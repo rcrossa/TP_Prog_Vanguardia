@@ -1,37 +1,62 @@
-# Arquitectura del Proyecto
+# 🏗️ Arquitectura del Sistema de Reservas
+
+## 📁 Estructura del Proyecto
 
 ```
 TP_Prog_Vanguardia/
-├── app/                          # Código principal de la aplicación
+├── app/                          # Aplicación principal
 │   ├── api/                      # Capa de API REST
 │   │   └── v1/                   # Versionado de API
-│   │       └── endpoints/        # Endpoints REST por recurso
-│   ├── auth/                     # Autenticación y autorización
+│   │       ├── endpoints/        # Endpoints por recurso
+│   │       └── router.py         # Router principal
 │   ├── core/                     # Configuración central
-│   ├── models/                   # Modelos de base de datos (SQLAlchemy)
-│   ├── prediction/               # Módulo de predicción de reservas
-│   ├── repositories/             # Capa de acceso a datos (Repository Pattern)
+│   │   ├── config.py            # Configuración con variables de entorno
+│   │   └── database.py          # Configuración de base de datos
+│   ├── models/                   # Modelos SQLAlchemy 2.0
+│   │   ├── persona.py           # Modelo de usuarios
+│   │   ├── sala.py              # Modelo de salas
+│   │   ├── articulo.py          # Modelo de artículos
+│   │   └── reserva.py           # Modelo de reservas
+│   ├── repositories/             # Capa de acceso a datos
 │   ├── schemas/                  # Esquemas Pydantic para validación
 │   └── services/                 # Lógica de negocio
-├── config/                       # Configuraciones por ambiente
-├── docs/                         # Documentación del proyecto
-├── migrations/                   # Migraciones de base de datos
-└── tests/                        # Pruebas automatizadas
-    ├── integration/              # Pruebas de integración
-    └── unit/                     # Pruebas unitarias
+├── docker/                       # Configuración de contenedores
+├── docs/                         # Documentación
+├── postman/                      # Colección de API testing
+└── scripts/                      # Scripts de utilidad
 ```
 
-## Principios de Diseño Aplicados
+## 🏛️ Patrón de Arquitectura
 
-### Clean Architecture
-- **Separación de responsabilidades** por capas
-- **Inversión de dependencias** con repositories
-- **Independencia de frameworks** en la lógica de negocio
+### Arquitectura por Capas
 
-### REST API Design
-- **Versionado de API** (/api/v1/)
-- **Recursos bien definidos** por endpoint
-- **Métodos HTTP semánticamente correctos**
+**API Layer (Endpoints)**
+- `app/api/v1/endpoints/` - Controladores REST
+- Manejo de requests/responses
+- Validación de entrada con Pydantic
+
+**Service Layer (Lógica de Negocio)**
+- `app/services/` - Reglas de negocio
+- Validaciones complejas
+- Coordinación entre repositorios
+
+**Repository Layer (Acceso a Datos)**
+- `app/repositories/` - Patrón Repository
+- Abstracción de la base de datos
+- Operaciones CRUD encapsuladas
+
+**Model Layer (Persistencia)**
+- `app/models/` - Modelos SQLAlchemy 2.0
+- Mapeo objeto-relacional
+- Definición de esquema de BD
+
+### Tecnologías Principales
+
+- **FastAPI** - Framework web moderno
+- **SQLAlchemy 2.0** - ORM con Mapped types
+- **Pydantic** - Validación y serialización
+- **PostgreSQL** - Base de datos relacional
+- **Docker** - Containerización
 
 ### Domain-Driven Design
 - **Modelos** representan entidades del dominio

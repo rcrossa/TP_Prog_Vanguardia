@@ -1,0 +1,1718 @@
+{
+	"info": {
+		"_postman_id": "sistema-completo-2024-consolidado",
+		"name": "🏢 Sistema Completo de Reservas - API Consolidada",
+		"description": "Colección consolidada que incluye todos los módulos del sistema de reservas de salas: Personas, Salas, Artículos, Reservas, Testing Avanzado y funcionalidades del sistema completo. Organizada por carpetas temáticas para facilitar la navegación y testing.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "sistema-consolidado-2024"
+	},
+	"item": [
+		{
+			"name": "🏥 Sistema - Health & Configuration",
+			"description": "Endpoints para verificar el estado del sistema, configuración inicial y conectividad",
+			"item": [
+				{
+					"name": "Health Check Principal",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Sistema está disponible\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Tiempo de respuesta aceptable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test(\"Status healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('healthy');",
+									"});",
+									"",
+									"console.log(\"✅ Sistema listo para operaciones\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "System Information",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/info",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"info"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "API Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"stats"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👥 Personas - CRUD Completo",
+			"description": "Gestión completa de personas del sistema: crear, leer, actualizar y eliminar",
+			"item": [
+				{
+					"name": "➕ Crear Personas",
+					"item": [
+						{
+							"name": "Crear Persona - Docente",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Persona creada exitosamente\", function () {",
+											"    pm.response.to.have.status(201);",
+											"});",
+											"",
+											"pm.test(\"ID asignado correctamente\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.have.property('id');",
+											"    pm.environment.set(\"docente_id\", jsonData.id);",
+											"});",
+											"",
+											"pm.test(\"Datos completos\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.nombre).to.eql(\"Dr. Carlos Rodriguez\");",
+											"    pm.expect(jsonData.email).to.include(\"@universidad.edu.ar\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Dr. Carlos Rodriguez\",\n  \"email\": \"carlos.rodriguez@universidad.edu.ar\",\n  \"telefono\": \"+54 11 4321-8765\",\n  \"departamento\": \"Ingeniería en Sistemas\",\n  \"cargo\": \"Profesor Titular\",\n  \"activo\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Crear Persona - Estudiante",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Estudiante creado\", function () {",
+											"    pm.response.to.have.status(201);",
+											"});",
+											"",
+											"pm.test(\"ID guardado\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.environment.set(\"estudiante_id\", jsonData.id);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Ana María González\",\n  \"email\": \"ana.gonzalez@estudiantes.universidad.edu.ar\",\n  \"telefono\": \"+54 11 5555-1234\",\n  \"departamento\": \"Ingeniería en Sistemas\",\n  \"cargo\": \"Estudiante - 4to Año\",\n  \"activo\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Crear Persona - Administrativo",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Luis Fernando Martinez\",\n  \"email\": \"luis.martinez@admin.universidad.edu.ar\",\n  \"telefono\": \"+54 11 4444-5678\",\n  \"departamento\": \"Administración Académica\",\n  \"cargo\": \"Coordinador de Recursos\",\n  \"activo\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "📋 Consultar Personas",
+					"item": [
+						{
+							"name": "Listar Todas las Personas",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Lista obtenida correctamente\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta es un array\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.be.an('array');",
+											"});",
+											"",
+											"pm.test(\"Personas tienen estructura completa\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    if (jsonData.length > 0) {",
+											"        pm.expect(jsonData[0]).to.have.property('id');",
+											"        pm.expect(jsonData[0]).to.have.property('nombre');",
+											"        pm.expect(jsonData[0]).to.have.property('email');",
+											"        pm.expect(jsonData[0]).to.have.property('departamento');",
+											"    }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/?skip=0&limit=100",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "100"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener Persona por ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Persona encontrada\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Datos completos de la persona\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.have.property('nombre');",
+											"    pm.expect(jsonData).to.have.property('email');",
+											"    pm.expect(jsonData).to.have.property('telefono');",
+											"    pm.expect(jsonData).to.have.property('departamento');",
+											"    pm.expect(jsonData).to.have.property('cargo');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/{{docente_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										"{{docente_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🔄 Actualizar Personas",
+					"item": [
+						{
+							"name": "Actualizar Información Docente",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Persona actualizada correctamente\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Información actualizada\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.telefono).to.include(\"+54 11 9999\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Dr. Carlos Rodriguez\",\n  \"email\": \"carlos.rodriguez@universidad.edu.ar\",\n  \"telefono\": \"+54 11 9999-8765\",\n  \"departamento\": \"Ingeniería en Sistemas\",\n  \"cargo\": \"Profesor Titular - Investigador\",\n  \"activo\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/{{docente_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										"{{docente_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🗑️ Eliminar Personas",
+					"item": [
+						{
+							"name": "Eliminar Persona",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Persona eliminada correctamente\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/{{estudiante_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										"{{estudiante_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🏛️ Salas - Gestión Completa",
+			"description": "Administración de salas: creación, consulta, actualización y gestión de espacios",
+			"item": [
+				{
+					"name": "➕ Crear Salas",
+					"item": [
+						{
+							"name": "Crear Sala de Conferencias",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Sala creada exitosamente\", function () {",
+											"    pm.response.to.have.status(201);",
+											"});",
+											"",
+											"pm.test(\"ID asignado\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.have.property('id');",
+											"    pm.environment.set(\"sala_conferencias_id\", jsonData.id);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Sala de Conferencias Ejecutiva A\",\n  \"descripcion\": \"Sala premium para presentaciones ejecutivas con vista panorámica. Equipamiento audiovisual de última generación, sistema de videoconferencia 4K, climatización inteligente.\",\n  \"capacidad\": 25,\n  \"ubicacion\": \"Piso 10 - Ala Norte\",\n  \"equipamiento\": \"Proyector 4K, Sistema de audio Bose, Pizarra interactiva 75', Mesa de reuniones ejecutiva, Videoconferencia Logitech Rally Plus\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Crear Aula Magna",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Aula Magna - Auditorio Principal\",\n  \"descripcion\": \"Auditorio principal de la universidad con capacidad para grandes eventos académicos, conferencias magistrales y ceremonias. Acústica profesional y sistema de grabación.\",\n  \"capacidad\": 300,\n  \"ubicacion\": \"Planta Baja - Edificio Central\",\n  \"equipamiento\": \"Sistema de sonido profesional 7.1, Proyectores duales 4K, Iluminación escénica LED, Atril con micrófono, Sistema de grabación profesional\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Crear Laboratorio de Computación",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Laboratorio de Computación 101\",\n  \"descripcion\": \"Laboratorio equipado con estaciones de trabajo de alta performance para desarrollo de software, machine learning y análisis de datos. Red de alta velocidad y servidores dedicados.\",\n  \"capacidad\": 30,\n  \"ubicacion\": \"Piso 3 - Ala Este\",\n  \"equipamiento\": \"30 Workstations Intel i7, Proyector interactivo, Red 10Gbps, Servidores GPU para ML, Software especializado (Visual Studio, PyCharm, MATLAB)\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "📋 Consultar Salas",
+					"item": [
+						{
+							"name": "Listar Todas las Salas",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Salas obtenidas correctamente\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Lista de salas válida\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.be.an('array');",
+											"});",
+											"",
+											"pm.test(\"Salas tienen datos completos\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    if (jsonData.length > 0) {",
+											"        pm.expect(jsonData[0]).to.have.property('id');",
+											"        pm.expect(jsonData[0]).to.have.property('nombre');",
+											"        pm.expect(jsonData[0]).to.have.property('capacidad');",
+											"        pm.expect(jsonData[0]).to.have.property('ubicacion');",
+											"    }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/?skip=0&limit=100",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										""
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "100"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener Sala por ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/{{sala_conferencias_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										"{{sala_conferencias_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Salas Disponibles",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/?skip=0&limit=50",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										""
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "50"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🔄 Actualizar Salas",
+					"item": [
+						{
+							"name": "Actualizar Equipamiento Sala",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Sala de Conferencias Ejecutiva A - RENOVADA\",\n  \"descripcion\": \"[ACTUALIZADA] Sala premium para presentaciones ejecutivas con equipamiento completamente renovado. Nueva mesa inteligente, sistema de IA para gestión automática de reuniones.\",\n  \"capacidad\": 25,\n  \"ubicacion\": \"Piso 10 - Ala Norte\",\n  \"equipamiento\": \"NUEVO: Proyector láser 8K, Sistema de audio espacial Bose, Pizarra interactiva 85' 4K, Mesa inteligente con carga inalámbrica, IA Assistant para reuniones\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/{{sala_conferencias_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										"{{sala_conferencias_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📦 Artículos - Inventario Completo",
+			"description": "Gestión completa del inventario de artículos y equipamiento",
+			"item": [
+				{
+					"name": "➕ Agregar Artículos",
+					"item": [
+						{
+							"name": "Equipamiento Audiovisual - Proyector",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Artículo creado exitosamente\", function () {",
+											"    pm.response.to.have.status(201);",
+											"});",
+											"",
+											"pm.test(\"ID asignado correctamente\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.have.property('id');",
+											"    pm.environment.set(\"proyector_id\", jsonData.id);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Proyector Epson PowerLite L615U\",\n  \"descripcion\": \"Proyector láser WUXGA de 6000 lúmenes con tecnología 3LCD. Ideal para salas de conferencias grandes con iluminación ambiente. Conectividad HDMI, VGA, USB y red. Incluye control remoto y cables.\",\n  \"categoria\": \"Equipamiento Audiovisual\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Sistema de Audio",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Sistema de Audio Bose Professional\",\n  \"descripcion\": \"Sistema de audio profesional con altavoces de techo, amplificador digital, micrófono inalámbrico de mano y de solapa. Cobertura para salas de hasta 100 personas.\",\n  \"categoria\": \"Equipamiento de Audio\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Pizarra Interactiva",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Pizarra Interactiva Smart Board 75'\",\n  \"descripcion\": \"Pantalla táctil interactiva de 75 pulgadas con tecnología multi-touch. Incluye software de colaboración, marcadores digitales y soporte de pared ajustable. Compatible con Windows, Mac y Android.\",\n  \"categoria\": \"Tecnología Interactiva\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "📋 Consultar Inventario",
+					"item": [
+						{
+							"name": "Inventario Completo",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Inventario obtenido correctamente\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Lista de artículos válida\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.be.an('array');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/?skip=0&limit=100",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										""
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "100"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Artículo por ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/{{proyector_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										"{{proyector_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🔄 Actualizar Artículos",
+					"item": [
+						{
+							"name": "Actualizar Descripción Proyector",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Proyector Epson PowerLite L615U - ACTUALIZADO\",\n  \"descripcion\": \"[ACTUALIZADO] Proyector láser WUXGA de 6000 lúmenes con tecnología 3LCD. Recientemente calibrado y con firmware actualizado.\",\n  \"categoria\": \"Equipamiento Audiovisual Premium\",\n  \"disponible\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/{{proyector_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										"{{proyector_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🗑️ Gestionar Inventario",
+					"item": [
+						{
+							"name": "Eliminar Artículo del Inventario",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Artículo eliminado correctamente\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/{{proyector_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										"{{proyector_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📅 Reservas - Sistema Completo",
+			"description": "Sistema completo de reservas de salas con casos de uso avanzados y flujos de trabajo",
+			"item": [
+				{
+					"name": "➕ Crear Reservas",
+					"item": [
+						{
+							"name": "Reserva Conferencia Ejecutiva",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Reserva creada exitosamente\", function () {",
+											"    pm.response.to.have.status(201);",
+											"});",
+											"",
+											"pm.test(\"ID de reserva asignado\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.have.property('id');",
+											"    pm.environment.set(\"reserva_id\", jsonData.id);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"titulo\": \"Conferencia Anual de Tecnología 2024\",\n  \"descripcion\": \"Conferencia magistral sobre tendencias tecnológicas y transformación digital. Presentación de nuevos productos y networking ejecutivo.\",\n  \"fecha_inicio\": \"2024-12-15T09:00:00\",\n  \"fecha_fin\": \"2024-12-15T17:00:00\",\n  \"persona_id\": 1,\n  \"sala_id\": 1,\n  \"estado\": \"confirmada\",\n  \"equipamiento_adicional\": \"Sistema de streaming, cámaras profesionales, servicio de catering\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reserva Clase Académica",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"titulo\": \"Clase de Machine Learning Avanzado\",\n  \"descripcion\": \"Sesión práctica de aprendizaje automático con implementación de algoritmos de deep learning. Uso de GPUs para entrenamiento.\",\n  \"fecha_inicio\": \"2024-11-20T14:00:00\",\n  \"fecha_fin\": \"2024-11-20T17:00:00\",\n  \"persona_id\": 1,\n  \"sala_id\": 3,\n  \"estado\": \"confirmada\",\n  \"equipamiento_adicional\": \"Acceso completo a servidores GPU, datasets preconfigurados\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "📋 Consultar Reservas",
+					"item": [
+						{
+							"name": "Listar Todas las Reservas",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Reservas obtenidas correctamente\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Lista de reservas válida\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData).to.be.an('array');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/?skip=0&limit=100",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										""
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "100"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reserva por ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/{{reserva_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										"{{reserva_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reservas por Fecha",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/?fecha=2024-12-15",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										""
+									],
+									"query": [
+										{
+											"key": "fecha",
+											"value": "2024-12-15"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🔄 Actualizar Reservas",
+					"item": [
+						{
+							"name": "Modificar Reserva",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"titulo\": \"Conferencia Anual de Tecnología 2024 - EXTENDIDA\",\n  \"descripcion\": \"[ACTUALIZADA] Conferencia magistral con agenda extendida. Incluye mesa redonda adicional y sesión de Q&A con expertos internacionales.\",\n  \"fecha_inicio\": \"2024-12-15T08:00:00\",\n  \"fecha_fin\": \"2024-12-15T19:00:00\",\n  \"persona_id\": 1,\n  \"sala_id\": 1,\n  \"estado\": \"confirmada\",\n  \"equipamiento_adicional\": \"Sistema de streaming HD, traducción simultánea, coffee break premium\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/{{reserva_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										"{{reserva_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "❌ Cancelar Reservas",
+					"item": [
+						{
+							"name": "Cancelar Reserva",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Reserva cancelada correctamente\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/{{reserva_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										"{{reserva_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🔬 Testing Avanzado y QA",
+			"description": "Testing avanzado, validación de performance, casos edge y aseguramiento de calidad",
+			"item": [
+				{
+					"name": "🚀 Performance Testing",
+					"item": [
+						{
+							"name": "Carga Masiva - 100 Personas",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Tiempo de respuesta bajo carga < 3000ms\", function () {",
+											"    pm.expect(pm.response.responseTime).to.be.below(3000);",
+											"});",
+											"",
+											"pm.test(\"Sistema mantiene disponibilidad\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"console.log(\"⏱️ Tiempo de respuesta: \" + pm.response.responseTime + \"ms\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/?skip=0&limit=100",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "100"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Stress Test - Reservas Concurrentes",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Sistema maneja concurrencia\", function () {",
+											"    pm.expect([200, 201, 409]).to.include(pm.response.code);",
+											"});",
+											"",
+											"pm.test(\"Respuesta en tiempo aceptable\", function () {",
+											"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"titulo\": \"Test de Concurrencia - {{$timestamp}}\",\n  \"descripcion\": \"Reserva de prueba para testing de concurrencia\",\n  \"fecha_inicio\": \"2024-12-20T10:00:00\",\n  \"fecha_fin\": \"2024-12-20T11:00:00\",\n  \"persona_id\": 1,\n  \"sala_id\": 1,\n  \"estado\": \"pendiente\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🧪 Casos Edge y Límites",
+					"item": [
+						{
+							"name": "Crear Reserva con Datos Extremos",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Sistema maneja datos extremos correctamente\", function () {",
+											"    pm.expect([201, 422]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 422) {",
+											"    pm.test(\"Error de validación apropiado\", function () {",
+											"        var jsonData = pm.response.json();",
+											"        pm.expect(jsonData).to.have.property('detail');",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"titulo\": \"Título extremadamente largo para probar los límites del sistema de validación de datos y asegurar que maneja correctamente strings de gran longitud sin generar errores inesperados en la base de datos o en la lógica de negocio del backend\",\n  \"descripcion\": \"Descripción de prueba con caracteres especiales: àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ !@#$%^&*()_+-=[]{}|;':,.<>?\",\n  \"fecha_inicio\": \"2025-01-01T00:00:00\",\n  \"fecha_fin\": \"2025-12-31T23:59:59\",\n  \"persona_id\": 999999,\n  \"sala_id\": 999999,\n  \"estado\": \"confirmada\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/reservas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"reservas",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Paginación Extrema",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Sistema maneja paginación extrema\", function () {",
+											"    pm.expect([200, 422]).to.include(pm.response.code);",
+											"});",
+											"",
+											"pm.test(\"Tiempo de respuesta aceptable\", function () {",
+											"    pm.expect(pm.response.responseTime).to.be.below(10000);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/?skip=999999&limit=1000",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "999999"
+										},
+										{
+											"key": "limit",
+											"value": "1000"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "🛡️ Seguridad y Validación",
+					"item": [
+						{
+							"name": "SQL Injection Test",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Sistema protegido contra SQL injection\", function () {",
+											"    pm.expect([400, 404, 422]).to.include(pm.response.code);",
+											"});",
+											"",
+											"pm.test(\"No hay exposición de datos sensibles\", function () {",
+											"    var responseText = pm.response.text();",
+											"    pm.expect(responseText.toLowerCase()).to.not.include('select');",
+											"    pm.expect(responseText.toLowerCase()).to.not.include('drop');",
+											"    pm.expect(responseText.toLowerCase()).to.not.include('delete');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/1' OR '1'='1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										"1' OR '1'='1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "XSS Prevention Test",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Sistema sanitiza entrada XSS\", function () {",
+											"    pm.expect([201, 422]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 201) {",
+											"    pm.test(\"Script tags sanitizados\", function () {",
+											"        var jsonData = pm.response.json();",
+											"        pm.expect(jsonData.nombre).to.not.include('<script>');",
+											"    });",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"<script>alert('XSS')</script>Test User\",\n  \"email\": \"test@example.com\",\n  \"telefono\": \"123456789\",\n  \"departamento\": \"IT\",\n  \"cargo\": \"Tester\",\n  \"activo\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "⚠️ Manejo de Errores",
+			"description": "Casos de error y validación de respuestas incorrectas",
+			"item": [
+				{
+					"name": "Recursos Inexistentes",
+					"item": [
+						{
+							"name": "Persona Inexistente",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Error 404 para persona inexistente\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/999999",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										"999999"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Sala Inexistente",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Error 404 para sala inexistente\", function () {",
+											"    pm.response.to.have.status(404);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/salas/999999",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"salas",
+										"999999"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Datos Inválidos",
+					"item": [
+						{
+							"name": "Crear Persona - Email Inválido",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Error de validación por email inválido\", function () {",
+											"    pm.response.to.have.status(422);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Test User\",\n  \"email\": \"email-invalido-sin-arroba\",\n  \"telefono\": \"123456789\",\n  \"departamento\": \"IT\",\n  \"cargo\": \"Tester\",\n  \"activo\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/personas/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"personas",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Crear Artículo - Datos Incompletos",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Error de validación por datos faltantes\", function () {",
+											"    pm.response.to.have.status(422);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nombre\": \"Artículo Incompleto\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/articulos/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"articulos",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string",
+			"description": "URL base de la API del sistema de reservas"
+		},
+		{
+			"key": "docente_id",
+			"value": "1",
+			"type": "string",
+			"description": "ID del docente para pruebas"
+		},
+		{
+			"key": "estudiante_id",
+			"value": "2",
+			"type": "string",
+			"description": "ID del estudiante para pruebas"
+		},
+		{
+			"key": "sala_conferencias_id",
+			"value": "1",
+			"type": "string",
+			"description": "ID de la sala de conferencias para pruebas"
+		},
+		{
+			"key": "proyector_id",
+			"value": "1",
+			"type": "string",
+			"description": "ID del proyector para pruebas"
+		},
+		{
+			"key": "reserva_id",
+			"value": "1",
+			"type": "string",
+			"description": "ID de la reserva para pruebas"
+		}
+	]
+}

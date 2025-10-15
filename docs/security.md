@@ -1,54 +1,82 @@
 # 🔒 Configuración de Seguridad
 
-## ⚠️ Problema Identificado
+## 📋 Configuración Segura Implementada
 
-En el primer commit se incluyeron credenciales de base de datos directamente en el código fuente, lo cual representa una vulnerabilidad de seguridad.
+### Variables de Entorno
+El sistema utiliza variables de entorno para todas las configuraciones sensibles. No hay credenciales hardcodeadas en el código.
 
-## ✅ Solución Implementada
-
-### 1. Configuración Centralizada
-- Creado `app/core/config.py` con clase `Settings`
-- Todas las configuraciones sensibles provienen de variables de entorno
-- Validación obligatoria de variables críticas
-
-### 2. Variables de Entorno Obligatorias
-```bash
-POSTGRES_USER=tu_usuario
-POSTGRES_PASSWORD=tu_contraseña  
-POSTGRES_DB=tu_base_de_datos
-SECRET_KEY=tu_clave_secreta
-JWT_SECRET_KEY=tu_jwt_secret
+**Configuración en `app/core/config.py`:**
+```python
+class Settings(BaseSettings):
+    # Base de datos
+    postgres_user: str = Field(..., env="POSTGRES_USER")
+    postgres_password: str = Field(..., env="POSTGRES_PASSWORD")
+    postgres_db: str = Field(..., env="POSTGRES_DB")
+    postgres_host: str = Field("localhost", env="POSTGRES_HOST")
+    postgres_port: int = Field(5432, env="POSTGRES_PORT")
+    
+    # Seguridad
+    secret_key: str = Field(..., env="SECRET_KEY")
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
 ```
 
-### 3. Archivos Protegidos
-- `.env` está en `.gitignore` (no se sube al repositorio)
-- `.env.example` es la plantilla sin datos sensibles
-- `config.py` valida que las variables existan
+### Variables de Entorno Requeridas
+```bash
+# Base de datos
+POSTGRES_USER=usuario_bd
+POSTGRES_PASSWORD=contraseña_segura  
+POSTGRES_DB=nombre_base_datos
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
 
-## 🚨 Recomendaciones de Seguridad
+# Seguridad
+SECRET_KEY=clave_secreta_muy_larga_y_segura
+```
+
+### Archivos de Configuración
+- **`.env`**: Archivo local con variables reales (en `.gitignore`)
+- **`.env.example`**: Plantilla sin datos sensibles
+- **`docker/.env.example`**: Plantilla para Docker Compose
+
+## �️ Mejores Prácticas Implementadas
 
 ### Desarrollo Local
 1. Copiar `.env.example` a `.env`
 2. Completar con valores reales
-3. Nunca commitear el archivo `.env`
+3. El archivo `.env` está en `.gitignore` y no se commitea
 
 ### Producción
-1. Usar variables de entorno del sistema
-2. Usar servicios de gestión de secretos (AWS Secrets Manager, etc.)
+1. Configurar variables de entorno del sistema
+2. Usar servicios de gestión de secretos cuando sea posible
 3. Rotar credenciales regularmente
 
-### Gestión de Secretos
-- **✅ Correcto:** Variables de entorno, servicios de secretos
-- **❌ Incorrecto:** Hardcodeado en código, archivos de configuración en repo
+### Docker Compose
+El archivo `docker-compose.yml` utiliza substitución de variables:
+```yaml
+environment:
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reservas_password}
+  POSTGRES_USER: ${POSTGRES_USER:-reservas_user}
+```
 
-## 🔄 Migración Aplicada
+## 🚀 Configuración Rápida
 
-```python
-# ❌ ANTES (inseguro)
-POSTGRES_PASSWORD = "reservas_password"
+### Para Desarrollo
+```bash
+# 1. Copiar archivo de ejemplo
+cp .env.example .env
 
-# ✅ DESPUÉS (seguro)  
-postgres_password = os.getenv("POSTGRES_PASSWORD")
-if not postgres_password:
-    raise ValueError("POSTGRES_PASSWORD es requerida")
+# 2. Editar con tus valores
+# 3. Ejecutar la aplicación
+python main.py
+```
+
+### Para Docker
+```bash
+# 1. Configurar variables para Docker
+cp docker/.env.example docker/.env
+
+# 2. Editar docker/.env con tus valores
+# 3. Levantar contenedores
+cd docker && docker-compose up -d
 ```

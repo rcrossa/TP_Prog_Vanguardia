@@ -1,193 +1,126 @@
-# 📋 Plataforma de Gestión de Reservas
+# 🏢 Sistema de Reservas de Salas
 
 ## 📚 Información Académica
 
-- **Asignatura:** Programación de Vanguardia
+- **Asignatura:** Programación de Vanguardia  
 - **Carrera:** Licenciatura en Tecnologías Informáticas
 - **Ciclo Lectivo:** 2025
-- **Docente:** Ing. Vázquez Alejandro
 
-## 📖 Descripción del Proyecto
+## 📖 Descripción
 
-Este proyecto consiste en la migración de una plataforma existente para la gestión de reservas de recursos organizacionales. La migración es necesaria por requerimientos de compliance y debe completarse antes de los cambios de plataforma programados.
+Sistema moderno para la gestión de reservas de salas y recursos organizacionales, desarrollado con tecnologías actuales y mejores prácticas de desarrollo.
 
-### 🔄 Estado Actual del Sistema
-- **Tecnología:** Java 8
-- **Base de Datos:** SQL Server
-- **DAOs:** Desarrollados con JDBC
-- **Configuración:** Estática en código fuente
+### �️ Tecnologías Utilizadas
 
-### 🚀 Mejoras Propuestas
-- Migración a tecnologías modernas
-- Implementación de módulo de predicción de reservas
-- Optimización del uso eficiente de recursos
-- Configuración dinámica
+- **Backend:** FastAPI (Python)
+- **ORM:** SQLAlchemy 2.0 con Mapped types
+- **Base de Datos:** PostgreSQL
+- **Validación:** Pydantic v2
+- **Containerización:** Docker & Docker Compose
+- **Testing:** Postman Collections
 
-## 🎯 Objetivos
+## ⚡ Funcionalidades
 
-- [ ] Seleccionar tecnologías adecuadas para el desarrollo del proyecto
-- [ ] Desarrollar un MVP (Producto Mínimo Viable)
-- [ ] Elegir una base de datos que se adapte mejor a los requisitos
-- [ ] Crear mocks de pantallas
-- [ ] Definir modelo de pruebas para garantizar la calidad del código
-- [ ] Plantear la plataforma de despliegue de la aplicación
+### 👥 Gestión de Personas
+- CRUD completo de usuarios
+- Validación de emails únicos
+- Información de contacto y departamento
 
-## ⚡ Funcionalidades Principales
+### 🏛️ Administración de Salas  
+- Gestión de espacios con capacidades
+- Información de ubicación y equipamiento
+- Filtros por capacidad mínima
 
-### 🔐 Autenticación y Autorización
-- Registro de usuarios
-- Autenticación por roles
-- Gestión de permisos
+### � Inventario de Artículos
+- Control de artículos reservables
+- Estados de disponibilidad
+- Categorización por tipo
 
-### 📊 Gestión de Datos
-- Ingreso y actualización manual de datos
-- API para integración de datos
-- Recursos reservables
-
-### 🔮 Módulo de Predicción
-- Monitor de predicción de reservas
-- Análisis de patrones de uso
-- Optimización de recursos
+### 📅 Sistema de Reservas
+- Reservas de salas y artículos
+- Validación de conflictos de horarios
+- Gestión de estados de reserva
 
 ## 🗃️ Modelo de Datos
 
-El sistema maneja las siguientes entidades principales:
+El sistema maneja cuatro entidades principales:
 
-### 👥 Personas
-```sql
-CREATE TABLE personas (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    nombre VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL
-);
-```
+- **👥 Personas** - Usuarios del sistema con nombre y email único
+- **🏛️ Salas** - Espacios físicos con capacidad definida  
+- **📦 Artículos** - Equipamiento reservable con estado de disponibilidad
+- **📅 Reservas** - Vinculación de personas con salas/artículos en fechas específicas
 
-### 📦 Artículos
-```sql
-CREATE TABLE articulos (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    nombre VARCHAR(255) NOT NULL,
-    disponible BOOLEAN NOT NULL
-);
-```
+### Relaciones
+- Una **reserva** pertenece a una **persona** (obligatorio)
+- Una **reserva** puede ser de una **sala** O un **artículo** (exclusivo)
+- Las **reservas** incluyen fecha/hora de inicio y fin
 
-### 🏢 Salas
-```sql
-CREATE TABLE salas (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    nombre VARCHAR(255) NOT NULL,
-    capacidad INT NOT NULL
-);
-```
+## � Instalación y Uso
 
-### 📅 Reservas
-```sql
-CREATE TABLE reservas (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    id_articulo INT,
-    id_sala INT,
-    id_persona INT NOT NULL,
-    fecha_hora_inicio DATETIME NOT NULL,
-    fecha_hora_fin DATETIME NOT NULL,
-    FOREIGN KEY (id_articulo) REFERENCES articulos(id),
-    FOREIGN KEY (id_sala) REFERENCES salas(id),
-    FOREIGN KEY (id_persona) REFERENCES personas(id)
-);
-```
+### Requisitos Previos
+- Python 3.11+
+- Docker y Docker Compose
+- Git
 
-### 📋 Datos de Ejemplo
-
-#### Personas
-| ID | Nombre | Email |
-|---|---|---|
-| 1 | Ana Pérez | ana.perez@organizacion.com |
-| 2 | Juan Gómez | juan.gomez@organizacion.com |
-| 3 | María López | maria.lopez@organizacion.com |
-
-#### Artículos
-| ID | Nombre | Disponible |
-|---|---|---|
-| 1 | Proyector Epson EB-X05 | ✅ |
-| 2 | Laptop HP EliteBook | ❌ |
-| 3 | Cámara Sony Alpha a6400 | ✅ |
-
-#### Salas
-| ID | Nombre | Capacidad |
-|---|---|---|
-| 1 | Sala de Reuniones 1A | 8 |
-| 2 | Sala de Conferencias B2 | 20 |
-| 3 | Aula de Capacitación C3 | 15 |
-
-## 📦 Entregables
-
-### 📅 Fecha Límite: 12 de Noviembre de 2025
-
-### 📋 Componentes Requeridos
-- [ ] **Documentación completa** con toda la información relevante
-- [ ] **Presentación** en formato PPT o similar
-- [ ] **Código fuente** que sustente la Prueba de Concepto (PoC)
-- [ ] **Carátula** del proyecto
-- [ ] **Presentación de integrantes** del equipo
-- [ ] **Gráficos del predictor** de reservas
-- [ ] **Diagrama de arquitectura** del sistema
-- [ ] **Minutas de reuniones** del equipo
-- [ ] **Análisis de mejoras** al problema expuesto
-
-## 🏗️ Arquitectura del Sistema
-
-*[Diagrama de arquitectura será añadido durante el desarrollo]*
-
-## 👥 Equipo de Desarrollo
-
-*[Información del equipo será añadida]*
-
-## 🚀 Instalación y Configuración
-
-### ⚡ Setup Rápido
+### Instalación Rápida
 ```bash
-# Ejecutar script de configuración automática
+# 1. Clonar repositorio
+git clone <repo-url>
+cd TP_Prog_Vanguardia
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus valores
+
+# 3. Ejecutar setup automático
 ./setup.sh
+
+# 4. Acceder a la aplicación
+# API: http://localhost:8000
+# Docs: http://localhost:8000/docs
 ```
 
-### 🔧 Setup Manual
-
-#### 1. Configurar Variables de Entorno
+### Configuración Manual
 ```bash
-# Copiar plantilla de configuración
-cp config/.env.example .env
+# Base de datos con Docker
+cd docker && docker-compose up -d
 
-# Editar .env con tus configuraciones
-nano .env
-```
-
-#### 2. Levantar Base de Datos
-```bash
-cd docker
-docker-compose up -d
-```
-
-#### 3. Instalar Dependencias Python
-```bash
+# Entorno Python
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
+
+# Ejecutar aplicación
+python main.py
 ```
 
-### 🔒 Configuración de Seguridad
-- Variables sensibles se cargan desde `.env` (no incluido en repo)
-- Configuración centralizada en `app/core/config.py`
-- Ver `docs/security.md` para más detalles
+## 🧪 Testing
 
-### 📊 Servicios Disponibles
-- **PostgreSQL:** `localhost:5432`
-- **PgAdmin:** http://localhost:8080
+### Postman Collections
+El directorio `postman/` contiene colecciones completas para testing:
+- Testing de todos los endpoints
+- Casos de uso avanzados  
+- Validación de errores
 
-## 🧪 Pruebas
+### Verificación de Calidad
+```bash
+# Script de verificación automática
+./scripts/check_code_quality.sh
+```
 
-*[Información sobre pruebas será añadida durante el desarrollo]*
+## � Documentación
 
-## 📈 Roadmap
+- **`docs/architecture.md`** - Arquitectura del sistema
+- **`docs/security.md`** - Configuración de seguridad
+- **`docs/formato_codigo.md`** - Estándares de código
+- **API Docs** - http://localhost:8000/docs (FastAPI auto-docs)
 
-- **Fase 1:** Análisis y diseño del sistema
-- **Fase 2:** Desarrollo del MVP
+## 🔒 Seguridad
+
+- ✅ Variables de entorno para credenciales
+- ✅ Sin hardcoding de passwords
+- ✅ Validación de entrada con Pydantic
+- ✅ Configuración centralizada
 - **Fase 3:** Implementación del módulo de predicción
 - **Fase 4:** Pruebas y optimización
 - **Fase 5:** Despliegue y documentación
