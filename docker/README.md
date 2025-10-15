@@ -22,14 +22,23 @@ docker-compose ps
 
 #### PostgreSQL Database
 - **URL:** `localhost:5432`
-- **Base de datos:** `reservas`
-- **Usuario:** `reservas_user`
-- **Contraseña:** `reservas_password`
+- **Configuración:** Ver archivo `.env` o valores por defecto en `docker-compose.yml`
 
 #### PgAdmin (Interfaz web para PostgreSQL)
 - **URL:** http://localhost:8080
-- **Email:** admin@reservas.com
-- **Contraseña:** admin123
+- **Credenciales:** Ver archivo `.env` o valores por defecto en `docker-compose.yml`
+
+### Configuración de Variables de Entorno
+
+Para personalizar las credenciales, crea un archivo `.env` en este directorio:
+
+```bash
+# Copiar el archivo de ejemplo
+cp .env.example .env
+
+# Editar con tus credenciales
+nano .env
+```
 
 ### Comandos útiles
 
