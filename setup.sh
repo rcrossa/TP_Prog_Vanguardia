@@ -15,10 +15,19 @@ fi
 # Crear archivo .env si no existe
 if [ ! -f ".env" ]; then
     echo "📝 Creando archivo .env desde plantilla..."
-    cp config/.env.example .env
-    echo "⚠️  IMPORTANTE: Edita el archivo .env con tus configuraciones reales"
+    cp .env.example .env
+    echo "✅ Archivo .env creado con configuración por defecto para desarrollo"
 else
     echo "✅ Archivo .env ya existe"
+fi
+
+# Crear archivo .env para Docker si no existe
+if [ ! -f "docker/.env" ]; then
+    echo "📝 Creando docker/.env desde plantilla..."
+    cp docker/.env.example docker/.env
+    echo "✅ Docker .env creado con configuración por defecto"
+else
+    echo "✅ Docker .env ya existe"
 fi
 
 # Levantar servicios de Docker

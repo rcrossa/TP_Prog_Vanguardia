@@ -42,9 +42,10 @@ SECRET_KEY=clave_secreta_muy_larga_y_segura
 ## �️ Mejores Prácticas Implementadas
 
 ### Desarrollo Local
-1. Copiar `.env.example` a `.env`
-2. Completar con valores reales
+1. Ejecutar `./setup.sh` (crea `.env` automáticamente)
+2. El script genera credenciales seguras para desarrollo
 3. El archivo `.env` está en `.gitignore` y no se commitea
+4. Revisar `.env` para ver las credenciales generadas
 
 ### Producción
 1. Configurar variables de entorno del sistema
@@ -63,20 +64,18 @@ environment:
 
 ### Para Desarrollo
 ```bash
-# 1. Copiar archivo de ejemplo
-cp .env.example .env
+# 1. Ejecutar setup (genera .env automáticamente)
+./setup.sh
 
-# 2. Editar con tus valores
-# 3. Ejecutar la aplicación
-python main.py
+# 2. La aplicación se inicia automáticamente
+# 3. Credenciales disponibles en archivo .env
 ```
 
 ### Para Docker
 ```bash
-# 1. Configurar variables para Docker
-cp docker/.env.example docker/.env
+# 1. El setup.sh configura automáticamente docker/.env
+./setup.sh
 
-# 2. Editar docker/.env con tus valores
-# 3. Levantar contenedores
-cd docker && docker-compose up -d
+# 2. Los contenedores se levantan automáticamente
+# 3. Credenciales configuradas en docker/.env
 ```
