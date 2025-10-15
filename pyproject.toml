@@ -1,0 +1,29 @@
+# Configuración para herramientas de formato y linting
+
+# Para flake8
+[flake8]
+max-line-length = 88
+extend-ignore = E203, W503
+exclude = venv, __pycache__, .git, *.egg-info
+
+# Para black
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | __pycache__
+  | \.pytest_cache
+)/
+'''
+
+# Para isort
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["app"]
+skip = ["venv", "__pycache__"]
