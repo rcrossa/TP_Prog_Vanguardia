@@ -143,7 +143,42 @@ CREATE TABLE reservas (
 
 ## 🚀 Instalación y Configuración
 
-*[Instrucciones de instalación serán añadidas durante el desarrollo]*
+### ⚡ Setup Rápido
+```bash
+# Ejecutar script de configuración automática
+./setup.sh
+```
+
+### 🔧 Setup Manual
+
+#### 1. Configurar Variables de Entorno
+```bash
+# Copiar plantilla de configuración
+cp config/.env.example .env
+
+# Editar .env con tus configuraciones
+nano .env
+```
+
+#### 2. Levantar Base de Datos
+```bash
+cd docker
+docker-compose up -d
+```
+
+#### 3. Instalar Dependencias Python
+```bash
+pip install -r requirements.txt
+```
+
+### 🔒 Configuración de Seguridad
+- Variables sensibles se cargan desde `.env` (no incluido en repo)
+- Configuración centralizada en `app/core/config.py`
+- Ver `docs/security.md` para más detalles
+
+### 📊 Servicios Disponibles
+- **PostgreSQL:** `localhost:5432`
+- **PgAdmin:** http://localhost:8080
 
 ## 🧪 Pruebas
 
