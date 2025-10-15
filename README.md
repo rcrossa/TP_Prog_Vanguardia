@@ -68,24 +68,31 @@ El sistema maneja cuatro entidades principales:
 git clone <repo-url>
 cd TP_Prog_Vanguardia
 
-# 2. Ejecutar setup automático (crea .env automáticamente)
+# 2. Ejecutar setup interactivo
 ./setup.sh
+# El script te preguntará si usar valores por defecto o configurar credenciales personalizadas
 
 # 3. Acceder a la aplicación
 # API: http://localhost:8000
 # Docs: http://localhost:8000/docs
-# PgAdmin: http://localhost:8080 (credenciales en archivo .env)
+# PgAdmin: http://localhost:8080
 ```
 
-### 🔐 Configuración de Credenciales
+### 🔐 Opciones de Configuración
 
-El script `setup.sh` genera automáticamente:
-- **`.env`** - Variables de entorno para la aplicación
-- **`docker/.env`** - Variables para Docker Compose
+El script `setup.sh` te ofrece dos opciones:
 
-Las credenciales se configuran en estos archivos y **no están hardcodeadas** en el código.
+**Opción 1: Configuración por defecto (recomendada)**
+- Usa valores seguros predefinidos para desarrollo
+- No requiere edición manual
+- Perfecto para comenzar rápidamente
 
-> 💡 **Tip:** Revisa el archivo `.env` generado para ver las credenciales de desarrollo.
+**Opción 2: Credenciales personalizadas**
+- Te permite editar `.env` y `docker/.env` 
+- Para usuarios que quieren credenciales específicas
+- El script espera a que termines de editarlos
+
+> 💡 **Al final del setup:** Se muestran las credenciales que están siendo utilizadas
 
 ### Configuración Manual
 ```bash

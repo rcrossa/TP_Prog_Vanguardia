@@ -7,8 +7,12 @@
 git clone <repo-url>
 cd TP_Prog_Vanguardia
 
-# El setup crea automáticamente los archivos .env necesarios
+# Ejecutar setup interactivo
 ./setup.sh
+
+# Opciones:
+# 1) Usar configuración por defecto (más rápido)
+# 2) Configurar credenciales personalizadas
 ```
 
 ### 2. Acceder al sistema
@@ -16,13 +20,15 @@ cd TP_Prog_Vanguardia
 - **Documentación:** http://localhost:8000/docs
 - **Base de datos (PgAdmin):** http://localhost:8080
 
-## � Credenciales
+## 🔐 Credenciales
 
-Las credenciales se generan automáticamente en:
+**Al final del `setup.sh` se muestran las credenciales configuradas:**
+- Usuario y password de PostgreSQL
+- Email y password de PgAdmin
+
+**También puedes consultarlas en:**
+- **`docker/.env`** - Credenciales de contenedores
 - **`.env`** - Configuración de la aplicación
-- **`docker/.env`** - Configuración de contenedores
-
-> 💡 **Para ver las credenciales:** Revisa el archivo `.env` después de ejecutar `setup.sh`
 
 ## 🧪 Probar la API
 
