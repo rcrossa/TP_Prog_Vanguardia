@@ -190,6 +190,8 @@ spring-rest-main/
 *.db
 *.sqlite
 *.sqlite3
+users.db
+test.db
 
 # Logs
 logs/

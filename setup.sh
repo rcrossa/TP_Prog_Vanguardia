@@ -32,7 +32,14 @@ sleep 10
 
 # Verificar conexión a base de datos
 echo "🔍 Verificando conexión a base de datos..."
-if docker exec -it reservas_db pg_isready -U reservas_user -d reservas > /dev/null 2>&1; then
+# Cargar variables de entorno si existe el archivo .env
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+DB_USER=${POSTGRES_USER:-reservas_user}
+DB_NAME=${POSTGRES_DB:-reservas}
+
+if docker exec -it reservas_db pg_isready -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1; then
     echo "✅ Base de datos PostgreSQL lista"
 else
     echo "❌ Error: No se puede conectar a PostgreSQL"
@@ -48,8 +55,8 @@ echo "   PostgreSQL: localhost:5432"
 echo "   PgAdmin:    http://localhost:8080"
 echo ""
 echo "📋 Datos de acceso PgAdmin:"
-echo "   Email:      admin@reservas.com"  
-echo "   Password:   admin123"
+echo "   Consulta tu archivo .env para las credenciales configuradas"
+echo "   (O usa los valores por defecto si no los modificaste)"
 echo ""
 echo "🔧 Próximos pasos:"
 echo "   1. Instalar dependencias Python: pip install -r requirements.txt"

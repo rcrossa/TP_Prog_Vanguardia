@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     container_name: reservas_db
     environment:
-      POSTGRES_DB: reservas
-      POSTGRES_USER: reservas_user
-      POSTGRES_PASSWORD: reservas_password
+      POSTGRES_DB: ${POSTGRES_DB:-reservas}
+      POSTGRES_USER: ${POSTGRES_USER:-reservas_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reservas_password}
     ports:
       - "5432:5432"
     volumes:
@@ -21,8 +21,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: reservas_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@reservas.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@reservas.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
     ports:
       - "8080:80"
     depends_on:
