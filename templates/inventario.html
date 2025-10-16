@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Inventario - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-boxes me-2"></i>Gestión de Inventario</h1>
+            <div class="d-flex gap-2">
+                <span class="badge bg-warning" id="java-status">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Verificando conexión...
+                </span>
+                <button class="btn btn-primary" onclick="refreshInventory()">
+                    <i class="fas fa-sync me-1"></i>Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estado de conexión con Java -->
+<div class="alert alert-info d-flex align-items-center mb-4" id="connection-alert">
+    <i class="fas fa-info-circle me-2"></i>
+    <div>
+        <strong>Conectando con microservicio Java...</strong><br>
+        <small>El inventario se gestiona desde el servicio FastAPI en el puerto 8000</small>
+    </div>
+</div>
+
+<!-- Contenedor para el inventario -->
+<div id="inventory-container">
+    <div class="row g-3 mb-4" id="inventory-stats" style="display: none;">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-boxes fa-2x text-primary mb-2"></i>
+                    <h3 class="mb-0" id="total-articles">0</h3>
+                    <small class="text-muted">Total Artículos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <h3 class="mb-0" id="available-articles">0</h3>
+                    <small class="text-muted">Disponibles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-times-circle fa-2x text-warning mb-2"></i>
+                    <h3 class="mb-0" id="reserved-articles">0</h3>
+                    <small class="text-muted">Reservados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                    <h3 class="mb-0" id="utilization-rate">0%</h3>
+                    <small class="text-muted">Utilización</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de artículos -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Lista de Artículos
+            </h5>
+        </div>
+        <div class="card-body" id="articles-list">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mb-0">Cargando inventario...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mensaje de error cuando Java no está disponible -->
+<div class="card border-0 shadow-sm d-none" id="error-container">
+    <div class="card-body">
+        <div class="text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h4>Microservicio Java no disponible</h4>
+            <p class="text-muted">No se puede conectar con el servicio de inventario.</p>
+            <p class="text-muted">
+                <small>Asegúrate de que el servicio FastAPI esté ejecutándose en el puerto 8000</small>
+            </p>
+            <button class="btn btn-primary" onclick="checkJavaConnection()">
+                <i class="fas fa-sync me-1"></i>Reintentar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function checkJavaConnection() {
+    try {
+        const isOnline = await javaService.checkHealth();
+        
+        if (isOnline) {
+            document.getElementById('java-status').innerHTML = `
+                <i class="fas fa-check-circle me-1"></i>Java Service: Online
+            `;
+            document.getElementById('java-status').className = 'badge bg-success';
+            
+            document.getElementById('connection-alert').innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <div>
+                    <strong>Conectado al microservicio Java</strong><br>
+                    <small>Inventario disponible y actualizado</small>
+                </div>
+            `;
+            document.getElementById('connection-alert').className = 'alert alert-success d-flex align-items-center mb-4';
+            
+            document.getElementById('inventory-container').style.display = 'block';
+            document.getElementById('error-container').classList.add('d-none');
+            
+            await loadInventoryData();
+        } else {
+            throw new Error('Service unavailable');
+        }
+    } catch (error) {
+        document.getElementById('java-status').innerHTML = `
+            <i class="fas fa-times-circle me-1"></i>Java Service: Offline
+        `;
+        document.getElementById('java-status').className = 'badge bg-danger';
+        
+        document.getElementById('connection-alert').innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <div>
+                <strong>No se puede conectar al servicio FastAPI</strong><br>
+                <small>Verifica que esté ejecutándose en http://localhost:8000</small>
+            </div>
+        `;
+        document.getElementById('connection-alert').className = 'alert alert-warning d-flex align-items-center mb-4';
+        
+        document.getElementById('inventory-container').style.display = 'none';
+        document.getElementById('error-container').classList.remove('d-none');
+    }
+}
+
+async function loadInventoryData() {
+    try {
+        console.log('Cargando datos del inventario...');
+        console.log('Token disponible:', !!window.authManager?.getToken());
+        console.log('Usuario:', window.authManager?.getUser());
+        
+        // Cargar estadísticas
+        const totalStats = await javaService.countArticulos();
+        const availableStats = await javaService.countArticulos(true);
+        const reservedStats = await javaService.countArticulos(false);
+        
+        document.getElementById('total-articles').textContent = totalStats.total || 0;
+        document.getElementById('available-articles').textContent = availableStats.total || 0;
+        document.getElementById('reserved-articles').textContent = reservedStats.total || 0;
+        
+        const utilization = totalStats.total > 0 
+            ? Math.round((reservedStats.total / totalStats.total) * 100)
+            : 0;
+        document.getElementById('utilization-rate').textContent = utilization + '%';
+        
+        document.getElementById('inventory-stats').style.display = 'block';
+        
+        // Cargar lista de artículos
+        const articles = await javaService.getArticulos({ limit: 20 });
+        renderArticlesList(articles);
+        
+    } catch (error) {
+        console.error('Error loading inventory:', error);
+        document.getElementById('articles-list').innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                <p class="text-muted">Error al cargar el inventario</p>
+                <button class="btn btn-outline-primary" onclick="loadInventoryData()">
+                    Reintentar
+                </button>
+            </div>
+        `;
+    }
+}
+
+function renderArticlesList(articles) {
+    const container = document.getElementById('articles-list');
+    
+    if (!articles || articles.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-boxes fa-2x text-muted mb-3"></i>
+                <p class="text-muted">No hay artículos en el inventario</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${articles.map(article => `
+                        <tr>
+                            <td><span class="badge bg-secondary">${article.id}</span></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-box text-primary me-2"></i>
+                                    <strong>${article.nombre}</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge ${article.disponible ? 'bg-success' : 'bg-warning'}">
+                                    <i class="fas ${article.disponible ? 'fa-check' : 'fa-times'} me-1"></i>
+                                    ${article.disponible ? 'Disponible' : 'Reservado'}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="editArticle(${article.id})" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-${article.disponible ? 'warning' : 'success'}" 
+                                            onclick="toggleAvailability(${article.id})" 
+                                            title="${article.disponible ? 'Reservar' : 'Liberar'}">
+                                        <i class="fas ${article.disponible ? 'fa-lock' : 'fa-unlock'}"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+async function refreshInventory() {
+    await checkJavaConnection();
+}
+
+async function toggleAvailability(id) {
+    try {
+        await javaService.toggleDisponibilidad(id);
+        showToast('Estado actualizado correctamente', 'success');
+        await loadInventoryData();
+    } catch (error) {
+        console.error('Error toggling availability:', error);
+        showToast('Error al cambiar el estado del artículo', 'error');
+    }
+}
+
+function editArticle(id) {
+    showToast('Funcionalidad en desarrollo', 'info');
+}
+
+// Inicializar página
+document.addEventListener('DOMContentLoaded', function() {
+    // Esperar a que el AuthManager esté completamente inicializado
+    const checkAuth = () => {
+        if (!window.authManager) {
+            console.log('Esperando AuthManager en inventario...');
+            setTimeout(checkAuth, 100);
+            return;
+        }
+        
+        console.log('=== INICIANDO PÁGINA INVENTARIO ===');
+        debugAuthState(); // Función de debug para diagnóstico
+        
+        // Verificar que el usuario esté autenticado
+        if (!window.authManager.isAuthenticated()) {
+            console.error('Usuario no autenticado en inventario');
+            window.location.href = '/login';
+            return;
+        }
+        
+        console.log('Usuario autenticado, verificando permisos admin...');
+        
+        // Verificar permisos de admin
+        const user = window.authManager.getUser();
+        if (!user || !user.is_admin) {
+            console.error('Usuario sin permisos admin en inventario:', user);
+            alert('Acceso denegado. Solo los administradores pueden acceder a esta sección.');
+            window.location.href = '/';
+            return;
+        }
+        
+        console.log('Permisos verificados, iniciando inventario...');
+        
+        // Si todo está bien, cargar el inventario
+        checkJavaConnection();
+    };
+    
+    // Iniciar verificación
+    checkAuth();
+});
+</script>
+{% endblock %}

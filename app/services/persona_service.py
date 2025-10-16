@@ -7,9 +7,14 @@ incluyendo validaciones y operaciones complejas.
 
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from datetime import timedelta
 from app.models.persona import Persona
 from app.schemas.persona import PersonaCreate, PersonaUpdate
 from app.repositories.persona_repository import PersonaRepository
+from app.auth.jwt_handler import verify_password, create_access_token
+
+# Configuración JWT
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 class PersonaService:
@@ -160,3 +165,29 @@ class PersonaService:
         """
         persona = PersonaRepository.get_by_id(db, persona_id)
         return persona is not None
+
+    # Removida función verify_password - usar la de jwt_handler
+
+    @staticmethod
+    def authenticate_user(db: Session, email: str, password: str) -> Optional[Persona]:
+        """
+        Autenticar un usuario con email y contraseña.
+        
+        Args:
+            db: Sesión de base de datos
+            email: Email del usuario
+            password: Contraseña del usuario
+            
+        Returns:
+            Usuario autenticado o None si las credenciales son incorrectas
+        """
+        user = PersonaRepository.get_by_email(db, email)
+        if not user:
+            return None
+        if not user.is_active:
+            return None
+        if not user.hashed_password or not verify_password(password, user.hashed_password):
+            return None
+        return user
+
+    # Removidas funciones JWT - usar las de jwt_handler

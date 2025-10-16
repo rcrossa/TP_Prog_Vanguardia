@@ -13,10 +13,12 @@ from app.api.v1.endpoints import (
     reservas_router
 )
 from app.api.v1.endpoints.demo import router as demo_router
+from app.api.v1.endpoints.auth import router as auth_router
 
 api_router = APIRouter()
 
 # Incluir todos los routers de endpoints
+api_router.include_router(auth_router)
 api_router.include_router(personas_router)
 api_router.include_router(articulos_router)
 api_router.include_router(salas_router)

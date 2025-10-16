@@ -6,11 +6,15 @@ del modelo Persona utilizando FastAPI.
 """
 
 from typing import List
+from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.schemas.persona import Persona, PersonaCreate, PersonaUpdate
-from app.services.persona_service import PersonaService
+from app.schemas.persona import Persona, PersonaCreate, PersonaUpdate, PersonaLogin, PersonaLoginResponse
+from app.services.persona_service import PersonaService, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.auth.dependencies import get_current_admin_user, get_current_user
+from app.auth.jwt_handler import create_access_token
+from app.models.persona import Persona as PersonaModel
 
 router = APIRouter(prefix="/personas", tags=["personas"])
 
@@ -30,7 +34,9 @@ router = APIRouter(prefix="/personas", tags=["personas"])
                     "example": {
                         "id": 1,
                         "nombre": "Juan Pérez",
-                        "email": "juan.perez@email.com"
+                        "email": "juan.perez@email.com",
+                        "is_admin": False,
+                        "is_active": True
                     }
                 }
             }
@@ -49,21 +55,29 @@ router = APIRouter(prefix="/personas", tags=["personas"])
 )
 def create_persona(
     persona_data: PersonaCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_admin_user)
 ):
     """
-    ## 👤 Crear una nueva persona
+    ## 👤 Crear una nueva persona (Solo Administradores)
     
     Registra una nueva persona en el sistema con las siguientes validaciones:
     
-    ### 📝 Campos Requeridos
+    ### � Permisos Requeridos
+    - **Solo administradores** pueden crear nuevas personas
+    
+    ### �📝 Campos Requeridos
     - **nombre**: Nombre completo de la persona (mínimo 2 caracteres)
     - **email**: Dirección de email válida y única en el sistema
+    - **password**: Contraseña del usuario (mínimo 6 caracteres)
+    - **is_admin**: Permisos de administrador (true/false)
+    - **is_active**: Estado del usuario (true/false)
     
     ### ✅ Validaciones Automáticas
     - Email debe tener formato válido
     - Email debe ser único (no puede repetirse)
     - Nombre no puede estar vacío
+    - Contraseña se hashea automáticamente
     
     ### 📤 Respuesta
     Retorna la persona creada con su ID único asignado automáticamente.
@@ -72,7 +86,10 @@ def create_persona(
     ```json
     {
         "nombre": "María González",
-        "email": "maria.gonzalez@universidad.edu"
+        "email": "maria.gonzalez@universidad.edu",
+        "password": "securepassword123",
+        "is_admin": false,
+        "is_active": true
     }
     ```
     """
@@ -85,17 +102,70 @@ def create_persona(
         )
 
 
+@router.post("/login", response_model=PersonaLoginResponse)
+def login_user(login_data: PersonaLogin, db: Session = Depends(get_db)):
+    """
+    Autenticar usuario y obtener token de acceso.
+    
+    Args:
+        login_data: Credenciales de login (email y password)
+        db: Sesión de base de datos
+        
+    Returns:
+        Token de acceso y datos del usuario
+        
+    Raises:
+        HTTPException: Si las credenciales son incorrectas
+    """
+    user = PersonaService.authenticate_user(db, login_data.email, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email, "user_id": user.id}, 
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
+@router.get("/me", response_model=Persona)
+def get_current_user_info(current_user: PersonaModel = Depends(get_current_user)):
+    """
+    Obtener información del usuario autenticado actualmente.
+    
+    Args:
+        current_user: Usuario actual obtenido del token JWT
+        
+    Returns:
+        Datos del usuario autenticado
+    """
+    return current_user
+
+
 @router.get("/", response_model=List[Persona])
 def get_personas(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_admin_user)
 ):
     """
-    Obtener lista de personas con paginación.
+    Obtener lista de personas con paginación (Solo Administradores).
     
     - **skip**: Número de registros a omitir (default: 0)
     - **limit**: Máximo número de registros a retornar (default: 100)
+    
+    🔐 **Requiere permisos de administrador**
     
     Retorna lista de personas ordenadas por ID.
     """
@@ -111,7 +181,8 @@ def get_personas(
 @router.get("/{persona_id}", response_model=Persona)
 def get_persona(
     persona_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_admin_user)
 ):
     """
     Obtener una persona específica por su ID.
@@ -132,7 +203,8 @@ def get_persona(
 @router.get("/email/{email}", response_model=Persona)
 def get_persona_by_email(
     email: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_admin_user)
 ):
     """
     Obtener una persona por su dirección de email.
@@ -154,7 +226,8 @@ def get_persona_by_email(
 def update_persona(
     persona_id: int,
     persona_data: PersonaUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_admin_user)
 ):
     """
     Actualizar los datos de una persona existente.
@@ -183,7 +256,8 @@ def update_persona(
 @router.delete("/{persona_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_persona(
     persona_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_admin_user)
 ):
     """
     Eliminar una persona del sistema.
@@ -208,7 +282,10 @@ def delete_persona(
 
 
 @router.get("/count/total")
-def count_personas(db: Session = Depends(get_db)):
+def count_personas(
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_admin_user)
+):
     """
     Obtener el número total de personas registradas.
     
@@ -216,3 +293,56 @@ def count_personas(db: Session = Depends(get_db)):
     """
     count = PersonaService.count_personas(db)
     return {"total": count}
+
+
+@router.post("/web-login")
+def web_login_user(login_data: PersonaLogin, db: Session = Depends(get_db)):
+    """
+    Autenticar usuario para navegación web y configurar cookies.
+    
+    Este endpoint es específico para el login desde el navegador,
+    configurando automáticamente las cookies necesarias.
+    """
+    from fastapi.responses import JSONResponse
+    
+    user = PersonaService.authenticate_user(db, login_data.email, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos",
+        )
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email, "user_id": user.id}, 
+        expires_delta=access_token_expires
+    )
+    
+    # Crear respuesta JSON
+    response_data = {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "nombre": user.nombre,
+            "email": user.email,
+            "is_admin": user.is_admin,
+            "is_active": user.is_active
+        }
+    }
+    
+    # Crear respuesta con cookies
+    response = JSONResponse(content=response_data)
+    
+    # Configurar cookie con el token
+    response.set_cookie(
+        key="token",
+        value=access_token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # En segundos
+        path="/",        # Disponible en todas las rutas
+        httponly=False,  # Permitir acceso desde JavaScript
+        secure=False,    # False para desarrollo en localhost
+        samesite="lax"   # Política de cookies
+    )
+    
+    return response

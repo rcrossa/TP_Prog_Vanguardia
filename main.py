@@ -7,11 +7,14 @@ básicos y la configuración inicial del sistema de reservas.
 
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.core.database import engine, Base, get_db
 from app.core.config import settings
 from app.api import api_router
+from app.web import web_router
 # Validar configuración crítica al inicio
 try:
     settings.validate_required_settings()
@@ -104,8 +107,12 @@ app = FastAPI(
     ]
 )
 
-# Incluir routers de la API
+# Configurar archivos estáticos
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Incluir routers
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(web_router)
 
 @app.get(
     "/stats",

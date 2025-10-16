@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Autenticación</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Debug Autenticación</h1>
+    
+    <div>
+        <h3>Estado del localStorage:</h3>
+        <pre id="localStorage-content"></pre>
+    </div>
+    
+    <div>
+        <h3>Test Login Admin:</h3>
+        <button onclick="testLoginAdmin()">Login como Admin</button>
+        <pre id="login-result"></pre>
+    </div>
+    
+    <div>
+        <h3>Test /me endpoint:</h3>
+        <button onclick="testMeEndpoint()">Verificar Usuario Actual</button>
+        <pre id="me-result"></pre>
+    </div>
+    
+    <div>
+        <h3>Console Log:</h3>
+        <pre id="console-log"></pre>
+    </div>
+
+    <script>
+        function log(message) {
+            const consoleDiv = document.getElementById('console-log');
+            consoleDiv.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        function updateLocalStorageDisplay() {
+            const content = document.getElementById('localStorage-content');
+            content.textContent = JSON.stringify({
+                token: localStorage.getItem('token'),
+                user: localStorage.getItem('user')
+            }, null, 2);
+        }
+
+        async function testLoginAdmin() {
+            try {
+                log('Intentando login como admin...');
+                const response = await axios.post('/api/v1/personas/login', {
+                    email: 'admin@test.com',
+                    password: 'admin123'
+                });
+                
+                log('Login exitoso!');
+                document.getElementById('login-result').textContent = JSON.stringify(response.data, null, 2);
+                
+                // Guardar en localStorage
+                localStorage.setItem('token', response.data.access_token);
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+                
+                updateLocalStorageDisplay();
+                log('Datos guardados en localStorage');
+                
+            } catch (error) {
+                log('Error en login: ' + error.message);
+                document.getElementById('login-result').textContent = 'ERROR: ' + error.message;
+            }
+        }
+
+        async function testMeEndpoint() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('No hay token en localStorage');
+                }
+                
+                log('Probando endpoint /me con token...');
+                const response = await axios.get('/api/v1/personas/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                log('/me endpoint exitoso!');
+                document.getElementById('me-result').textContent = JSON.stringify(response.data, null, 2);
+                
+            } catch (error) {
+                log('Error en /me: ' + error.message);
+                document.getElementById('me-result').textContent = 'ERROR: ' + error.message;
+            }
+        }
+
+        // Inicializar display
+        updateLocalStorageDisplay();
+        log('Página de debug cargada');
+    </script>
+</body>
+</html>

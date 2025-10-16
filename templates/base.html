@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Reservas{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-calendar-alt me-2"></i>
+                Sistema de Reservas
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto" id="mainNavMenu">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item admin-only">
+                        <a class="nav-link" href="/personas">
+                            <i class="fas fa-users me-1"></i>Personas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/salas">
+                            <i class="fas fa-door-open me-1"></i>Salas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reservas">
+                            <i class="fas fa-calendar-check me-1"></i>Reservas
+                        </a>
+                    </li>
+                    <li class="nav-item admin-only">
+                        <a class="nav-link" href="/inventario">
+                            <i class="fas fa-boxes me-1"></i>Inventario
+                        </a>
+                    </li>
+                    <li class="nav-item admin-only">
+                        <a class="nav-link" href="/reportes">
+                            <i class="fas fa-chart-bar me-1"></i>Reportes
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>Usuario
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout(); return false;"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center text-muted py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">© 2025 Sistema de Reservas - Programación de Vanguardia</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/main.js"></script>
+    
+    <script>
+        // Control de menú basado en permisos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Esperar a que AuthManager esté inicializado
+            setTimeout(() => {
+                updateMenuVisibility();
+            }, 100);
+        });
+        
+        function updateMenuVisibility() {
+            if (!window.authManager) return;
+            
+            const user = window.authManager.getUser();
+            if (!user) return;
+            
+            // Si el usuario no es admin, ocultar elementos admin-only
+            if (!user.is_admin) {
+                document.querySelectorAll('.admin-only').forEach(element => {
+                    element.style.display = 'none';
+                });
+            } else {
+                // Si es admin, mostrar todos los elementos
+                document.querySelectorAll('.admin-only').forEach(element => {
+                    element.style.display = 'block';
+                });
+            }
+            
+            // Actualizar el dropdown del usuario para mostrar el rol
+            updateUserDropdown(user);
+        }
+        
+        function updateUserDropdown(user) {
+            const userDropdown = document.getElementById('navbarDropdown');
+            if (userDropdown) {
+                const roleText = user.is_admin ? ' (Admin)' : ' (Usuario)';
+                userDropdown.innerHTML = `<i class="fas fa-user me-1"></i>${user.nombre}${roleText}`;
+            }
+        }
+        
+        // Función para verificar si un usuario tiene permisos de admin
+        function checkAdminAccess() {
+            console.log('=== VERIFICANDO ACCESO ADMIN ===');
+            
+            if (!window.authManager) {
+                console.warn('AuthManager no disponible, redirigiendo a login');
+                window.location.href = '/login';
+                return false;
+            }
+            
+            console.log('Token disponible:', !!window.authManager.getToken());
+            console.log('Token:', window.authManager.getToken()?.substring(0, 30) + '...');
+            
+            if (!window.authManager.isAuthenticated()) {
+                console.warn('Usuario no autenticado, redirigiendo a login');
+                window.location.href = '/login';
+                return false;
+            }
+            
+            const user = window.authManager.getUser();
+            console.log('Usuario completo:', user);
+            
+            if (!user) {
+                console.warn('Datos de usuario no disponibles, redirigiendo a login');
+                window.location.href = '/login';
+                return false;
+            }
+            
+            console.log('Es admin:', user.is_admin);
+            
+            if (!user.is_admin) {
+                console.warn('Usuario no tiene permisos de admin');
+                alert('Acceso denegado. Solo los administradores pueden acceder a esta sección.');
+                window.location.href = '/';
+                return false;
+            }
+            
+            console.log('✅ Acceso admin confirmado');
+            return true;
+        }
+        
+        // Función de debug para diagnóstico
+        function debugAuthState() {
+            console.log('=== DEBUG AUTH STATE ===');
+            console.log('AuthManager disponible:', !!window.authManager);
+            console.log('Token localStorage:', localStorage.getItem('token')?.substring(0, 30) + '...');
+            console.log('User localStorage:', localStorage.getItem('user'));
+            console.log('Authenticated:', window.authManager?.isAuthenticated());
+            console.log('User object:', window.authManager?.getUser());
+            console.log('Current URL:', window.location.href);
+            console.log('========================');
+        }
+        
+        // Función global para cerrar sesión
+        function logout() {
+            console.log('Cerrando sesión...');
+            if (window.authManager) {
+                window.authManager.logout();
+                console.log('Sesión cerrada, redirigiendo a login...');
+                window.location.href = '/login';
+            } else {
+                console.error('AuthManager no disponible');
+                // Limpiar manualmente y redirigir
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                window.location.href = '/login';
+            }
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

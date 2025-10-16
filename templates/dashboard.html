@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard del Sistema</h1>
+            <div class="btn-group">
+                <a href="/docs" class="btn btn-outline-primary" target="_blank">
+                    <i class="fas fa-book me-1"></i>API Docs
+                </a>
+                <button class="btn btn-success" onclick="refreshStats()">
+                    <i class="fas fa-sync-alt me-1"></i>Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar avatar-lg bg-primary rounded">
+                            <i class="fas fa-users text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="small text-muted">Total Personas</div>
+                        <div class="fs-4 fw-bold text-primary" id="total-personas">
+                            {{ stats.personas if stats.personas is defined else '...' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar avatar-lg bg-success rounded">
+                            <i class="fas fa-door-open text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="small text-muted">Total Salas</div>
+                        <div class="fs-4 fw-bold text-success" id="total-salas">
+                            {{ stats.salas if stats.salas is defined else '...' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar avatar-lg bg-info rounded">
+                            <i class="fas fa-boxes text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="small text-muted">Artículos Disponibles</div>
+                        <div class="fs-4 fw-bold text-info" id="total-articulos">
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            Cargando...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar avatar-lg bg-warning rounded">
+                            <i class="fas fa-calendar-check text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="small text-muted">Reservas Activas</div>
+                        <div class="fs-4 fw-bold text-warning" id="reservas-activas">
+                            {{ stats.reservas_activas if stats.reservas_activas is defined else '...' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos y Información Adicional -->
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Actividad Reciente
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Gráfico de actividad se cargará aquí</p>
+                    <small class="text-muted">Conectando con microservicio Java...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Alertas del Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success d-flex align-items-center" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Sistema operativo
+                </div>
+                
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Python Service: Online
+                </div>
+                
+                <div class="alert alert-warning d-flex align-items-center" role="alert" id="java-service-status">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Verificando Java Service...
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-rocket me-2"></i>Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2" id="quick-actions">
+                    <!-- Nueva Reserva - Disponible para todos los usuarios -->
+                    <a href="/reservas" class="btn btn-outline-success">
+                        <i class="fas fa-calendar-plus me-1"></i>Nueva Reserva
+                    </a>
+                    <!-- Acciones solo para administradores -->
+                    <div id="admin-actions" style="display: none;">
+                        <a href="/personas" class="btn btn-outline-primary mt-2">
+                            <i class="fas fa-user-plus me-1"></i>Nueva Persona
+                        </a>
+                        <a href="/inventario" class="btn btn-outline-info mt-2">
+                            <i class="fas fa-box me-1"></i>Gestionar Inventario
+                        </a>
+                        <a href="/reportes" class="btn btn-outline-warning mt-2">
+                            <i class="fas fa-chart-pie me-1"></i>Ver Reportes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Función para actualizar estadísticas
+    async function refreshStats() {
+        try {
+            const response = await axios.get('/stats');
+            const stats = response.data;
+            
+            document.getElementById('total-personas').textContent = stats.personas?.total || 0;
+            document.getElementById('total-salas').textContent = stats.salas?.total || 0;
+            document.getElementById('reservas-activas').textContent = stats.reservas?.activas || 0;
+            
+        } catch (error) {
+            console.error('Error al actualizar estadísticas:', error);
+        }
+    }
+
+    // Función para verificar estado del microservicio Java
+    async function checkJavaService() {
+        try {
+            const response = await axios.get('http://localhost:8000/api/v1/personas/me', { 
+                timeout: 3000,
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            
+            document.getElementById('java-service-status').innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                Java Service: Online
+            `;
+            document.getElementById('java-service-status').className = 'alert alert-success d-flex align-items-center';
+            
+            // Cargar artículos disponibles
+            loadInventoryStats();
+            
+        } catch (error) {
+            document.getElementById('java-service-status').innerHTML = `
+                <i class="fas fa-times-circle me-2"></i>
+                Java Service: Offline
+            `;
+            document.getElementById('java-service-status').className = 'alert alert-danger d-flex align-items-center';
+            
+            document.getElementById('total-articulos').innerHTML = 'N/A';
+        }
+    }
+
+    // Función para cargar estadísticas de inventario desde Java
+    async function loadInventoryStats() {
+        try {
+            const response = await axios.get('http://localhost:8000/api/v1/articulos/count/total?disponible=true');
+            document.getElementById('total-articulos').textContent = response.data.total || 0;
+        } catch (error) {
+            document.getElementById('total-articulos').textContent = 'Error';
+        }
+    }
+
+    // Cargar datos al inicio
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshStats();
+        checkJavaService();
+        
+        // Mostrar acciones de administrador si el usuario es admin
+        const user = window.authManager?.getUser();
+        if (user && user.is_admin) {
+            const adminActions = document.getElementById('admin-actions');
+            if (adminActions) {
+                adminActions.style.display = 'block';
+            }
+        }
+        
+        // Actualizar cada 30 segundos
+        setInterval(checkJavaService, 30000);
+    });
+</script>
+{% endblock %}

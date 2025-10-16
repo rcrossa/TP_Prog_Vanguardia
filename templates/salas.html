@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Salas - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 id="pageTitle"><i class="fas fa-door-open me-2"></i>Salas Disponibles</h1>
+            <button class="btn btn-primary admin-only" id="newSalaBtn" style="display: none;">
+                <i class="fas fa-plus me-1"></i>Nueva Sala
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" placeholder="Buscar salas...">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filterCapacity">
+            <option value="">Todas las capacidades</option>
+            <option value="1-10">1-10 personas</option>
+            <option value="11-20">11-20 personas</option>
+            <option value="21+">Más de 20 personas</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-outline-secondary w-100" onclick="loadSalas()">
+            <i class="fas fa-sync me-1"></i>Actualizar
+        </button>
+    </div>
+</div>
+
+<!-- Tabla de Salas -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th width="80">ID</th>
+                        <th>Nombre</th>
+                        <th width="100">Capacidad</th>
+                        <th class="user-only">Disponibilidad</th>
+                        <th class="admin-only" style="display: none;" width="150">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="salasTableBody">
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 mb-0 text-muted">Cargando salas...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let salas = [];
+let isAdmin = false;
+
+// Cargar salas
+async function loadSalas() {
+    try {
+        const response = await axios.get('/api/v1/salas');
+        salas = response.data;
+        renderSalas(salas);
+    } catch (error) {
+        console.error('Error al cargar salas:', error);
+        showError('Error al cargar las salas');
+    }
+}
+
+// Renderizar salas
+function renderSalas(salasToRender) {
+    const tbody = document.getElementById('salasTableBody');
+    
+    if (salasToRender.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${isAdmin ? 5 : 4}" class="text-center py-4">
+                    <i class="fas fa-door-open fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No hay salas disponibles</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = salasToRender.map(sala => `
+        <tr>
+            <td><span class="badge bg-secondary">${sala.id}</span></td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-info rounded-circle d-flex align-items-center justify-content-center me-2">
+                        <i class="fas fa-door-open text-white small"></i>
+                    </div>
+                    <strong>${sala.nombre}</strong>
+                </div>
+            </td>
+            <td>
+                <span class="badge bg-primary">${sala.capacidad} personas</span>
+            </td>
+            ${!isAdmin ? `
+                <td>
+                    <span class="badge bg-success">
+                        <i class="fas fa-check me-1"></i>Disponible
+                    </span>
+                </td>
+            ` : ''}
+            ${isAdmin ? `
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="editSala(${sala.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteSala(${sala.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            ` : ''}
+        </tr>
+    `).join('');
+}
+
+function updatePageForUserRole(user) {
+    isAdmin = user.is_admin;
+    
+    if (isAdmin) {
+        document.getElementById('pageTitle').innerHTML = '<i class="fas fa-door-open me-2"></i>Gestión de Salas';
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        document.querySelectorAll('.user-only').forEach(el => el.style.display = 'none');
+    } else {
+        document.getElementById('pageTitle').innerHTML = '<i class="fas fa-door-open me-2"></i>Salas Disponibles';
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.user-only').forEach(el => el.style.display = 'table-cell');
+    }
+}
+
+function showError(message) {
+    alert('❌ ' + message);
+}
+
+function showSuccess(message) {
+    alert('✅ ' + message);
+}
+
+// Funciones admin (placeholder)
+function editSala(id) {
+    alert('Funcionalidad de edición en desarrollo');
+}
+
+function deleteSala(id) {
+    alert('Funcionalidad de eliminación en desarrollo');
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const user = window.authManager?.getUser();
+        if (!user) {
+            window.location.href = '/login';
+            return;
+        }
+        
+        updatePageForUserRole(user);
+        loadSalas();
+    }, 200);
+    
+    // Filtro de búsqueda
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filteredSalas = salas.filter(sala => 
+            sala.nombre.toLowerCase().includes(searchTerm)
+        );
+        renderSalas(filteredSalas);
+    });
+    
+    // Filtro de capacidad
+    document.getElementById('filterCapacity').addEventListener('change', function() {
+        const filter = this.value;
+        let filteredSalas = salas;
+        
+        if (filter === '1-10') {
+            filteredSalas = salas.filter(sala => sala.capacidad >= 1 && sala.capacidad <= 10);
+        } else if (filter === '11-20') {
+            filteredSalas = salas.filter(sala => sala.capacidad >= 11 && sala.capacidad <= 20);
+        } else if (filter === '21+') {
+            filteredSalas = salas.filter(sala => sala.capacidad > 20);
+        }
+        
+        renderSalas(filteredSalas);
+    });
+});
+</script>
+{% endblock %}

@@ -31,13 +31,34 @@ class PersonaCreate(PersonaBase):
     
     Valida que el nombre no esté vacío y que el email tenga formato válido.
     El email debe ser único en todo el sistema.
+    Incluye campos para contraseña y perfil de administrador.
     """
+    password: str = Field(
+        ...,
+        min_length=6,
+        max_length=128,
+        description="Contraseña del usuario (mínimo 6 caracteres)",
+        examples=["admin123", "user123", "securepassword"]
+    )
+    is_admin: bool = Field(
+        default=False,
+        description="Si el usuario tiene permisos de administrador",
+        examples=[True, False]
+    )
+    is_active: bool = Field(
+        default=True,
+        description="Si el usuario está activo en el sistema",
+        examples=[True, False]
+    )
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "nombre": "Ana Martínez",
-                "email": "ana.martinez@email.com"
+                "email": "ana.martinez@email.com",
+                "password": "admin123",
+                "is_admin": True,
+                "is_active": True
             }
         }
     )
@@ -62,12 +83,32 @@ class PersonaUpdate(BaseModel):
         description="Nueva dirección de email (debe ser única)",
         examples=["nuevo.email@email.com", "actualizado@empresa.com"]
     )
+    password: Optional[str] = Field(
+        None,
+        min_length=6,
+        max_length=128,
+        description="Nueva contraseña del usuario (mínimo 6 caracteres)",
+        examples=["newpassword123", "securepassword"]
+    )
+    is_admin: Optional[bool] = Field(
+        None,
+        description="Nuevos permisos de administrador",
+        examples=[True, False]
+    )
+    is_active: Optional[bool] = Field(
+        None,
+        description="Nuevo estado del usuario",
+        examples=[True, False]
+    )
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "nombre": "Juan Carlos Pérez",
-                "email": "juan.carlos@newemail.com"
+                "email": "juan.carlos@newemail.com",
+                "password": "newpassword123",
+                "is_admin": False,
+                "is_active": True
             }
         }
     )
@@ -86,7 +127,9 @@ class Persona(PersonaBase):
             "example": {
                 "id": 1,
                 "nombre": "Juan Pérez",
-                "email": "juan.perez@email.com"
+                "email": "juan.perez@email.com",
+                "is_admin": False,
+                "is_active": True
             }
         }
     )
@@ -95,4 +138,47 @@ class Persona(PersonaBase):
         ...,
         description="Identificador único de la persona",
         examples=[1, 2, 3, 42, 100]
+    )
+    is_admin: bool = Field(
+        ...,
+        description="Si el usuario tiene permisos de administrador",
+        examples=[True, False]
+    )
+    is_active: bool = Field(
+        ...,
+        description="Si el usuario está activo en el sistema",
+        examples=[True, False]
+    )
+
+
+class PersonaLogin(BaseModel):
+    """Esquema para el login de usuarios."""
+    email: EmailStr = Field(
+        ...,
+        description="Email del usuario",
+        examples=["admin@test.com", "user@test.com"]
+    )
+    password: str = Field(
+        ...,
+        min_length=1,
+        description="Contraseña del usuario",
+        examples=["admin123", "user123"]
+    )
+
+
+class PersonaLoginResponse(BaseModel):
+    """Esquema para la respuesta del login."""
+    access_token: str = Field(
+        ...,
+        description="Token JWT para autenticación",
+        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."]
+    )
+    token_type: str = Field(
+        default="bearer",
+        description="Tipo de token",
+        examples=["bearer"]
+    )
+    user: Persona = Field(
+        ...,
+        description="Datos del usuario autenticado"
     )

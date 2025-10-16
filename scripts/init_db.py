@@ -4,6 +4,7 @@ Script para inicializar la base de datos con los datos de ejemplo de la consigna
 from datetime import datetime
 from app.core.database import Base, SessionLocal
 from app.models import Persona, Articulo, Sala, Reserva
+from app.auth.jwt_handler import get_password_hash
 
 
 def init_database():
@@ -22,11 +23,35 @@ def init_database():
             print("La base de datos ya contiene datos.")
             return
 
-        # Insertar personas (según la consigna)
+        # Insertar personas (según la consigna) con contraseñas de prueba
         personas = [
-            Persona(id=1, nombre="Ana Pérez", email="ana.perez@organizacion.com"),
-            Persona(id=2, nombre="Juan Gómez", email="juan.gomez@organizacion.com"),
-            Persona(id=3, nombre="María López", email="maria.lopez@organizacion.com")
+            Persona(
+                id=1, 
+                nombre="Ana Pérez", 
+                email="ana.perez@organizacion.com",
+                hashed_password=get_password_hash("admin123"),
+                is_active=True,
+                is_admin=True,
+                created_at=datetime.utcnow()
+            ),
+            Persona(
+                id=2, 
+                nombre="Juan Gómez", 
+                email="juan.gomez@organizacion.com",
+                hashed_password=get_password_hash("user123"),
+                is_active=True,
+                is_admin=False,
+                created_at=datetime.utcnow()
+            ),
+            Persona(
+                id=3, 
+                nombre="María López", 
+                email="maria.lopez@organizacion.com",
+                hashed_password=get_password_hash("user123"),
+                is_active=True,
+                is_admin=False,
+                created_at=datetime.utcnow()
+            )
         ]
 
         for persona in personas:
