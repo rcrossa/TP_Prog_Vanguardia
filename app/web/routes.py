@@ -84,6 +84,11 @@ async def debug_auth(request: Request):
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     """Dashboard principal"""
+    # Verificar autenticación
+    current_user = get_user_from_request(request, db)
+    if not current_user:
+        return handle_auth_error(request)
+    
     try:
         # Obtener estadísticas básicas para el dashboard
         from app.repositories.persona_repository import PersonaRepository
@@ -107,7 +112,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         
         return templates.TemplateResponse("dashboard.html", {
             "request": request,
-            "stats": stats
+            "stats": stats,
+            "user": current_user
         })
     except Exception as e:
         # En caso de error, devolver un dashboard básico
@@ -123,6 +129,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
                 'salas_grandes': 0,
                 'total_reservas': 0,
             },
+            "user": current_user,
             "error": f"Error al cargar estadísticas: {str(e)}"
         })
 
@@ -152,33 +159,63 @@ async def personas_page(request: Request, db: Session = Depends(get_db)):
 @router.get("/salas", response_class=HTMLResponse)
 async def salas_page(request: Request, db: Session = Depends(get_db)):
     """Página de gestión de salas."""
+    # Verificar autenticación
+    current_user = get_user_from_request(request, db)
+    if not current_user:
+        return handle_auth_error(request)
+    
     return templates.TemplateResponse(
         "salas.html", 
-        {"request": request}
+        {"request": request, "user": current_user}
     )
 
 @router.get("/reservas", response_class=HTMLResponse)
 async def reservas_page(request: Request, db: Session = Depends(get_db)):
     """Página de gestión de reservas."""
+    # Verificar autenticación
+    current_user = get_user_from_request(request, db)
+    if not current_user:
+        return handle_auth_error(request)
+    
     return templates.TemplateResponse(
         "reservas.html", 
-        {"request": request}
+        {"request": request, "user": current_user}
     )
 
 @router.get("/inventario", response_class=HTMLResponse)
 async def inventario_page(request: Request, db: Session = Depends(get_db)):
-    """Página de gestión de inventario."""
+    """Página de gestión de inventario (solo administradores)."""
+    # Verificar autenticación
+    current_user = get_user_from_request(request, db)
+    if not current_user:
+        return handle_auth_error(request)
+    
+    # Verificar permisos de admin
+    admin_check = require_admin_access(current_user, request)
+    if admin_check:
+        return admin_check
+    
     return templates.TemplateResponse(
         "inventario.html", 
-        {"request": request}
+        {"request": request, "user": current_user}
     )
 
 @router.get("/reportes", response_class=HTMLResponse)
 async def reportes_page(request: Request, db: Session = Depends(get_db)):
-    """Página de reportes y analytics."""
+    """Página de reportes y analytics (solo administradores)."""
+    # Verificar autenticación
+    current_user = get_user_from_request(request, db)
+    if not current_user:
+        return handle_auth_error(request)
+    
+    # Verificar permisos de admin
+    admin_check = require_admin_access(current_user, request)
+    if admin_check:
+        return admin_check
+    
     return templates.TemplateResponse(
         "reportes.html", 
-        {"request": request}
+        {"request": request, "user": current_user}
     )
 
 @router.get("/login", response_class=HTMLResponse)

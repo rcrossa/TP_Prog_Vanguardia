@@ -104,17 +104,9 @@
             const user = window.authManager.getUser();
             if (!user) return;
             
-            // Si el usuario no es admin, ocultar elementos admin-only
-            if (!user.is_admin) {
-                document.querySelectorAll('.admin-only').forEach(element => {
-                    element.style.display = 'none';
-                });
-            } else {
-                // Si es admin, mostrar todos los elementos
-                document.querySelectorAll('.admin-only').forEach(element => {
-                    element.style.display = 'block';
-                });
-            }
+            // La visibilidad de elementos admin-only ahora se controla mediante CSS
+            // con la clase 'is-admin' en el body, aplicada automáticamente por auth.js
+            // No necesitamos manipular elementos individuales aquí
             
             // Actualizar el dropdown del usuario para mostrar el rol
             updateUserDropdown(user);

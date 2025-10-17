@@ -179,6 +179,26 @@
 
 {% block scripts %}
 <script>
+// 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE
+(function() {
+    try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user && user.is_admin === true) {
+                document.body.classList.add('is-admin');
+            } else {
+                document.body.classList.remove('is-admin');
+            }
+        } else {
+            document.body.classList.remove('is-admin');
+        }
+    } catch (e) {
+        console.error('Error al verificar rol de admin:', e);
+        document.body.classList.remove('is-admin');
+    }
+})();
+
 let currentPersonaId = null;
 let personas = [];
 

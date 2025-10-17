@@ -21,7 +21,8 @@
 
 <!-- Tarjetas de Estadísticas -->
 <div class="row g-3 mb-4">
-    <div class="col-xl-3 col-md-6">
+    <!-- Total Personas - Solo visible para administradores -->
+    <div class="col-xl-3 col-md-6 admin-only">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center">
@@ -160,7 +161,7 @@
                         <i class="fas fa-calendar-plus me-1"></i>Nueva Reserva
                     </a>
                     <!-- Acciones solo para administradores -->
-                    <div id="admin-actions" style="display: none;">
+                    <div class="admin-only">
                         <a href="/personas" class="btn btn-outline-primary mt-2">
                             <i class="fas fa-user-plus me-1"></i>Nueva Persona
                         </a>
@@ -180,6 +181,26 @@
 
 {% block scripts %}
 <script>
+    // 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE antes de que la página renderice
+    (function() {
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user && user.is_admin === true) {
+                    document.body.classList.add('is-admin');
+                } else {
+                    document.body.classList.remove('is-admin');
+                }
+            } else {
+                document.body.classList.remove('is-admin');
+            }
+        } catch (e) {
+            console.error('Error al verificar rol de admin:', e);
+            document.body.classList.remove('is-admin');
+        }
+    })();
+
     // Función para actualizar estadísticas
     async function refreshStats() {
         try {
@@ -240,13 +261,20 @@
         refreshStats();
         checkJavaService();
         
-        // Mostrar acciones de administrador si el usuario es admin
+        // 🔒 VERIFICACIÓN DE SEGURIDAD
+        // Doble verificación para asegurar que usuarios no-admin no vean contenido admin
         const user = window.authManager?.getUser();
-        if (user && user.is_admin) {
-            const adminActions = document.getElementById('admin-actions');
-            if (adminActions) {
-                adminActions.style.display = 'block';
-            }
+        
+        // Si el usuario NO es admin, forzar ocultamiento
+        if (!user || user.is_admin !== true) {
+            document.body.classList.remove('is-admin');
+            
+            // Seguridad adicional: forzar ocultamiento de cualquier elemento admin-only visible
+            document.querySelectorAll('.admin-only').forEach(el => {
+                if (window.getComputedStyle(el).display !== 'none') {
+                    el.style.setProperty('display', 'none', 'important');
+                }
+            });
         }
         
         // Actualizar cada 30 segundos

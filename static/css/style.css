@@ -203,3 +203,32 @@ body {
 .bg-info { background-color: var(--info-color) !important; }
 .bg-warning { background-color: var(--warning-color) !important; }
 .bg-danger { background-color: var(--danger-color) !important; }
+
+/* Control de visibilidad para contenido admin */
+/* Ocultar por defecto contenido admin hasta que JavaScript verifique el rol */
+.admin-only {
+    display: none !important;
+}
+
+/* Mostrar contenido admin según el tipo de elemento cuando el usuario es admin */
+/* Para elementos de lista (nav items) */
+body.is-admin li.admin-only {
+    display: list-item !important;
+}
+
+/* Para divs normales */
+body.is-admin div.admin-only {
+    display: block !important;
+}
+
+/* Para elementos flex (contenedores bootstrap) */
+body.is-admin .d-flex.admin-only,
+body.is-admin .admin-only.d-flex {
+    display: flex !important;
+}
+
+/* Para elementos inline-block */
+body.is-admin .d-inline-block.admin-only,
+body.is-admin .admin-only.d-inline-block {
+    display: inline-block !important;
+}
