@@ -6,7 +6,9 @@ incluyendo crear, leer, actualizar y eliminar registros.
 """
 
 from typing import List, Optional
+
 from sqlalchemy.orm import Session
+
 from app.models.sala import Sala
 from app.schemas.sala import SalaCreate, SalaUpdate
 
@@ -17,10 +19,7 @@ class SalaRepository:
     @staticmethod
     def create(db: Session, sala_data: SalaCreate) -> Sala:
         """Crear una nueva sala."""
-        db_sala = Sala(
-            nombre=sala_data.nombre,
-            capacidad=sala_data.capacidad
-        )
+        db_sala = Sala(nombre=sala_data.nombre, capacidad=sala_data.capacidad)
         db.add(db_sala)
         db.commit()
         db.refresh(db_sala)
@@ -32,24 +31,34 @@ class SalaRepository:
         return db.query(Sala).filter(Sala.id == sala_id).first()
 
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 100, min_capacidad: Optional[int] = None) -> List[Sala]:
+    def get_all(
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        min_capacidad: Optional[int] = None,
+    ) -> List[Sala]:
         """Obtener todas las salas con filtros opcionales."""
         query = db.query(Sala)
-        
+
         if min_capacidad is not None:
             query = query.filter(Sala.capacidad >= min_capacidad)
-            
+
         return query.offset(skip).limit(limit).all()
 
     @staticmethod
-    def get_by_capacidad(db: Session, min_capacidad: int, max_capacidad: Optional[int] = None, 
-                        skip: int = 0, limit: int = 100) -> List[Sala]:
+    def get_by_capacidad(
+        db: Session,
+        min_capacidad: int,
+        max_capacidad: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[Sala]:
         """Obtener salas por rango de capacidad."""
         query = db.query(Sala).filter(Sala.capacidad >= min_capacidad)
-        
+
         if max_capacidad is not None:
             query = query.filter(Sala.capacidad <= max_capacidad)
-            
+
         return query.offset(skip).limit(limit).all()
 
     @staticmethod

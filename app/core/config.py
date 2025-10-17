@@ -6,6 +6,7 @@ del sistema de reservas, incluyendo base de datos, JWT y seguridad.
 """
 
 import os
+
 from dotenv import load_dotenv
 
 # Cargar variables de entorno desde .env
@@ -20,6 +21,7 @@ class Settings:
     incluyendo configuración de base de datos, JWT y seguridad.
     Las variables críticas son requeridas sin valores por defecto.
     """
+
     # Base de datos - REQUERIDAS (sin valores por defecto por seguridad)
     postgres_user: str = os.getenv("POSTGRES_USER") or ""
     postgres_password: str = os.getenv("POSTGRES_PASSWORD") or ""
@@ -72,6 +74,7 @@ class Settings:
                 f"Variables de entorno de seguridad faltantes: {', '.join(missing_vars)}. "
                 f"Por favor configúrelas en el archivo .env"
             )
+
 
 # Instancia global de configuración
 settings = Settings()

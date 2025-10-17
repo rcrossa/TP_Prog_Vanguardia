@@ -1,10 +1,12 @@
 """
 Script para inicializar la base de datos con los datos de ejemplo de la consigna
 """
+
 from datetime import datetime
-from app.core.database import Base, SessionLocal
-from app.models import Persona, Articulo, Sala, Reserva
+
 from app.auth.jwt_handler import get_password_hash
+from app.core.database import Base, SessionLocal
+from app.models import Articulo, Persona, Reserva, Sala
 
 
 def init_database():
@@ -12,6 +14,7 @@ def init_database():
 
     # Crear todas las tablas
     from app.core.database import engine
+
     Base.metadata.create_all(bind=engine)
 
     # Crear sesión
@@ -26,32 +29,32 @@ def init_database():
         # Insertar personas (según la consigna) con contraseñas de prueba
         personas = [
             Persona(
-                id=1, 
-                nombre="Ana Pérez", 
+                id=1,
+                nombre="Ana Pérez",
                 email="ana.perez@organizacion.com",
                 hashed_password=get_password_hash("admin123"),
                 is_active=True,
                 is_admin=True,
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
             ),
             Persona(
-                id=2, 
-                nombre="Juan Gómez", 
+                id=2,
+                nombre="Juan Gómez",
                 email="juan.gomez@organizacion.com",
                 hashed_password=get_password_hash("user123"),
                 is_active=True,
                 is_admin=False,
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
             ),
             Persona(
-                id=3, 
-                nombre="María López", 
+                id=3,
+                nombre="María López",
                 email="maria.lopez@organizacion.com",
                 hashed_password=get_password_hash("user123"),
                 is_active=True,
                 is_admin=False,
-                created_at=datetime.utcnow()
-            )
+                created_at=datetime.utcnow(),
+            ),
         ]
 
         for persona in personas:
@@ -61,7 +64,7 @@ def init_database():
         articulos = [
             Articulo(id=1, nombre="Proyector Epson EB-X05", disponible=True),
             Articulo(id=2, nombre="Laptop HP EliteBook", disponible=False),
-            Articulo(id=3, nombre="Cámara Sony Alpha a6400", disponible=True)
+            Articulo(id=3, nombre="Cámara Sony Alpha a6400", disponible=True),
         ]
 
         for articulo in articulos:
@@ -71,7 +74,7 @@ def init_database():
         salas = [
             Sala(id=1, nombre="Sala de Reuniones 1A", capacidad=8),
             Sala(id=2, nombre="Sala de Conferencias B2", capacidad=20),
-            Sala(id=3, nombre="Aula de Capacitación C3", capacidad=15)
+            Sala(id=3, nombre="Aula de Capacitación C3", capacidad=15),
         ]
 
         for sala in salas:
@@ -84,22 +87,22 @@ def init_database():
                 id_sala=None,
                 id_persona=1,
                 fecha_hora_inicio=datetime(2025, 9, 11, 10, 0, 0),
-                fecha_hora_fin=datetime(2025, 9, 11, 11, 0, 0)
+                fecha_hora_fin=datetime(2025, 9, 11, 11, 0, 0),
             ),
             Reserva(
                 id_articulo=None,
                 id_sala=2,
                 id_persona=2,
                 fecha_hora_inicio=datetime(2025, 9, 12, 14, 0, 0),
-                fecha_hora_fin=datetime(2025, 9, 12, 16, 0, 0)
+                fecha_hora_fin=datetime(2025, 9, 12, 16, 0, 0),
             ),
             Reserva(
                 id_articulo=2,
                 id_sala=None,
                 id_persona=3,
                 fecha_hora_inicio=datetime(2025, 9, 13, 9, 0, 0),
-                fecha_hora_fin=datetime(2025, 9, 13, 10, 0, 0)
-            )
+                fecha_hora_fin=datetime(2025, 9, 13, 10, 0, 0),
+            ),
         ]
 
         for reserva in reservas:

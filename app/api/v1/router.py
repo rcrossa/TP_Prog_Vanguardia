@@ -6,11 +6,12 @@ y los agrupa bajo el prefijo /api/v1.
 """
 
 from fastapi import APIRouter
+
 from app.api.v1.endpoints import (
-    personas_router,
     articulos_router,
+    personas_router,
+    reservas_router,
     salas_router,
-    reservas_router
 )
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.integration import router as integration_router
