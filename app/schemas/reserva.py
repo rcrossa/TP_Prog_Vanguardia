@@ -43,8 +43,10 @@ class ReservaBase(BaseModel):
 
     @field_validator('fecha_hora_fin')
     @classmethod
-    def validate_fecha_fin(cls, v, info):
-        if 'fecha_hora_inicio' in info.data and v <= info.data['fecha_hora_inicio']:
+    def validate_fecha_fin(cls, v: datetime, info) -> datetime:
+        """Validar que la fecha de fin sea posterior a la fecha de inicio."""
+        fecha_inicio = info.data.get('fecha_hora_inicio')
+        if fecha_inicio and v <= fecha_inicio:
             raise ValueError('La fecha de fin debe ser posterior a la fecha de inicio')
         return v
 

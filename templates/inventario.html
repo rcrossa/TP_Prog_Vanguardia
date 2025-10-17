@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="fas fa-boxes me-2"></i>Gestión de Inventario</h1>
             <div class="d-flex gap-2">
-                <button class="btn btn-success admin-only" id="newArticuloBtn" style="display: none;">
+                <button class="btn btn-success admin-only" id="newArticuloBtn">
                     <i class="fas fa-plus me-1"></i>Nuevo Artículo
                 </button>
                 <button class="btn btn-outline-secondary" onclick="loadArticulos()">
@@ -116,7 +116,7 @@
                         <th width="100">Cantidad Total</th>
                         <th width="120">Disponibles Ahora</th>
                         <th width="120">Estado</th>
-                        <th class="admin-only" style="display: none;" width="150">Acciones</th>
+                        <th class="admin-only" width="150">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="articulosTableBody">
@@ -274,7 +274,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updatePageForAdmin() {
     if (isAdmin) {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        // Mostrar elementos admin-only
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = '';  // Restaurar display por defecto
+            el.style.removeProperty('display');  // Remover override
+        });
+    } else {
+        // Ocultar elementos admin-only para usuarios normales
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = 'none';
+        });
     }
 }
 
@@ -504,10 +513,13 @@ async function saveArticulo() {
     }
     
     const id = document.getElementById('articuloId').value;
+    const cantidadValue = document.getElementById('articuloCantidad').value;
+    const descripcionValue = document.getElementById('articuloDescripcion').value.trim();
+    
     const data = {
         nombre: document.getElementById('articuloNombre').value,
-        descripcion: document.getElementById('articuloDescripcion').value || null,
-        cantidad: parseInt(document.getElementById('articuloCantidad').value),
+        descripcion: descripcionValue || null,
+        cantidad: cantidadValue ? parseInt(cantidadValue) : 1,
         categoria: document.getElementById('articuloCategoria').value || null,
         disponible: document.getElementById('articuloDisponible').checked
     };
@@ -664,9 +676,9 @@ function formatDateTime(dateString) {
     });
 }
 
-// Mostrar mensajes
+// Mostrar mensajes con Toast
 function showSuccess(message) {
-    alert('✅ ' + message);
+    showToast('✅ ' + message, 'success');
 }
 
 function showError(message) {
@@ -680,7 +692,51 @@ function showError(message) {
             message = JSON.stringify(message);
         }
     }
-    alert('❌ ' + message);
+    showToast('❌ ' + message, 'danger');
+}
+
+// Función para mostrar Toast notifications
+function showToast(message, type = 'success') {
+    // Crear contenedor si no existe
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Determinar el tipo de alerta de Bootstrap
+    const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
+    
+    // Crear el toast
+    const toastId = 'toast_' + Date.now();
+    const toastHTML = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Mostrar el toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 3000 // 3 segundos
+    });
+    toast.show();
+    
+    // Remover del DOM después de ocultarse
+    toastElement.addEventListener('hidden.bs.toast', function () {
+        toastElement.remove();
+    });
 }
 </script>
 {% endblock %}

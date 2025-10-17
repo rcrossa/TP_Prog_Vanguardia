@@ -19,6 +19,9 @@ class ArticuloRepository:
         """Crear un nuevo artículo."""
         db_articulo = Articulo(
             nombre=articulo_data.nombre,
+            descripcion=articulo_data.descripcion,
+            cantidad=articulo_data.cantidad,
+            categoria=articulo_data.categoria,
             disponible=articulo_data.disponible
         )
         db.add(db_articulo)

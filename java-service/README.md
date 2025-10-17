@@ -130,7 +130,7 @@ Accede a la documentación interactiva en:
 ## 🗄️ Modelo de Datos
 
 ### Sala
-```java
+```json
 {
   "id": 1,
   "nombre": "Sala de Reuniones A",
@@ -142,7 +142,7 @@ Accede a la documentación interactiva en:
 ```
 
 ### Artículo
-```java
+```json
 {
   "id": 1,
   "nombre": "Proyector Epson",

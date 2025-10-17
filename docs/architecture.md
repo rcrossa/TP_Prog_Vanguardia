@@ -145,28 +145,16 @@ Si Java no responde → Python usa validación local contra PostgreSQL
 
 ### Archivos Clave de Integración
 
-```python
-# app/services/java_client.py (NUEVO)
-class JavaServiceClient:
-    @staticmethod
-    async def validate_sala_exists(sala_id: int) -> bool:
-        # Consulta a http://localhost:8080/api/salas/{sala_id}
-        
-    @staticmethod
-    async def check_sala_disponible(sala_id: int) -> bool:
-        # Verifica disponibilidad en Java
-```
+**Python → Java:**
+- `app/services/java_client.py` - Cliente HTTP asíncrono para llamadas a Java Service
+- `app/services/reserva_service.py` - Validación de salas contra Java al crear reservas
+- `app/api/v1/endpoints/integration.py` - Endpoints de demostración de integración
 
-```python
-# app/services/reserva_service.py (MODIFICADO)
-@staticmethod
-def _validate_sala_reservation(db, reserva_data):
-    # 🔗 INTEGRACIÓN: Valida contra Java primero
-    java_validation = asyncio.run(
-        JavaServiceClient.validate_sala_exists(reserva_data.id_sala)
-    )
-    # Fallback a DB local si Java no responde
-```
+**Funcionalidades:**
+- Validación de existencia de salas consultando Java Service
+- Verificación de disponibilidad de recursos
+- Health checks entre servicios
+- Fallback automático a base de datos si Java no responde
 
 ### Endpoints de Integración
 
@@ -192,35 +180,16 @@ def _validate_sala_reservation(db, reserva_data):
 
 ### Archivos Clave de Integración
 
-```java
-// java-service/.../client/PythonServiceClient.java (NUEVO)
-@Component
-public class PythonServiceClient {
-    public Optional<PersonaDTO> validateToken(String jwtToken) {
-        // Consulta a http://localhost:8000/api/v1/personas/me
-    }
-    
-    public boolean isAdmin(String jwtToken) {
-        // Verifica si usuario es admin
-    }
-}
-```
+**Java → Python:**
+- `java-service/.../client/PythonServiceClient.java` - Cliente HTTP para validación JWT
+- `java-service/.../controller/SalaController.java` - Validación de autenticación en endpoints
+- `java-service/.../controller/ArticuloController.java` - Validación de permisos de admin
 
-```java
-// java-service/.../controller/SalaController.java (MODIFICADO)
-@PostMapping
-public ResponseEntity<?> createSala(
-    @RequestHeader("Authorization") String authHeader) {
-    
-    // 🔗 INTEGRACIÓN: Valida token con Python
-    Optional<PersonaDTO> persona = pythonClient.validateToken(authHeader);
-    
-    if (persona.isEmpty() || !persona.get().getRol().equals("admin")) {
-        return ResponseEntity.status(403).body("No autorizado");
-    }
-    // Crear sala...
-}
-```
+**Funcionalidades:**
+- Validación de tokens JWT contra Python Service
+- Verificación de roles de usuario (admin/user)
+- Health checks entre servicios
+- Autenticación centralizada en Python
 
 ### Endpoints (16 total)
 

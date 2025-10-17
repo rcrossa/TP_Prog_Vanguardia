@@ -232,3 +232,17 @@ body.is-admin .d-inline-block.admin-only,
 body.is-admin .admin-only.d-inline-block {
     display: inline-block !important;
 }
+
+/* Para botones */
+body.is-admin button.admin-only {
+    display: inline-block !important;
+}
+
+/* Para elementos de tabla */
+body.is-admin th.admin-only {
+    display: table-cell !important;
+}
+
+body.is-admin td.admin-only {
+    display: table-cell !important;
+}

@@ -18,8 +18,7 @@ Sistema moderno de gestión de reservas implementado con **arquitectura de micro
 |---------|---------|
 | 🚀 **Ejecutar el proyecto** | [🚀 Inicio Rápido](#-inicio-rápido) (en este README) |
 | 📖 **Entender la arquitectura** | [docs/architecture.md](./docs/architecture.md) |
-| 🔗 **Probar la integración Python ↔ Java** | [docs/INTEGRACION.md](./docs/INTEGRACION.md) |
-| 🐳 **Configurar Docker** | [docker/README.md](./docker/README.md) |
+|  **Configurar Docker** | [docker/README.md](./docker/README.md) |
 | ☕ **Java Service (API)** | [java-service/README.md](./java-service/README.md) |
 
 ### 📊 Estado Actual del Proyecto
@@ -782,17 +781,13 @@ El servicio Java **llama a Python** para:
 - ✅ **Obtener información de usuarios** para auditoría
 
 ```java
-// ✅ IMPLEMENTADO en JavaClientService
+// Ejemplo ilustrativo de integración Java → Python
 @Service
 public class PythonServiceClient {
-    private final RestTemplate restTemplate;
-    
+    // Validación de JWT contra Python service
+    // Implementación en: java-service/src/main/java/com/reservas/service/
     public boolean validateUser(String token) {
-        String url = "http://localhost:8000/api/v1/personas/me";
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        // Validación de autenticación funcionando
-        // Ver: java-service/src/main/java/com/reservas/service/
+        // Llama a Python para validar autenticación
     }
 }
 ```
@@ -806,22 +801,17 @@ El servicio Python **llama a Java** para:
 - ✅ **Verificar existencia de recursos** antes de reservar
 
 ```python
-# ✅ IMPLEMENTADO en app/services/java_client.py
-import httpx
+# Ejemplo ilustrativo de integración Python → Java
+# Implementación en: app/services/java_client.py
 
-async def get_sala_by_id(sala_id: int) -> Optional[dict]:
+async def get_sala_by_id(sala_id: int):
     """Consultar sala desde Java service"""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://localhost:8080/api/salas/{sala_id}")
-        if response.status_code == 200:
-            return response.json()
-        return None
+    # Realiza request HTTP al servicio Java
+    # Retorna datos de la sala si existe
 
-async def get_available_salas() -> List[dict]:
+async def get_available_salas():
     """Obtener todas las salas disponibles"""
-    async with httpx.AsyncClient() as client:
-        response = await client.get("http://localhost:8080/api/salas")
-        return response.json() if response.status_code == 200 else []
+    # Consulta endpoint /api/salas del servicio Java
 ```
 
 > 📝 **Ejemplo real:** Al crear una reserva en Python, se valida automáticamente que la sala exista consultando a Java.
