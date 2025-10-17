@@ -216,9 +216,45 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmación para Eliminar Artículo -->
+<div class="modal fade" id="confirmDeleteArticuloModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-box-open fa-3x text-danger mb-3"></i>
+                    <h6>¿Eliminar artículo de la reserva?</h6>
+                </div>
+                <p class="text-center mb-2">
+                    Se eliminará <strong id="articuloNameToDelete"></strong> de esta reserva.
+                </p>
+                <p class="text-muted small text-center mb-0">
+                    El artículo volverá a estar disponible para otras reservas.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmarEliminarArticulo()">
+                    <i class="fas fa-trash me-1"></i>Eliminar Artículo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
+<!-- Toast Notifications System -->
+<script src="/static/js/toast-notifications.js?v=1.0"></script>
 <script>
 // 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE antes de que la página renderice
 (function() {
@@ -250,6 +286,7 @@ let reservaModal;
 let articulosModal;
 let currentReservaId = null;
 let articulosAsignadosActuales = []; // Para saber qué artículos ya están asignados
+let articuloToDelete = null; // Para almacenar el artículo a eliminar
 
 // Función para esperar a que auth esté disponible
 function waitForAuth(callback, maxAttempts = 100) {
@@ -729,9 +766,15 @@ async function deleteReserva(id) {
     }
 }
 
-// Mostrar mensajes con Toast
+// Mostrar mensajes con Toast - delegamos al sistema centralizado
 function showSuccess(message) {
-    showToast('✅ ' + message, 'success');
+    // Usar el sistema centralizado de toast-notifications.js
+    if (typeof window.showSuccess === 'function') {
+        window.showSuccess(message);
+    } else {
+        // Fallback si no está cargado
+        showToast(message, 'success');
+    }
 }
 
 function showError(message) {
@@ -746,11 +789,12 @@ function showError(message) {
         }
     }
     
-    // Si el mensaje tiene múltiples líneas, usar un alert más grande
-    if (message.includes('\n')) {
-        alert('❌ Error:\n\n' + message);
+    // Usar el sistema centralizado de toast-notifications.js
+    if (typeof window.showError === 'function') {
+        window.showError(message);
     } else {
-        alert('❌ ' + message);
+        // Fallback si no está cargado
+        showToast(message, 'danger');
     }
 }
 
@@ -987,11 +1031,40 @@ async function modificarCantidadArticulo(articuloId, cambio) {
 
 // Eliminar artículo de la reserva
 async function eliminarArticuloDeReserva(articuloId) {
-    if (!confirm('¿Está seguro de eliminar este artículo completamente de la reserva?')) return;
+    // Buscar el nombre del artículo para mostrarlo en el modal
+    const articuloAsignado = articulosAsignadosActuales.find(item => item.articulo.id === articuloId);
+    const nombreArticulo = articuloAsignado ? articuloAsignado.articulo.nombre : 'este artículo';
+    
+    // Almacenar el ID del artículo a eliminar
+    articuloToDelete = articuloId;
+    
+    // Actualizar el nombre en el modal
+    document.getElementById('articuloNameToDelete').textContent = nombreArticulo;
+    
+    // Mostrar el modal de confirmación
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteArticuloModal'));
+    confirmModal.show();
+}
+
+// Función para confirmar la eliminación del artículo
+async function confirmarEliminarArticulo() {
+    if (!articuloToDelete) return;
     
     try {
-        await axios.delete(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}`);
-        showSuccess('Artículo eliminado exitosamente');
+        // Mostrar loading en el botón
+        const deleteBtn = document.querySelector('#confirmDeleteArticuloModal .btn-danger');
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Eliminando...';
+        deleteBtn.disabled = true;
+        
+        await axios.delete(`/api/v1/reservas/${currentReservaId}/articulos/${articuloToDelete}`);
+        
+        // Cerrar el modal
+        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteArticuloModal'));
+        confirmModal.hide();
+        
+        // Mostrar toast de éxito con animación
+        showSuccess('🗑️ Artículo eliminado exitosamente de la reserva');
         
         // Recargar lista
         await loadArticulosAsignados(currentReservaId);
@@ -1001,54 +1074,52 @@ async function eliminarArticuloDeReserva(articuloId) {
         
         // Actualizar el estado del formulario
         actualizarInfoArticulo();
+        
+        // Limpiar variable
+        articuloToDelete = null;
+        
+        // Restaurar botón
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = false;
+        
     } catch (error) {
         console.error('Error eliminando artículo:', error);
-        showError('Error al eliminar el artículo');
+        
+        // Mostrar toast de error con detalles
+        const errorMessage = error.response?.data?.detail || 'Error al eliminar el artículo';
+        showError(`❌ ${errorMessage}`);
+        
+        // Restaurar botón
+        const deleteBtn = document.querySelector('#confirmDeleteArticuloModal .btn-danger');
+        deleteBtn.innerHTML = '<i class="fas fa-trash me-1"></i>Eliminar Artículo';
+        deleteBtn.disabled = false;
     }
 }
 
-// Función para mostrar Toast notifications
+// Función para mostrar Toast notifications - delegamos al sistema centralizado
 function showToast(message, type = 'success') {
-    // Crear contenedor si no existe
-    let toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toastContainer';
-        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-        toastContainer.style.zIndex = '9999';
-        document.body.appendChild(toastContainer);
+    // Usar el sistema centralizado de toast-notifications.js
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+    } else {
+        // Fallback básico si no está cargado
+        console.log(`Toast (${type}): ${message}`);
+        
+        // Crear un toast básico
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            background: ${type === 'success' ? '#28a745' : type === 'danger' ? '#dc3545' : '#17a2b8'};
+            color: white; padding: 12px 16px; border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 3000);
     }
-    
-    // Determinar el tipo de alerta de Bootstrap
-    const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
-    
-    // Crear el toast
-    const toastId = 'toast_' + Date.now();
-    const toastHTML = `
-        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `;
-    
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    
-    // Mostrar el toast
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, {
-        autohide: true,
-        delay: 3000 // 3 segundos
-    });
-    toast.show();
-    
-    // Remover del DOM después de ocultarse
-    toastElement.addEventListener('hidden.bs.toast', function () {
-        toastElement.remove();
-    });
 }
 </script>
 {% endblock %}
