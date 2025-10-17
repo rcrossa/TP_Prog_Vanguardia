@@ -1,3 +1,67 @@
+# =====================================================================
+# 🔒 ARCHIVOS SENSIBLES - NUNCA COMMITEAR
+# =====================================================================
+
+# Variables de entorno con credenciales
+.env
+docker/.env
+
+# Archivos de configuración locales con secrets
+*.local.conf
+*.local.json
+
+# Backups de base de datos (pueden contener datos sensibles)
+*.sql.backup
+*.dump
+*.bak
+
+# Logs que puedan contener información sensible
+*.log
+logs/
+server.log
+
+# =====================================================================
+# 📝 DOCUMENTACIÓN DE TRABAJO INTERNO - NO SUBIR A GITHUB
+# =====================================================================
+
+# Carpeta con documentos de trabajo, borradores, análisis internos
+docs/internal/
+
+# Archivos de notas y borradores
+*.draft.md
+*.notes.md
+*.internal.md
+
+# =====================================================================
+# 🗑️ ARCHIVOS TEMPORALES DEL SISTEMA
+# =====================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Archivos temporales de curl/wget
+cookies.txt
+*.cookies
+wget-log
+
+# Archivos temporales de editores
+*~
+*.swp
+*.swo
+.vscode/settings.json
+
+# =====================================================================
+# PYTHON
+# =====================================================================
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
