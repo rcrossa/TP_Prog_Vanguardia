@@ -7,7 +7,7 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="fas fa-chart-bar me-2"></i>Reportes y Analytics</h1>
-            <button class="btn btn-primary">
+            <button class="btn btn-primary" onclick="exportReports()">
                 <i class="fas fa-download me-1"></i>Exportar
             </button>
         </div>
@@ -17,67 +17,43 @@
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <div class="text-center py-5">
-            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
-            <h4>Reportes y Analytics</h4>
-            <p class="text-muted">Funcionalidad conectada con microservicio Java...</p>
-            <p class="text-muted">
-                <small>Esta página mostrará reportes generados por el servicio Java</small>
-            </p>
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <h4 class="mt-3">Cargando reportes...</h4>
+            <p>Preparando dashboard de analytics</p>
         </div>
     </div>
 </div>
+
+<!-- Template Data Bridge - Datos del backend para JavaScript -->
+<script id="template-data" type="application/json">
+{
+    "reportsConfig": {
+        "autoRefresh": true,
+        "refreshInterval": 30000,
+        "exportFormats": ["PDF", "Excel", "CSV"]
+    },
+    "apiEndpoints": {
+        "reservationStats": "/api/v1/stats/reservas",
+        "usageStats": "/api/v1/stats/uso",
+        "exportReports": "/api/v1/reports/export"
+    },
+    "initialData": {
+        "currentUser": "{{ user.nombre if user else 'Invitado' }}",
+        "isAdmin": {{ 'true' if user and user.is_admin else 'false' }}
+    }
+}
+</script>
 {% endblock %}
 
 {% block scripts %}
-<script>
-// 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE
-(function() {
-    try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            const user = JSON.parse(userStr);
-            if (user && user.is_admin === true) {
-                document.body.classList.add('is-admin');
-            } else {
-                document.body.classList.remove('is-admin');
-            }
-        } else {
-            document.body.classList.remove('is-admin');
-        }
-    } catch (e) {
-        console.error('Error al verificar rol de admin:', e);
-        document.body.classList.remove('is-admin');
-    }
-})();
+<!-- Core utilities -->
+<script src="/static/js/core/template-bridge.js?v=1.0"></script>
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Esperar a que el AuthManager esté completamente inicializado
-    const checkAuth = () => {
-        if (!window.authManager) {
-            setTimeout(checkAuth, 100);
-            return;
-        }
-        
-        // Verificar que el usuario esté autenticado
-        if (!window.authManager.isAuthenticated()) {
-            window.location.href = '/login';
-            return;
-        }
-        
-        // Verificar permisos de admin
-        const user = window.authManager.getUser();
-        if (!user || !user.is_admin) {
-            alert('Acceso denegado. Solo los administradores pueden acceder a esta sección.');
-            window.location.href = '/';
-            return;
-        }
-        
-        // Si todo está bien, cargar reportes
-        // Aquí iría el código específico para cargar reportes
-    };
-    
-    // Iniciar verificación
-    checkAuth();
-});
-</script>
+<!-- Toast notifications -->
+<script src="/static/js/toast-notifications.js?v=1.0"></script>
+
+<!-- Module-specific JavaScript -->
+<script src="/static/js/modules/reportes.js?v=1.0"></script>
 {% endblock %}

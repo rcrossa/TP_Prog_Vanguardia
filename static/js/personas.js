@@ -78,13 +78,17 @@ function renderPersonasTable() {
                     ${persona.is_admin ? 'Administrador' : 'Usuario'}
                 </span>
             </td>
-            <td class="admin-only">
-                <button class="btn btn-sm btn-outline-primary me-2" onclick="editPersona(${persona.id})">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deletePersona(${persona.id})">
-                    <i class="fas fa-trash"></i> Eliminar
-                </button>
+                <td class="admin-only table-actions">
+                <div class="d-flex gap-2 btn-equal-group">
+                            <button class="btn btn-sm btn-outline-primary btn-3d flex-fill" onclick="editPersona(${persona.id})" aria-label="Editar" title="Editar">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
+                                <span class="visually-hidden">Editar</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger btn-3d flex-fill" onclick="deletePersona(${persona.id})" aria-label="Eliminar" title="Eliminar">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
+                                <span class="visually-hidden">Eliminar</span>
+                            </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -333,13 +337,17 @@ function renderFilteredPersonas(filteredPersonas) {
                     ${persona.is_admin ? 'Administrador' : 'Usuario'}
                 </span>
             </td>
-            <td class="admin-only">
-                <button class="btn btn-sm btn-outline-primary me-2" onclick="editPersona(${persona.id})">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deletePersona(${persona.id})">
-                    <i class="fas fa-trash"></i> Eliminar
-                </button>
+            <td class="admin-only table-actions">
+                <div class="d-flex gap-2 btn-equal-group">
+                        <button class="btn btn-sm btn-outline-primary btn-3d flex-fill" onclick="editPersona(${persona.id})" aria-label="Editar" title="Editar">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
+                            <span class="visually-hidden">Editar</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-3d flex-fill" onclick="deletePersona(${persona.id})" aria-label="Eliminar" title="Eliminar">
+                            <i class="fas fa-trash" aria-hidden="true"></i>
+                            <span class="visually-hidden">Eliminar</span>
+                        </button>
+                </div>
             </td>
         </tr>
     `).join('');

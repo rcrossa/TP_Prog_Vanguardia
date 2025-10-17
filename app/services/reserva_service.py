@@ -7,7 +7,7 @@ incluyendo validaciones complejas y operaciones de reservas.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -49,9 +49,14 @@ class ReservaService:
         if reserva_data.fecha_hora_fin <= reserva_data.fecha_hora_inicio:
             raise ValueError("La fecha de fin debe ser posterior a la fecha de inicio")
 
-        # Validar que no se está reservando en el pasado
-        if reserva_data.fecha_hora_inicio < datetime.now():
-            raise ValueError("No se pueden crear reservas en el pasado")
+        # Validar que no se está reservando demasiado en el pasado
+        # Permitir un margen de 30 minutos para compensar desfases de tiempo y casos de uso reales
+        now = datetime.now()
+        margin_minutes = 30
+        cutoff_time = now - timedelta(minutes=margin_minutes)
+        
+        if reserva_data.fecha_hora_inicio < cutoff_time:
+            raise ValueError(f"No se pueden crear reservas con más de {margin_minutes} minutos en el pasado")
 
         # Una reserva debe ser para un artículo O una sala, no ambos ni ninguno
         has_articulo = reserva_data.id_articulo is not None

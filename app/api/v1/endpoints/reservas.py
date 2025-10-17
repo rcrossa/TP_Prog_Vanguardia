@@ -15,6 +15,10 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.schemas.reserva import Reserva, ReservaCreate, ReservaUpdate
 from app.services.reserva_service import ReservaService
+from app.auth.dependencies import (
+    get_current_user,
+)
+from app.models.persona import Persona as PersonaModel
 
 router = APIRouter(prefix="/reservas", tags=["reservas"])
 
@@ -26,34 +30,71 @@ router = APIRouter(prefix="/reservas", tags=["reservas"])
     summary="Crear nueva reserva",
     description="Crear una reserva de sala o artículo con validación automática",
 )
-def create_reserva(reserva_data: ReservaCreate, db: Session = Depends(get_db)):
+def create_reserva(
+    reserva_data: ReservaCreate,
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
+):
     """Crear nueva reserva de artículo o sala. Valida disponibilidad y detecta conflictos."""
+    # Permitir que solo admin cree reservas para terceros
+    if not current_user.is_admin and reserva_data.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes crear reservas para otra persona",
+        )
     try:
         return ReservaService.create_reserva(db, reserva_data)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.get("/", response_model=List[Reserva])
-def get_reservas(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Obtener lista de reservas con paginación."""
+def get_reservas(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
+):
+    """Obtener lista de reservas con paginación.
+
+    - Admin: ve todas las reservas
+    - No admin: solo ve sus propias reservas
+    """
     if limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El límite máximo es 100 registros",
         )
 
-    return ReservaService.get_reservas(db, skip, limit)
+    if current_user.is_admin:
+        return ReservaService.get_reservas(db, skip, limit)
+    else:
+        return ReservaService.get_reservas_by_persona(
+            db, current_user.id, skip, limit
+        )
 
 
 @router.get("/{reserva_id}", response_model=Reserva)
-def get_reserva(reserva_id: int, db: Session = Depends(get_db)):
-    """Obtener una reserva específica por ID."""
+def get_reserva(
+    reserva_id: int,
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
+):
+    """Obtener una reserva específica por ID.
+
+    - Admin: puede ver cualquier reserva
+    - No admin: solo puede ver sus reservas
+    """
     reserva = ReservaService.get_reserva_by_id(db, reserva_id)
     if not reserva:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No se encontró una reserva con ID {reserva_id}",
+        )
+    if not current_user.is_admin and reserva.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para ver esta reserva",
         )
     return reserva
 
@@ -156,9 +197,28 @@ def check_sala_availability(
 
 @router.put("/{reserva_id}", response_model=Reserva)
 def update_reserva(
-    reserva_id: int, reserva_data: ReservaUpdate, db: Session = Depends(get_db)
+    reserva_id: int,
+    reserva_data: ReservaUpdate,
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
 ):
-    """Actualizar una reserva existente."""
+    """Actualizar una reserva existente.
+
+    - Admin: puede modificar cualquier reserva
+    - No admin: solo puede modificar sus reservas
+    """
+    # Asegurar que el usuario tenga permisos sobre la reserva
+    existing = ReservaService.get_reserva_by_id(db, reserva_id)
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró una reserva con ID {reserva_id}",
+        )
+    if not current_user.is_admin and existing.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para modificar esta reserva",
+        )
     try:
         reserva = ReservaService.update_reserva(db, reserva_id, reserva_data)
         if not reserva:
@@ -168,12 +228,32 @@ def update_reserva(
             )
         return reserva
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.delete("/{reserva_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_reserva(reserva_id: int, db: Session = Depends(get_db)):
-    """Eliminar una reserva del sistema."""
+def delete_reserva(
+    reserva_id: int,
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
+):
+    """Eliminar una reserva del sistema.
+
+    - Admin: puede eliminar cualquier reserva
+    - No admin: solo puede eliminar sus reservas
+    """
+    existing = ReservaService.get_reserva_by_id(db, reserva_id)
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró una reserva con ID {reserva_id}",
+        )
+    if not current_user.is_admin and existing.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para eliminar esta reserva",
+        )
+
     success = ReservaService.delete_reserva(db, reserva_id)
     if not success:
         raise HTTPException(
@@ -190,8 +270,27 @@ def count_reservas(db: Session = Depends(get_db)):
 
 
 @router.get("/{reserva_id}/articulos")
-def get_articulos_reserva(reserva_id: int, db: Session = Depends(get_db)):
-    """Obtener artículos asignados a una reserva de sala."""
+def get_articulos_reserva(
+    reserva_id: int,
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
+):
+    """Obtener artículos asignados a una reserva de sala.
+
+    - Admin: puede ver artículos de cualquier reserva
+    - No admin: solo puede ver artículos de sus reservas
+    """
+    reserva = ReservaService.get_reserva_by_id(db, reserva_id)
+    if not reserva:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró una reserva con ID {reserva_id}",
+        )
+    if not current_user.is_admin and reserva.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para ver los artículos de esta reserva",
+        )
     result = db.execute(
         text(
             """
@@ -226,8 +325,13 @@ def add_articulo_to_reserva(
         description="'sumar' para agregar, 'reemplazar' para establecer cantidad exacta",
     ),
     db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
 ):
-    """Agregar o actualizar artículo en una reserva de sala."""
+    """Agregar o actualizar artículo en una reserva de sala.
+
+    - Admin: puede gestionar artículos de cualquier reserva
+    - No admin: solo puede gestionar artículos de sus reservas
+    """
     # Verificar que la reserva existe
     from app.repositories.reserva_repository import ReservaRepository
 
@@ -236,6 +340,12 @@ def add_articulo_to_reserva(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No se encontró una reserva con ID {reserva_id}",
+        )
+
+    if not current_user.is_admin and reserva.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para modificar los artículos de esta reserva",
         )
 
     if not reserva.id_sala:
@@ -375,9 +485,27 @@ def add_articulo_to_reserva(
 
 @router.delete("/{reserva_id}/articulos/{articulo_id}")
 def remove_articulo_from_reserva(
-    reserva_id: int, articulo_id: int, db: Session = Depends(get_db)
+    reserva_id: int,
+    articulo_id: int,
+    db: Session = Depends(get_db),
+    current_user: PersonaModel = Depends(get_current_user),
 ):
-    """Eliminar un artículo de una reserva de sala."""
+    """Eliminar un artículo de una reserva de sala.
+
+    - Admin: puede gestionar artículos de cualquier reserva
+    - No admin: solo puede gestionar artículos de sus reservas
+    """
+    reserva = ReservaService.get_reserva_by_id(db, reserva_id)
+    if not reserva:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró una reserva con ID {reserva_id}",
+        )
+    if not current_user.is_admin and reserva.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para modificar los artículos de esta reserva",
+        )
     result = db.execute(
         text(
             """
@@ -389,7 +517,26 @@ def remove_articulo_from_reserva(
     )
     db.commit()
 
-    if result.rowcount == 0:
+    # Determinar si alguna fila fue afectada (compatibilidad con SQLAlchemy)
+    rowcount = getattr(result, "rowcount", None)
+    if rowcount is None:
+        # Fallback simple: verificar si aún existe el vínculo
+        verify = db.execute(
+            text(
+                """
+            SELECT 1 FROM reserva_articulos
+            WHERE reserva_id = :reserva_id AND articulo_id = :articulo_id
+            LIMIT 1
+            """
+            ),
+            {"reserva_id": reserva_id, "articulo_id": articulo_id},
+        ).fetchone()
+        if verify is not None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No se encontró el artículo en la reserva",
+            )
+    elif rowcount == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No se encontró el artículo en la reserva",

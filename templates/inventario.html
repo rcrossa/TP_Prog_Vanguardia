@@ -27,7 +27,7 @@
             <div class="card-body text-center">
                 <i class="fas fa-boxes fa-2x text-primary mb-2"></i>
                 <h3 class="mb-0" id="total-articles">0</h3>
-                <small class="text-muted">Total Artículos</small>
+                <small>Total Artículos</small>
             </div>
         </div>
     </div>
@@ -36,7 +36,7 @@
             <div class="card-body text-center">
                 <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
                 <h3 class="mb-0" id="available-articles">0</h3>
-                <small class="text-muted">Artículos Activos</small>
+                <small>Artículos Activos</small>
             </div>
         </div>
     </div>
@@ -45,7 +45,7 @@
             <div class="card-body text-center">
                 <i class="fas fa-times-circle fa-2x text-warning mb-2"></i>
                 <h3 class="mb-0" id="reserved-articles">0</h3>
-                <small class="text-muted">Artículos Inactivos</small>
+                <small>Artículos Inactivos</small>
             </div>
         </div>
     </div>
@@ -54,14 +54,14 @@
             <div class="card-body text-center">
                 <i class="fas fa-layer-group fa-2x text-info mb-2"></i>
                 <h3 class="mb-0" id="total-quantity">0</h3>
-                <small class="text-muted">Total Unidades</small>
+                <small>Total Unidades</small>
             </div>
         </div>
     </div>
     
     <!-- Fila 2: Estadísticas de Unidades -->
     <div class="col-md-6">
-        <div class="card border-0 shadow-sm" style="background-color: #d1f5e3;">
+    <div class="card border-0 shadow-sm card-inventory-success">
             <div class="card-body text-center">
                 <i class="fas fa-cube fa-2x text-success mb-2"></i>
                 <h3 class="mb-0 text-success fw-bold" id="available-units">0</h3>
@@ -70,7 +70,7 @@
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card border-0 shadow-sm" style="background-color: #fef5e7;">
+    <div class="card border-0 shadow-sm card-inventory-warning">
             <div class="card-body text-center">
                 <i class="fas fa-calendar-check fa-2x text-warning mb-2"></i>
                 <h3 class="mb-0 text-warning fw-bold" id="reserved-units">0</h3>
@@ -431,20 +431,24 @@ function renderArticulos(data) {
             </td>
             ${isAdmin ? `
                 <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-info" onclick="verReservas(${articulo.id})" title="Ver Reservas">
-                            <i class="fas fa-calendar-alt"></i>
+                    <div class="d-flex gap-2 btn-equal-group">
+                        <button class="btn btn-sm btn-outline-info btn-3d flex-fill w-100 py-2" onclick="verReservas(${articulo.id})" aria-label="Ver Reservas" title="Ver Reservas">
+                            <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                            <span class="visually-hidden">Ver Reservas</span>
                         </button>
-                        <button class="btn btn-outline-primary" onclick="editArticulo(${articulo.id})" title="Editar">
-                            <i class="fas fa-edit"></i>
+                        <button class="btn btn-sm btn-outline-primary btn-3d flex-fill w-100 py-2" onclick="editArticulo(${articulo.id})" aria-label="Editar" title="Editar">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
+                            <span class="visually-hidden">Editar</span>
                         </button>
-                        <button class="btn btn-outline-${articulo.disponible ? 'warning' : 'success'}" 
+                        <button class="btn btn-sm btn-outline-${articulo.disponible ? 'warning' : 'success'} btn-3d flex-fill w-100 py-2" 
                                 onclick="toggleDisponibilidad(${articulo.id})" 
-                                title="${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}">
-                            <i class="fas fa-${articulo.disponible ? 'times' : 'check'}"></i>
+                                aria-label="${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}" title="${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}">
+                            <i class="fas fa-${articulo.disponible ? 'times' : 'check'}" aria-hidden="true"></i>
+                            <span class="visually-hidden">${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}</span>
                         </button>
-                        <button class="btn btn-outline-danger" onclick="deleteArticulo(${articulo.id})" title="Eliminar">
-                            <i class="fas fa-trash"></i>
+                        <button class="btn btn-sm btn-outline-danger btn-3d flex-fill w-100 py-2" onclick="deleteArticulo(${articulo.id})" aria-label="Eliminar" title="Eliminar">
+                            <i class="fas fa-trash" aria-hidden="true"></i>
+                            <span class="visually-hidden">Eliminar</span>
                         </button>
                     </div>
                 </td>

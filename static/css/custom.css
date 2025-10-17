@@ -1,16 +1,59 @@
-/**
- * Estilos personalizados para el sistema de gestión
- */
-
-/* Toast Container */
-.toast-container {
-    z-index: 9999 !important;
+/* Reportes: cards y métricas colores consistentes */
+.card-header.bg-primary, .card-header.bg-success {
+    color: #fff !important;
+}
+.metric-item h3 {
+    color: inherit !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.btn-3d {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18), 0 1.5px 0 #bdbdbd;
+    border-radius: 0.5rem;
+    border: 1px solid #e0e0e0;
+    transition: box-shadow 0.18s, transform 0.18s;
+    background: linear-gradient(180deg, #fff 80%, #f3f3f3 100%);
+    position: relative;
+    transition: background 0.18s, box-shadow 0.18s, color 0.18s;
+}
+.btn-3d.btn-outline-primary:hover {
+    background: linear-gradient(180deg, #e3f0ff 70%, #b6d4fe 100%);
+    color: #0d6efd !important;
+    box-shadow: 0 6px 18px rgba(13,110,253,0.18), 0 2px 0 #b6d4fe;
+    border-color: #0d6efd;
+}
+.btn-3d.btn-outline-danger:hover {
+    background: linear-gradient(180deg, #ffe3e3 70%, #f8d7da 100%);
+    color: #dc3545 !important;
+    box-shadow: 0 6px 18px rgba(220,53,69,0.18), 0 2px 0 #f8d7da;
+    border-color: #dc3545;
+}
+.btn-3d:active {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12), 0 0.5px 0 #bdbdbd;
+    transform: translateY(2px);
+}
+/* 3D Button icon shadow */
+.btn-3d .fas {
+    filter: drop-shadow(0 1px 1px #bbb);
 }
 
-/* Toast Notifications */
-.toast {
-    border: none;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+/* Primary button icon color */
+.btn-3d.btn-outline-primary .fas {
+    color: #0d6efd !important;
+}
+
+/* Danger button icon color */
+.btn-3d.btn-outline-danger .fas {
+    color: #dc3545 !important;
+}
+
+/* Primary button icon color on hover */
+.btn-3d.btn-outline-primary:hover .fas {
+    color: #0a58ca !important;
+}
+
+/* Danger button icon color on hover */
+.btn-3d.btn-outline-danger:hover .fas {
+    color: #a71d2a !important;
 }
 
 .toast-header {
@@ -182,4 +225,106 @@ body.is-admin td.admin-only {
         background-color: var(--bs-dark);
         color: var(--bs-light);
     }
+}
+
+/* ===============================
+   Templates-specific extracted styles
+   =============================== */
+
+/* Reservas: select options disabled */
+option:disabled {
+    color: #999 !important;
+    background-color: #f5f5f5 !important;
+    font-style: italic !important;
+}
+
+/* Reservas: grupos ocultos inicialmente */
+#salaGroup,
+#articuloGroup {
+    display: none;
+}
+
+/* Reservas: alert tamaño reducido en modal de artículos */
+.alert-sm {
+    font-size: 0.9rem;
+}
+
+/* Reservas: botón display de valor (deshabilitado) */
+.btn-value-display[disabled] {
+    cursor: default;
+}
+
+/* Inventario: tarjetas con fondo informativo */
+.card-inventory-success {
+    background-color: #d1f5e3;
+}
+.card-inventory-warning {
+    background-color: #fef5e7;
+}
+
+/* Documentación (markmap) */
+.documentacion-page .container-fluid {
+    height: calc(100vh - 56px);
+    padding: 0;
+}
+.documentacion-page #markmap-container {
+    width: 100%;
+    height: 100%;
+}
+.documentacion-page .toolbar {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 1000;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.documentacion-page .toolbar button { margin: 2px; }
+
+/* Configuración (markmap en config) */
+.config-stats .card { cursor: default; transition: transform 0.2s; }
+.config-stats .card:hover { transform: translateY(-2px); }
+#markmap-wrapper {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    min-height: 500px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+#markmap-container { width: 100%; height: 100%; }
+.markmap-toolbar {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    background: white;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.markmap-toolbar .btn { margin: 0 2px; }
+#markmap-wrapper.fullscreen { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index: 9999; border-radius: 0; }
+#markmap-wrapper.fullscreen .markmap-toolbar { background: rgba(255,255,255,0.95); }
+.loading-message { position: absolute; top:50%; left:50%; transform: translate(-50%, -50%); color:#666; font-size:16px; }
+
+/* Utilities */
+.icon-3rem { font-size: 3rem; }
+
+/* Personas: columna de acciones y grupo de botones iguales */
+.table-actions { min-width: 200px; width: 200px; }
+/* Inventario/Reservas: botones de acciones con ancho fijo y proporciones iguales */
+.btn-equal-group .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100px;
+    text-align: center;
+    white-space: nowrap;
+}
+@media (max-width: 576px) {
+    .btn-equal-group { flex-direction: column; }
 }

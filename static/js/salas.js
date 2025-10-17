@@ -85,12 +85,16 @@ function renderSalas(salasToRender) {
             ${isAdmin ? `
                 <td>
                     <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary" onclick="editSala(${sala.id})" title="Editar">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="deleteSala(${sala.id})" title="Eliminar">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                            <div class="d-flex gap-2 btn-equal-group">
+                                <button class="btn btn-sm btn-outline-primary btn-3d flex-fill" onclick="editSala(${sala.id})" aria-label="Editar" title="Editar">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Editar</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-3d flex-fill" onclick="deleteSala(${sala.id})" aria-label="Eliminar" title="Eliminar">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Eliminar</span>
+                                </button>
+                            </div>
                     </div>
                 </td>
             ` : ''}

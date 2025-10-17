@@ -120,8 +120,30 @@ def get_disponibilidad_articulos(
             },
         )
 
-        total_reservado = result.scalar() or 0
-        disponible = max(0, articulo.cantidad - total_reservado)
+        total_reservado_otras = result.scalar() or 0
+
+        # Calcular cuánto ya tiene asignado esta reserva (si aplica)
+        ya_asignada_en_reserva = 0
+        if reserva_id is not None:
+            result_mia = db.execute(
+                text(
+                    """
+                    SELECT COALESCE(SUM(ra.cantidad), 0) as total
+                    FROM reserva_articulos ra
+                    WHERE ra.articulo_id = :articulo_id
+                    AND ra.reserva_id = :reserva_id
+                    """
+                ),
+                {"articulo_id": articulo.id, "reserva_id": reserva_id},
+            )
+            ya_asignada_en_reserva = result_mia.scalar() or 0
+
+        # Disponible total ignorando esta reserva (para compatibilidad)
+        disponible = max(0, articulo.cantidad - total_reservado_otras)
+        # Disponible para agregar (ya descontando lo asignado en esta reserva)
+        disponible_para_agregar = max(
+            0, articulo.cantidad - total_reservado_otras - ya_asignada_en_reserva
+        )
 
         resultado.append(
             {
@@ -130,8 +152,14 @@ def get_disponibilidad_articulos(
                 "descripcion": articulo.descripcion,
                 "categoria": articulo.categoria,
                 "cantidad_total": articulo.cantidad,
-                "cantidad_reservada": total_reservado,
+                # Para compatibilidad: lo reservado por otros (excluye esta reserva)
+                "cantidad_reservada_otros": total_reservado_otras,
+                # Lo que ya tiene asignado esta reserva
+                "cantidad_asignada_en_reserva": ya_asignada_en_reserva,
+                # Disponible total ignorando esta reserva (mantener campo histórico)
                 "cantidad_disponible": disponible,
+                # NUEVO: lo que realmente puede agregar adicionalmente en esta reserva
+                "cantidad_disponible_para_agregar": disponible_para_agregar,
             }
         )
 
