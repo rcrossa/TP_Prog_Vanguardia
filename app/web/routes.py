@@ -276,6 +276,43 @@ async def configuracion_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/documentacion", response_class=HTMLResponse)
+async def documentacion_page(request: Request, db: Session = Depends(get_db)):
+    """Página de documentación del proyecto (solo administradores)."""
+    # Verificar autenticación
+    current_user = get_user_from_request(request, db)
+    if not current_user:
+        return handle_auth_error(request)
+
+    # Verificar permisos de admin
+    admin_check = require_admin_access(current_user, request)
+    if admin_check:
+        return admin_check
+
+    # Leer contenido del README para el mapa mental
+    import os
+
+    readme_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "README.md"
+    )
+    readme_content = ""
+    try:
+        with open(readme_path, "r", encoding="utf-8") as f:
+            readme_content = f.read()
+    except Exception as e:
+        print(f"Error leyendo README: {e}")
+        readme_content = "# Error\nNo se pudo cargar la documentación."
+
+    return templates.TemplateResponse(
+        "documentacion.html",
+        {
+            "request": request,
+            "user": current_user,
+            "readme_content": readme_content,
+        },
+    )
+
+
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     """Página de inicio de sesión."""

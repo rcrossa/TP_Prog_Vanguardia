@@ -7,7 +7,7 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="fas fa-users me-2"></i>Gestión de Personas</h1>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalPersona" onclick="newPersona()">
+            <button class="btn btn-primary admin-only" onclick="newPersona()">
                 <i class="fas fa-user-plus me-1"></i>Nueva Persona
             </button>
         </div>
@@ -16,20 +16,13 @@
 
 <!-- Filtros -->
 <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-8">
         <div class="input-group">
             <span class="input-group-text"><i class="fas fa-search"></i></span>
             <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nombre o email...">
         </div>
     </div>
-    <div class="col-md-3">
-        <select class="form-select" id="sortSelect">
-            <option value="name">Ordenar por Nombre</option>
-            <option value="email">Ordenar por Email</option>
-            <option value="id">Ordenar por ID</option>
-        </select>
-    </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <button class="btn btn-outline-secondary w-100" onclick="loadPersonas()">
             <i class="fas fa-sync me-1"></i>Actualizar
         </button>
@@ -40,21 +33,19 @@
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle" id="personasTable">
                 <thead class="table-light">
                     <tr>
                         <th width="80">ID</th>
                         <th>Nombre</th>
                         <th>Email</th>
-                        <th width="100">Estado</th>
-                        <th width="100">Tipo</th>
-                        <th>Reservas</th>
-                        <th width="150">Acciones</th>
+                        <th width="120">Tipo</th>
+                        <th width="150" class="admin-only">Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="personasTableBody">
+                <tbody>
                     <tr>
-                        <td colspan="7" class="text-center py-4">
+                        <td colspan="5" class="text-center py-4">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Cargando...</span>
                             </div>
@@ -68,7 +59,7 @@
 </div>
 
 <!-- Modal para Nueva/Editar Persona -->
-<div class="modal fade" id="modalPersona" tabindex="-1">
+<div class="modal fade" id="personaModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -98,46 +89,25 @@
                         <input type="email" class="form-control" id="email" required 
                                placeholder="Ej: juan.perez@universidad.edu">
                         <div class="invalid-feedback"></div>
-                        <div class="form-text">
-                            El email debe ser único en el sistema.
-                        </div>
                     </div>
                     
-                    <div class="mb-3" id="passwordSection">
+                    <div class="mb-3">
                         <label for="password" class="form-label">
                             <i class="fas fa-lock me-1"></i>Contraseña *
                         </label>
                         <input type="password" class="form-control" id="password" 
                                placeholder="Mínimo 6 caracteres" minlength="6">
                         <div class="invalid-feedback"></div>
-                        <div class="form-text" id="passwordHelp">
-                            Dejar en blanco para mantener la contraseña actual (solo al editar).
+                        <div class="form-text" id="passwordHelp" style="display: none;">
+                            Dejar en blanco para mantener la contraseña actual.
                         </div>
                     </div>
                     
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="is_active" checked>
-                                <label class="form-check-label" for="is_active">
-                                    <i class="fas fa-toggle-on me-1"></i>Usuario Activo
-                                </label>
-                                <div class="form-text">
-                                    Usuarios inactivos no pueden iniciar sesión.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="is_admin">
-                                <label class="form-check-label" for="is_admin">
-                                    <i class="fas fa-user-shield me-1"></i>Administrador
-                                </label>
-                                <div class="form-text">
-                                    Administradores pueden gestionar usuarios.
-                                </div>
-                            </div>
-                        </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="is_admin">
+                        <label class="form-check-label" for="is_admin">
+                            <i class="fas fa-user-shield me-1"></i>Administrador
+                        </label>
                     </div>
                 </form>
             </div>
@@ -145,7 +115,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-primary" onclick="savePersona()" id="saveBtn">
+                <button type="button" class="btn btn-primary" onclick="savePersona()">
                     <i class="fas fa-save me-1"></i>Guardar
                 </button>
             </div>
@@ -153,8 +123,8 @@
     </div>
 </div>
 
-<!-- Modal de Confirmación -->
-<div class="modal fade" id="confirmModal" tabindex="-1">
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
@@ -163,12 +133,12 @@
                 </h6>
             </div>
             <div class="modal-body">
-                <p>¿Está seguro que desea eliminar esta persona?</p>
+                <p>¿Está seguro que desea eliminar a <strong id="deletePersonaName"></strong>?</p>
                 <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete()" id="deleteBtn">
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
                     <i class="fas fa-trash me-1"></i>Eliminar
                 </button>
             </div>
@@ -178,475 +148,33 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/personas.js?v=1.0"></script>
 <script>
-// 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE
-(function() {
-    try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            const user = JSON.parse(userStr);
-            if (user && user.is_admin === true) {
-                document.body.classList.add('is-admin');
-            } else {
-                document.body.classList.remove('is-admin');
-            }
-        } else {
-            document.body.classList.remove('is-admin');
-        }
-    } catch (e) {
-        console.error('Error al verificar rol de admin:', e);
-        document.body.classList.remove('is-admin');
-    }
-})();
-
-let currentPersonaId = null;
-let personas = [];
-
-// Cargar personas
-async function loadPersonas() {
-    try {
-        console.log('Cargando personas...');
-        console.log('Token disponible:', !!window.authManager?.getToken());
-        console.log('Usuario:', window.authManager?.getUser());
-        
-        const response = await axios.get('/api/v1/personas');
-        personas = response.data;
-        renderPersonasTable();
-        console.log('Personas cargadas exitosamente:', personas.length);
-    } catch (error) {
-        console.error('Error al cargar personas:', error);
-        console.error('Error response:', error.response);
-        
-        if (error.response?.status === 403) {
-            showError('No tienes permisos para ver esta información');
-        } else if (error.response?.status === 401) {
-            showError('Sesión expirada. Inicia sesión nuevamente');
-            window.location.href = '/login';
-        } else {
-            showError('Error al cargar las personas: ' + (error.response?.data?.detail || error.message));
-        }
-    }
-}
-
-// Renderizar tabla
-function renderPersonasTable() {
-    const tbody = document.getElementById('personasTableBody');
-    
-    if (personas.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="text-center py-4">
-                    <i class="fas fa-users fa-2x text-muted mb-2"></i>
-                    <p class="text-muted mb-0">No hay personas registradas</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = personas.map(persona => `
-        <tr>
-            <td><span class="badge bg-secondary">${persona.id}</span></td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
-                        <i class="fas fa-user text-white small"></i>
-                    </div>
-                    <strong>${persona.nombre}</strong>
-                </div>
-            </td>
-            <td>
-                <a href="mailto:${persona.email}" class="text-decoration-none">
-                    ${persona.email}
-                </a>
-            </td>
-            <td>
-                <span class="badge ${persona.is_active ? 'bg-success' : 'bg-danger'}">
-                    ${persona.is_active ? 'Activo' : 'Inactivo'}
-                </span>
-            </td>
-            <td>
-                <span class="badge ${persona.is_admin ? 'bg-warning text-dark' : 'bg-info'}">
-                    ${persona.is_admin ? 'Admin' : 'Usuario'}
-                </span>
-            </td>
-            <td>
-                <span class="badge bg-info">0 reservas</span>
-            </td>
-            <td>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="editPersona(${persona.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-outline-danger" onclick="deletePersona(${persona.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// Nueva persona
-function newPersona() {
-    currentPersonaId = null;
-    document.getElementById('modalTitle').textContent = 'Nueva Persona';
-    document.getElementById('personaForm').reset();
-    
-    // Configurar valores por defecto para nueva persona
-    document.getElementById('is_active').checked = true;
-    document.getElementById('is_admin').checked = false;
-    document.getElementById('password').setAttribute('required', 'required');
-    document.getElementById('passwordHelp').style.display = 'none';
-    
-    clearValidation();
-}
-
-// Editar persona
-async function editPersona(id) {
-    try {
-        const response = await axios.get(`/api/v1/personas/${id}`);
-        const persona = response.data;
-        
-        currentPersonaId = id;
-        document.getElementById('modalTitle').textContent = 'Editar Persona';
-        document.getElementById('nombre').value = persona.nombre;
-        document.getElementById('email').value = persona.email;
-        document.getElementById('password').value = ''; // Limpiar contraseña
-        document.getElementById('is_active').checked = persona.is_active;
-        document.getElementById('is_admin').checked = persona.is_admin;
-        
-        // Actualizar el texto de ayuda para edición
-        document.getElementById('passwordHelp').style.display = 'block';
-        document.getElementById('password').removeAttribute('required');
-        
-        new bootstrap.Modal(document.getElementById('modalPersona')).show();
-        clearValidation();
-    } catch (error) {
-        console.error('Error al cargar persona:', error);
-        showError('Error al cargar los datos de la persona');
-    }
-}
-
-// Guardar persona
-async function savePersona() {
-    const nombre = document.getElementById('nombre').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-    const isActive = document.getElementById('is_active').checked;
-    const isAdmin = document.getElementById('is_admin').checked;
-    
-    if (!validateForm(nombre, email, password)) return;
-    
-    const saveBtn = document.getElementById('saveBtn');
-    const originalText = saveBtn.innerHTML;
-    
-    try {
-        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
-        saveBtn.disabled = true;
-        
-        const data = { 
-            nombre, 
-            email,
-            is_active: isActive,
-            is_admin: isAdmin
-        };
-        
-        // Solo incluir contraseña si se está creando o si se proporcionó una nueva
-        if (!currentPersonaId || (password && password.length > 0)) {
-            data.password = password;
-        }
-        
-        if (currentPersonaId) {
-            await axios.put(`/api/v1/personas/${currentPersonaId}`, data);
-            showSuccess('Persona actualizada correctamente');
-        } else {
-            await axios.post('/api/v1/personas', data);
-            showSuccess('Persona creada correctamente');
-        }
-        
-        bootstrap.Modal.getInstance(document.getElementById('modalPersona')).hide();
-        loadPersonas();
-        
-    } catch (error) {
-        console.error('Error al guardar persona:', error);
-        
-        if (error.response?.status === 400 && error.response.data?.detail?.includes('email')) {
-            setFieldError('email', 'Este email ya está registrado');
-        } else {
-            showError('Error al guardar la persona');
-        }
-    } finally {
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
-    }
-}
-
-// Eliminar persona
-function deletePersona(id) {
-    currentPersonaId = id;
-    new bootstrap.Modal(document.getElementById('confirmModal')).show();
-}
-
-async function confirmDelete() {
-    try {
-        await axios.delete(`/api/v1/personas/${currentPersonaId}`);
-        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-        showSuccess('Persona eliminada correctamente');
-        loadPersonas();
-    } catch (error) {
-        console.error('Error al eliminar persona:', error);
-        showError('Error al eliminar la persona');
-    }
-}
-
-// Validación del formulario
-function validateForm(nombre, email, password) {
-    let isValid = true;
-    
-    clearValidation();
-    
-    if (!nombre || nombre.length < 2) {
-        setFieldError('nombre', 'El nombre debe tener al menos 2 caracteres');
-        isValid = false;
-    }
-    
-    if (!email || !isValidEmail(email)) {
-        setFieldError('email', 'Ingrese un email válido');
-        isValid = false;
-    }
-    
-    // Validar contraseña solo si es requerida (nuevo usuario) o si se proporcionó
-    if (!currentPersonaId) {
-        // Nuevo usuario - contraseña requerida
-        if (!password || password.length < 6) {
-            setFieldError('password', 'La contraseña debe tener al menos 6 caracteres');
-            isValid = false;
-        }
-    } else if (password && password.length > 0 && password.length < 6) {
-        // Editando usuario - validar solo si se proporcionó contraseña
-        setFieldError('password', 'La contraseña debe tener al menos 6 caracteres');
-        isValid = false;
-    }
-    
-    return isValid;
-}
-
-function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function setFieldError(fieldId, message) {
-    const field = document.getElementById(fieldId);
-    field.classList.add('is-invalid');
-    field.nextElementSibling.textContent = message;
-}
-
-function clearValidation() {
-    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-    document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
-}
-
-// Búsqueda
-document.getElementById('searchInput').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const filteredPersonas = personas.filter(persona => 
-        persona.nombre.toLowerCase().includes(searchTerm) ||
-        persona.email.toLowerCase().includes(searchTerm)
-    );
-    renderFilteredPersonas(filteredPersonas);
-});
-
-function renderFilteredPersonas(filteredPersonas) {
-    const tbody = document.getElementById('personasTableBody');
-    
-    if (filteredPersonas.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-4">
-                    <i class="fas fa-search fa-2x text-muted mb-2"></i>
-                    <p class="text-muted mb-0">No se encontraron resultados</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = filteredPersonas.map(persona => `
-        <tr>
-            <td><span class="badge bg-secondary">${persona.id}</span></td>
-            <td>
-                <div class="d-flex align-items-center">
-                    <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
-                        <i class="fas fa-user text-white small"></i>
-                    </div>
-                    <strong>${persona.nombre}</strong>
-                </div>
-            </td>
-            <td>
-                <a href="mailto:${persona.email}" class="text-decoration-none">
-                    ${persona.email}
-                </a>
-            </td>
-            <td>
-                <span class="badge ${persona.is_active ? 'bg-success' : 'bg-danger'}">
-                    ${persona.is_active ? 'Activo' : 'Inactivo'}
-                </span>
-            </td>
-            <td>
-                <span class="badge ${persona.is_admin ? 'bg-warning text-dark' : 'bg-info'}">
-                    ${persona.is_admin ? 'Admin' : 'Usuario'}
-                </span>
-            </td>
-            <td>
-                <span class="badge bg-info">0 reservas</span>
-            </td>
-            <td>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="editPersona(${persona.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-outline-danger" onclick="deletePersona(${persona.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// Utilidades para notificaciones
-function showSuccess(message) {
-    showToast('✅ ' + message, 'success');
-}
-
-function showError(message) {
-    // Si el mensaje es un objeto, extraer el texto apropiado
-    if (typeof message === 'object') {
-        if (message.detail) {
-            message = message.detail;
-        } else if (message.message) {
-            message = message.message;
-        } else {
-            message = JSON.stringify(message);
-        }
-    }
-    showToast('❌ ' + message, 'danger');
-}
-
-// Función para mostrar Toast notifications
-function showToast(message, type = 'success') {
-    // Crear contenedor si no existe
-    let toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toastContainer';
-        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-        toastContainer.style.zIndex = '9999';
-        document.body.appendChild(toastContainer);
-    }
-    
-    // Determinar el tipo de alerta de Bootstrap
-    const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
-    
-    // Crear el toast
-    const toastId = 'toast_' + Date.now();
-    const toastHTML = `
-        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `;
-    
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    
-    // Mostrar el toast
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, {
-        autohide: true,
-        delay: 3000 // 3 segundos
-    });
-    toast.show();
-    
-    // Remover del DOM después de ocultarse
-    toastElement.addEventListener('hidden.bs.toast', function () {
-        toastElement.remove();
-    });
-}
-
-function debugAuthState() {
-    console.log('=== DEBUG AUTH STATE ===');
-    console.log('AuthManager disponible:', !!window.authManager);
-    
-    if (window.authManager) {
-        const token = window.authManager.getToken();
-        const user = window.authManager.getUser();
-        const isAuth = window.authManager.isAuthenticated();
-        
-        console.log('Token presente:', !!token);
-        console.log('Token length:', token ? token.length : 0);
-        console.log('Token (primeros 50 chars):', token ? token.substring(0, 50) + '...' : 'null');
-        
-        console.log('User object presente:', !!user);
-        console.log('User data:', user);
-        
-        console.log('isAuthenticated():', isAuth);
-        
-        // Verificar localStorage directamente
-        console.log('localStorage token:', !!localStorage.getItem('token'));
-        console.log('localStorage user:', !!localStorage.getItem('user'));
-        
-        if (localStorage.getItem('user')) {
-            try {
-                const parsedUser = JSON.parse(localStorage.getItem('user'));
-                console.log('Parsed localStorage user:', parsedUser);
-                console.log('localStorage user is_admin:', parsedUser?.is_admin);
-            } catch (e) {
-                console.error('Error parsing localStorage user:', e);
-            }
-        }
-    }
-    
-    console.log('=== END DEBUG AUTH STATE ===');
-}
-
-// Event listeners
+// Inicialización específica de la página de personas
 document.addEventListener('DOMContentLoaded', function() {
-    // Esperar a que el AuthManager esté completamente inicializado
+    // Función para verificar autenticación y permisos
     const checkAuth = () => {
+        console.log('🔍 Verificando autenticación para gestión de personas...');
+        
         if (!window.authManager) {
-            console.log('Esperando AuthManager en personas...');
-            setTimeout(checkAuth, 100);
-            return;
-        }
-        
-        console.log('=== INICIANDO PÁGINA PERSONAS ===');
-        debugAuthState(); // Función de debug para diagnóstico
-        
-        // Verificar que el usuario esté autenticado
-        if (!window.authManager.isAuthenticated()) {
-            console.error('Usuario no autenticado en personas');
+            console.error('❌ AuthManager no disponible');
             window.location.href = '/login';
             return;
         }
         
-        console.log('Usuario autenticado, verificando permisos admin...');
+        if (!window.authManager.isAuthenticated()) {
+            console.log('❌ Usuario no autenticado, redirigiendo...');
+            window.location.href = '/login';
+            return;
+        }
         
-        // Verificar permisos de admin
         const user = window.authManager.getUser();
-        console.log('Datos del usuario completos:', user);
-        console.log('¿Es admin?:', user?.is_admin);
-        console.log('Usuario existe?:', !!user);
-        
         if (!user || !user.is_admin) {
-            console.error('❌ ACCESO DENEGADO - Usuario sin permisos admin:', user);
-            console.error('Motivo:', !user ? 'Usuario no existe' : 'Usuario no es admin');
-            alert('Acceso denegado. Solo los administradores pueden acceder a esta sección.');
-            window.location.href = '/';
+            console.log('❌ ACCESO DENEGADO - Se requieren permisos de administrador');
+            showError('No tienes permisos para acceder a esta página. Solo los administradores pueden gestionar personas.');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 3000);
             return;
         }
         

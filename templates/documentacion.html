@@ -55,89 +55,25 @@
     <svg id="markmap-container"></svg>
 </div>
 
-<script>
-    // Markdown content pasado desde el backend
-    const markdownContent = {{ readme_content|tojson }};
-    
-    // Función para inicializar el mapa mental
-    async function initMarkmap() {
-        try {
-            // Esperar a que markmap esté disponible
-            if (typeof markmap === 'undefined') {
-                console.log('Esperando a que Markmap se cargue...');
-                setTimeout(initMarkmap, 100);
-                return;
-            }
-            
-            const { Markmap, loadCSS, loadJS } = markmap;
-            
-            // Crear instancia de Markmap
-            const mm = Markmap.create('#markmap-container', {
-                duration: 500,
-                maxWidth: 300,
-                color: (node) => {
-                    // Colores según el nivel de profundidad
-                    const colors = ['#4285f4', '#34a853', '#fbbc04', '#ea4335', '#9c27b0'];
-                    return colors[node.depth % colors.length];
-                },
-                paddingX: 20,
-                autoFit: true,
-                initialExpandLevel: 2
-            });
-            
-            // Transformar el markdown y renderizar
-            const { root } = markmap.transform(markdownContent);
-            mm.setData(root);
-            mm.fit();
-            
-            // Guardar referencia global para controles
-            window.markmapInstance = mm;
-            
-        } catch (error) {
-            console.error('Error al inicializar Markmap:', error);
-        }
+<!-- Template Data Bridge - Datos del backend para JavaScript -->
+<script id="template-data" type="application/json">
+{
+    "markdownContent": {{ readme_content|tojson }},
+    "markmapConfig": {
+        "duration": 500,
+        "maxWidth": 300,
+        "paddingX": 20,
+        "autoFit": true,
+        "initialExpandLevel": 2
     }
-    
-    // Funciones de control
-    function zoomIn() {
-        if (window.markmapInstance) {
-            const svg = window.markmapInstance.svg;
-            const currentScale = svg.getScale();
-            svg.setScale(currentScale * 1.2);
-        }
-    }
-    
-    function zoomOut() {
-        if (window.markmapInstance) {
-            const svg = window.markmapInstance.svg;
-            const currentScale = svg.getScale();
-            svg.setScale(currentScale / 1.2);
-        }
-    }
-    
-    function resetZoom() {
-        if (window.markmapInstance) {
-            window.markmapInstance.fit();
-        }
-    }
-    
-    function toggleFullscreen() {
-        const container = document.querySelector('.container-fluid');
-        if (!document.fullscreenElement) {
-            container.requestFullscreen().catch(err => {
-                console.error('Error al entrar en pantalla completa:', err);
-            });
-            // Cambiar icono
-            event.target.closest('button').querySelector('i').classList.replace('fa-expand', 'fa-compress');
-        } else {
-            document.exitFullscreen();
-            event.target.closest('button').querySelector('i').classList.replace('fa-compress', 'fa-expand');
-        }
-    }
-    
-    // Inicializar cuando el DOM esté listo
-    document.addEventListener('DOMContentLoaded', () => {
-        initMarkmap();
-    });
+}
 </script>
+{% endblock %}
+
+{% block scripts %}
+<!-- Core utilities -->
+<script src="/static/js/core/template-bridge.js?v=1.0"></script>
+
+<!-- Module-specific JavaScript -->
+<script src="/static/js/modules/documentacion.js?v=1.0"></script>
 {% endblock %}
