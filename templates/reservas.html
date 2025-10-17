@@ -2,28 +2,1009 @@
 
 {% block title %}Sistema de Reservas - Sistema de Reservas{% endblock %}
 
+{% block styles %}
+<style>
+    /* Estilos para opciones deshabilitadas en el select */
+    option:disabled {
+        color: #999 !important;
+        background-color: #f5f5f5 !important;
+        font-style: italic !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="fas fa-calendar-check me-2"></i>Sistema de Reservas</h1>
-            <button class="btn btn-primary">
+            <button class="btn btn-primary" id="newReservaBtn">
                 <i class="fas fa-calendar-plus me-1"></i>Nueva Reserva
             </button>
         </div>
     </div>
 </div>
 
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" placeholder="Buscar reservas...">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filterTipo">
+            <option value="">Todos los tipos</option>
+            <option value="sala">Reservas de Salas</option>
+            <option value="articulo">Reservas de Artículos</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select class="form-select" id="filterEstado">
+            <option value="">Todos los estados</option>
+            <option value="futuro">Futuras</option>
+            <option value="pasado">Pasadas</option>
+            <option value="activo">Activas</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-outline-secondary w-100" onclick="loadReservas()">
+            <i class="fas fa-sync me-1"></i>Actualizar
+        </button>
+    </div>
+</div>
+
+<!-- Tabla de Reservas -->
 <div class="card border-0 shadow-sm">
     <div class="card-body">
-        <div class="text-center py-5">
-            <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
-            <h4>Sistema de Reservas</h4>
-            <p class="text-muted">Funcionalidad en desarrollo...</p>
-            <p class="text-muted">
-                <small>Esta página conectará con las APIs existentes de reservas</small>
-            </p>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th width="80">ID</th>
+                        <th>Tipo</th>
+                        <th>Recurso</th>
+                        <th>Persona</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Fin</th>
+                        <th>Estado</th>
+                        <th width="150">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="reservasTableBody">
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 mb-0 text-muted">Cargando reservas...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+<!-- Modal para Nueva/Editar Reserva -->
+<div class="modal fade" id="reservaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Nueva Reserva</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reservaForm">
+                    <input type="hidden" id="reservaId">
+                    
+                    <!-- Tipo de Reserva -->
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Reserva</label>
+                        <select class="form-select" id="tipoReserva" required>
+                            <option value="">Seleccione...</option>
+                            <option value="sala">Sala</option>
+                            <option value="articulo">Artículo</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sala (solo si tipo = sala) -->
+                    <div class="mb-3" id="salaGroup" style="display: none;">
+                        <label class="form-label">Sala</label>
+                        <select class="form-select" id="idSala">
+                            <option value="">Cargando salas...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Artículo (solo si tipo = articulo) -->
+                    <div class="mb-3" id="articuloGroup" style="display: none;">
+                        <label class="form-label">Artículo</label>
+                        <select class="form-select" id="idArticulo">
+                            <option value="">Cargando artículos...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Persona -->
+                    <div class="mb-3">
+                        <label class="form-label">Persona</label>
+                        <select class="form-select" id="idPersona" required>
+                            <option value="">Cargando personas...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Fechas -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha/Hora Inicio</label>
+                            <input type="datetime-local" class="form-control" id="fechaInicio" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha/Hora Fin</label>
+                            <input type="datetime-local" class="form-control" id="fechaFin" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveReserva()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Gestionar Artículos de Reserva -->
+<div class="modal fade" id="articulosModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-boxes me-2"></i>Gestionar Artículos de la Reserva
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="reservaIdArticulos">
+                
+                <!-- Artículos ya asignados -->
+                <div class="mb-4">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-check-circle me-1"></i>Artículos Asignados
+                    </h6>
+                    <div id="articulosAsignados">
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Artículos disponibles para agregar -->
+                <div>
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-plus-circle me-1"></i>Agregar Artículos
+                    </h6>
+                    <div class="alert alert-info mb-3" style="font-size: 0.9rem;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> Use los botones <strong>+ / -</strong> en la lista de arriba para ajustar cantidades de artículos ya asignados.
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Artículo</label>
+                            <select class="form-select" id="articuloSelect" onchange="actualizarInfoArticulo()">
+                                <option value="">Seleccione un artículo...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" class="form-control" id="articuloCantidad" min="1" value="1" placeholder="Cant.">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-success w-100" onclick="agregarArticuloAReserva()" id="btnAgregarArticulo">
+                                <i class="fas fa-plus"></i> Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE antes de que la página renderice
+(function() {
+    try {
+        const userStr = localStorage.getItem('user');
+        
+        if (userStr && userStr !== 'undefined' && userStr !== 'null') {
+            const user = JSON.parse(userStr);
+            
+            if (user && user.is_admin === true) {
+                document.body.classList.add('is-admin');
+            } else {
+                document.body.classList.remove('is-admin');
+            }
+        } else {
+            document.body.classList.remove('is-admin');
+        }
+    } catch (e) {
+        console.error('Error al verificar rol de admin:', e);
+        document.body.classList.remove('is-admin');
+    }
+})();
+
+let reservas = [];
+let salas = [];
+let articulos = [];
+let personas = [];
+let reservaModal;
+let articulosModal;
+let currentReservaId = null;
+let articulosAsignadosActuales = []; // Para saber qué artículos ya están asignados
+
+// Función para esperar a que auth esté disponible
+function waitForAuth(callback, maxAttempts = 100) {
+    let attempts = 0;
+    const checkAuth = () => {
+        attempts++;
+        if (window.auth && window.authManager) {
+            callback();
+        } else if (attempts < maxAttempts) {
+            setTimeout(checkAuth, 50);
+        } else {
+            // Timeout - redirigir al login
+            window.location.href = '/login';
+        }
+    };
+    checkAuth();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Esperar a que el sistema de autenticación esté listo
+    waitForAuth(() => {
+        // 🔒 SEGURIDAD: Verificar rol de usuario inmediatamente
+        const currentUser = window.authManager ? window.authManager.getUser() : null;
+        if (currentUser) {
+            if (currentUser.is_admin === true) {
+                document.body.classList.add('is-admin');
+            } else {
+                document.body.classList.remove('is-admin');
+                // Forzar ocultamiento de elementos admin
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+        } else {
+            // Sin usuario autenticado, ocultar todo contenido admin
+            document.body.classList.remove('is-admin');
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+        
+        reservaModal = new bootstrap.Modal(document.getElementById('reservaModal'));
+        articulosModal = new bootstrap.Modal(document.getElementById('articulosModal'));
+        
+        // Cargar datos iniciales
+        loadReservas();
+        loadSalas();
+        loadArticulos();
+        loadPersonas();
+        
+        // Event listeners
+        document.getElementById('newReservaBtn').addEventListener('click', () => openModal());
+        document.getElementById('searchInput').addEventListener('input', filterReservas);
+        document.getElementById('filterTipo').addEventListener('change', filterReservas);
+        document.getElementById('filterEstado').addEventListener('change', filterReservas);
+        document.getElementById('tipoReserva').addEventListener('change', toggleTipoReserva);
+    });
+});
+
+// Cargar reservas
+async function loadReservas() {
+    try {
+        const response = await axios.get('/api/v1/reservas/');
+        reservas = response.data;
+        renderReservas(reservas);
+    } catch (error) {
+        console.error('Error cargando reservas:', error);
+        showError('Error al cargar las reservas');
+    }
+}
+
+// Cargar salas
+async function loadSalas() {
+    try {
+        const response = await axios.get('/api/v1/salas/');
+        salas = response.data;
+        updateSalaSelect();
+    } catch (error) {
+        console.error('Error cargando salas:', error);
+    }
+}
+
+// Cargar artículos
+async function loadArticulos() {
+    try {
+        const response = await axios.get('/api/v1/articulos/');
+        articulos = response.data;
+        updateArticuloSelect();
+    } catch (error) {
+        console.error('Error cargando artículos:', error);
+    }
+}
+
+// Cargar personas
+async function loadPersonas() {
+    try {
+        const response = await axios.get('/api/v1/personas/');
+        personas = response.data;
+        updatePersonaSelect();
+    } catch (error) {
+        console.error('Error cargando personas:', error);
+        
+        // Si el error es 403 (no es admin), usar solo el usuario actual
+        if (error.response?.status === 403) {
+            // Verificar que window.auth existe
+            if (!window.auth || !window.authManager) {
+                personas = [];
+                updatePersonaSelect();
+                return;
+            }
+            
+            let currentUser = window.auth.getUser();
+            
+            // Si no hay usuario en localStorage, consultar al servidor
+            if (!currentUser || !currentUser.id) {
+                try {
+                    const meResponse = await axios.get('/api/v1/personas/me');
+                    currentUser = meResponse.data;
+                    
+                    // Guardar en localStorage para próximas consultas
+                    window.auth.setUser(currentUser);
+                } catch (meError) {
+                    console.error('Error al obtener usuario del servidor:', meError);
+                    alert('No se pudo obtener tu información de usuario. Por favor, inicia sesión nuevamente.');
+                    window.location.href = '/login';
+                    return;
+                }
+            }
+            
+            if (currentUser && currentUser.id) {
+                personas = [{
+                    id: currentUser.id,
+                    nombre: currentUser.nombre,
+                    email: currentUser.email
+                }];
+                updatePersonaSelect();
+            } else {
+                personas = [];
+            }
+        } else if (error.response?.status === 401) {
+            alert('⚠️ Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+            window.location.href = '/login';
+        }
+    }
+}
+
+// Actualizar select de salas
+function updateSalaSelect() {
+    const select = document.getElementById('idSala');
+    select.innerHTML = '<option value="">Seleccione una sala...</option>';
+    salas.forEach(sala => {
+        select.innerHTML += `<option value="${sala.id}">${sala.nombre} (Cap: ${sala.capacidad})</option>`;
+    });
+}
+
+// Actualizar select de artículos
+function updateArticuloSelect() {
+    const select = document.getElementById('idArticulo');
+    select.innerHTML = '<option value="">Seleccione un artículo...</option>';
+    articulos.filter(a => a.disponible).forEach(articulo => {
+        select.innerHTML += `<option value="${articulo.id}">${articulo.nombre}</option>`;
+    });
+}
+
+// Actualizar select de personas
+function updatePersonaSelect() {
+    const select = document.getElementById('idPersona');
+    if (!select) {
+        return;
+    }
+    
+    select.innerHTML = '<option value="">Seleccione una persona...</option>';
+    
+    if (personas.length === 0) {
+        select.innerHTML += '<option value="" disabled>No hay personas disponibles</option>';
+        return;
+    }
+    
+    personas.forEach(persona => {
+        select.innerHTML += `<option value="${persona.id}">${persona.nombre}</option>`;
+    });
+}
+
+// Toggle tipo de reserva
+function toggleTipoReserva() {
+    const tipo = document.getElementById('tipoReserva').value;
+    const salaGroup = document.getElementById('salaGroup');
+    const articuloGroup = document.getElementById('articuloGroup');
+    const idSala = document.getElementById('idSala');
+    const idArticulo = document.getElementById('idArticulo');
+    
+    if (tipo === 'sala') {
+        salaGroup.style.display = 'block';
+        articuloGroup.style.display = 'none';
+        idSala.required = true;
+        idArticulo.required = false;
+        idArticulo.value = '';
+    } else if (tipo === 'articulo') {
+        salaGroup.style.display = 'none';
+        articuloGroup.style.display = 'block';
+        idSala.required = false;
+        idArticulo.required = true;
+        idSala.value = '';
+    } else {
+        salaGroup.style.display = 'none';
+        articuloGroup.style.display = 'none';
+        idSala.required = false;
+        idArticulo.required = false;
+    }
+}
+
+// Renderizar reservas
+function renderReservas(data) {
+    const tbody = document.getElementById('reservasTableBody');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-2x text-muted mb-2"></i>
+                    <p class="mb-0 text-muted">No se encontraron reservas</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(reserva => {
+        const tipo = reserva.id_sala ? 'Sala' : 'Artículo';
+        const recurso = getNombreRecurso(reserva);
+        const persona = getNombrePersona(reserva.id_persona);
+        const estado = getEstadoReserva(reserva);
+        const estadoBadge = getEstadoBadge(estado);
+        const esSala = reserva.id_sala !== null;
+        
+        return `
+            <tr>
+                <td><span class="badge bg-secondary">#${reserva.id}</span></td>
+                <td><i class="fas fa-${reserva.id_sala ? 'door-open' : 'box'} me-1"></i>${tipo}</td>
+                <td>${recurso}</td>
+                <td>${persona}</td>
+                <td>${formatDateTime(reserva.fecha_hora_inicio)}</td>
+                <td>${formatDateTime(reserva.fecha_hora_fin)}</td>
+                <td>${estadoBadge}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        ${esSala ? `
+                            <button class="btn btn-outline-info" onclick="gestionarArticulos(${reserva.id})" title="Gestionar Artículos">
+                                <i class="fas fa-boxes"></i>
+                            </button>
+                        ` : ''}
+                        ${estado === 'futuro' ? `
+                            <button class="btn btn-outline-primary" onclick="editReserva(${reserva.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        ` : `
+                            <button class="btn btn-outline-secondary" onclick="viewReserva(${reserva.id})" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        `}
+                        <button class="btn btn-outline-danger" onclick="deleteReserva(${reserva.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Obtener nombre del recurso
+function getNombreRecurso(reserva) {
+    if (reserva.id_sala) {
+        const sala = salas.find(s => s.id === reserva.id_sala);
+        return sala ? sala.nombre : `Sala #${reserva.id_sala}`;
+    } else if (reserva.id_articulo) {
+        const articulo = articulos.find(a => a.id === reserva.id_articulo);
+        return articulo ? articulo.nombre : `Artículo #${reserva.id_articulo}`;
+    }
+    return 'N/A';
+}
+
+// Obtener nombre de persona
+function getNombrePersona(idPersona) {
+    const persona = personas.find(p => p.id === idPersona);
+    return persona ? persona.nombre : `Persona #${idPersona}`;
+}
+
+// Obtener estado de reserva
+function getEstadoReserva(reserva) {
+    const ahora = new Date();
+    const inicio = new Date(reserva.fecha_hora_inicio);
+    const fin = new Date(reserva.fecha_hora_fin);
+    
+    if (ahora < inicio) return 'futuro';
+    if (ahora > fin) return 'pasado';
+    return 'activo';
+}
+
+// Obtener badge de estado
+function getEstadoBadge(estado) {
+    const badges = {
+        'futuro': '<span class="badge bg-info">Futura</span>',
+        'activo': '<span class="badge bg-success">Activa</span>',
+        'pasado': '<span class="badge bg-secondary">Pasada</span>'
+    };
+    return badges[estado] || '';
+}
+
+// Formatear fecha/hora
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+// Filtrar reservas
+function filterReservas() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const tipoFilter = document.getElementById('filterTipo').value;
+    const estadoFilter = document.getElementById('filterEstado').value;
+    
+    let filtered = reservas.filter(reserva => {
+        const recurso = getNombreRecurso(reserva).toLowerCase();
+        const persona = getNombrePersona(reserva.id_persona).toLowerCase();
+        const matchSearch = recurso.includes(searchTerm) || persona.includes(searchTerm);
+        
+        const tipo = reserva.id_sala ? 'sala' : 'articulo';
+        const matchTipo = !tipoFilter || tipo === tipoFilter;
+        
+        const estado = getEstadoReserva(reserva);
+        const matchEstado = !estadoFilter || estado === estadoFilter;
+        
+        return matchSearch && matchTipo && matchEstado;
+    });
+    
+    renderReservas(filtered);
+}
+
+// Abrir modal
+function openModal(reserva = null) {
+    document.getElementById('reservaForm').reset();
+    document.getElementById('reservaId').value = '';
+    document.getElementById('modalTitle').textContent = 'Nueva Reserva';
+    toggleTipoReserva();
+    reservaModal.show();
+}
+
+// Ver detalles de reserva
+function viewReserva(id) {
+    const reserva = reservas.find(r => r.id === id);
+    if (!reserva) return;
+    
+    alert(`Detalles de Reserva #${id}\n\nTipo: ${reserva.id_sala ? 'Sala' : 'Artículo'}\nRecurso: ${getNombreRecurso(reserva)}\nPersona: ${getNombrePersona(reserva.id_persona)}\nInicio: ${formatDateTime(reserva.fecha_hora_inicio)}\nFin: ${formatDateTime(reserva.fecha_hora_fin)}\nEstado: ${getEstadoReserva(reserva)}`);
+}
+
+// Editar reserva
+function editReserva(id) {
+    const reserva = reservas.find(r => r.id === id);
+    if (!reserva) return;
+    
+    // Verificar que es una reserva futura
+    const estado = getEstadoReserva(reserva);
+    if (estado !== 'futuro') {
+        showError('Solo se pueden editar reservas futuras');
+        return;
+    }
+    
+    // Cargar datos en el formulario
+    document.getElementById('reservaId').value = reserva.id;
+    document.getElementById('idPersona').value = reserva.id_persona;
+    
+    // Convertir fechas a formato ISO para el input datetime-local
+    const fechaInicio = new Date(reserva.fecha_hora_inicio);
+    const fechaFin = new Date(reserva.fecha_hora_fin);
+    
+    document.getElementById('fechaInicio').value = fechaInicio.toISOString().slice(0, 16);
+    document.getElementById('fechaFin').value = fechaFin.toISOString().slice(0, 16);
+    
+    // Configurar tipo de reserva
+    if (reserva.id_sala) {
+        document.getElementById('tipoReserva').value = 'sala';
+        toggleTipoReserva();
+        document.getElementById('idSala').value = reserva.id_sala;
+    } else {
+        document.getElementById('tipoReserva').value = 'articulo';
+        toggleTipoReserva();
+        document.getElementById('idArticulo').value = reserva.id_articulo;
+    }
+    
+    document.getElementById('modalTitle').textContent = `Editar Reserva #${id}`;
+    reservaModal.show();
+}
+
+// Guardar reserva
+async function saveReserva() {
+    const form = document.getElementById('reservaForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const reservaId = document.getElementById('reservaId').value;
+    const tipo = document.getElementById('tipoReserva').value;
+    
+    // Obtener las fechas del formulario
+    let fechaInicio = document.getElementById('fechaInicio').value;
+    let fechaFin = document.getElementById('fechaFin').value;
+    
+    // Convertir a formato ISO con segundos si no los tiene
+    // El input datetime-local devuelve: "2025-10-17T14:30"
+    // Necesitamos: "2025-10-17T14:30:00"
+    if (fechaInicio && fechaInicio.length === 16) {
+        fechaInicio += ':00';
+    }
+    if (fechaFin && fechaFin.length === 16) {
+        fechaFin += ':00';
+    }
+    
+    const data = {
+        id_persona: parseInt(document.getElementById('idPersona').value),
+        fecha_hora_inicio: fechaInicio,
+        fecha_hora_fin: fechaFin,
+        id_sala: tipo === 'sala' ? parseInt(document.getElementById('idSala').value) : null,
+        id_articulo: tipo === 'articulo' ? parseInt(document.getElementById('idArticulo').value) : null
+    };
+    
+    try {
+        if (reservaId) {
+            // Actualizar reserva existente
+            await axios.put(`/api/v1/reservas/${reservaId}`, data);
+            showSuccess('Reserva actualizada exitosamente');
+        } else {
+            // Crear nueva reserva
+            await axios.post('/api/v1/reservas/', data);
+            showSuccess('Reserva creada exitosamente');
+        }
+        reservaModal.hide();
+        loadReservas();
+    } catch (error) {
+        console.error('Error guardando reserva:', error);
+        
+        // Mostrar mensaje de error más detallado
+        let errorMsg = 'Error al guardar la reserva';
+        if (error.response?.data?.detail) {
+            if (Array.isArray(error.response.data.detail)) {
+                // Errores de validación de Pydantic
+                errorMsg = error.response.data.detail.map(err => {
+                    const location = err.loc ? err.loc.join('.') : 'unknown';
+                    const message = err.msg || err.message || 'Error desconocido';
+                    const inputValue = err.input !== undefined ? ` (valor: ${err.input})` : '';
+                    return `• ${location}: ${message}${inputValue}`;
+                }).join('\n');
+            } else {
+                errorMsg = error.response.data.detail;
+            }
+        }
+        showError(errorMsg);
+    }
+}
+
+// Eliminar reserva
+async function deleteReserva(id) {
+    if (!confirm('¿Está seguro de eliminar esta reserva?')) return;
+    
+    try {
+        await axios.delete(`/api/v1/reservas/${id}`);
+        loadReservas();
+        showSuccess('Reserva eliminada exitosamente');
+    } catch (error) {
+        console.error('Error eliminando reserva:', error);
+        showError('Error al eliminar la reserva');
+    }
+}
+
+// Mostrar mensajes
+function showSuccess(message) {
+    alert('✅ ' + message);
+}
+
+function showError(message) {
+    // Si el mensaje es un objeto, extraer el texto apropiado
+    if (typeof message === 'object') {
+        if (message.detail) {
+            message = message.detail;
+        } else if (message.message) {
+            message = message.message;
+        } else {
+            message = JSON.stringify(message);
+        }
+    }
+    
+    // Si el mensaje tiene múltiples líneas, usar un alert más grande
+    if (message.includes('\n')) {
+        alert('❌ Error:\n\n' + message);
+    } else {
+        alert('❌ ' + message);
+    }
+}
+
+// ===== GESTIÓN DE ARTÍCULOS EN RESERVAS =====
+
+// Actualizar información del artículo seleccionado
+function actualizarInfoArticulo() {
+    const selectArticulo = document.getElementById('articuloSelect');
+    const inputCantidad = document.getElementById('articuloCantidad');
+    
+    // Simplemente resetear la cantidad a 1
+    if (!selectArticulo.value) {
+        inputCantidad.value = '1';
+        return;
+    }
+    
+    inputCantidad.value = '1';
+}
+
+// Cargar disponibilidad de artículos en el select
+async function cargarDisponibilidadArticulos(reservaId) {
+    const reserva = reservas.find(r => r.id === reservaId);
+    if (!reserva) {
+        showError('No se encontró la reserva');
+        return;
+    }
+    
+    const select = document.getElementById('articuloSelect');
+    const valorActual = select.value; // Guardar selección actual
+    select.innerHTML = '<option value="">Cargando disponibilidad...</option>';
+    
+    try {
+        // Obtener disponibilidad de artículos para el período de la reserva
+        // NO pasamos reserva_id para que incluya TODAS las reservas (incluida esta)
+        // así sabemos si realmente hay stock disponible
+        const response = await axios.get('/api/v1/articulos/disponibilidad', {
+            params: {
+                fecha_inicio: reserva.fecha_hora_inicio,
+                fecha_fin: reserva.fecha_hora_fin
+                // NO incluir reserva_id aquí
+            }
+        });
+        
+        const articulosDisponibilidad = response.data;
+        
+        console.log('Disponibilidad de artículos para reserva', reservaId, ':', articulosDisponibilidad);
+        
+        // Actualizar select con disponibilidad real
+        select.innerHTML = '<option value="">Seleccione un artículo...</option>';
+        
+        // Solo mostrar artículos con disponibilidad > 0
+        console.log('Disponibilidad recibida:', articulosDisponibilidad);
+        
+        articulosDisponibilidad.forEach(articulo => {
+            // Solo agregar al select si tiene cantidad disponible
+            if (articulo.cantidad_disponible > 0) {
+                const option = document.createElement('option');
+                option.value = articulo.id;
+                option.textContent = `${articulo.nombre} (Disponible: ${articulo.cantidad_disponible} de ${articulo.cantidad_total})`;
+                select.appendChild(option);
+                console.log(`Agregado: ${articulo.nombre} - Disponible: ${articulo.cantidad_disponible}`);
+            } else {
+                console.log(`Omitido (sin stock): ${articulo.nombre} - Disponible: ${articulo.cantidad_disponible}`);
+            }
+        });
+        
+        // Mensaje si no hay artículos disponibles
+        if (select.options.length === 1) { // Solo tiene la opción "Seleccione..."
+            const option = document.createElement('option');
+            option.disabled = true;
+            option.textContent = 'No hay artículos disponibles para agregar';
+            select.appendChild(option);
+        }
+        
+        // Restaurar selección si todavía existe
+        if (valorActual && select.querySelector(`option[value="${valorActual}"]`)) {
+            select.value = valorActual;
+        }
+        
+    } catch (error) {
+        console.error('Error obteniendo disponibilidad:', error);
+        // Fallback: mostrar artículos sin cálculo de disponibilidad
+        select.innerHTML = '<option value="">Seleccione un artículo...</option>';
+        articulos.filter(a => a.disponible).forEach(articulo => {
+            select.innerHTML += `<option value="${articulo.id}">${articulo.nombre}</option>`;
+        });
+    }
+}
+
+// Abrir modal de gestión de artículos
+async function gestionarArticulos(reservaId) {
+    currentReservaId = reservaId;
+    document.getElementById('reservaIdArticulos').value = reservaId;
+    
+    // Cargar disponibilidad inicial
+    await cargarDisponibilidadArticulos(reservaId);
+    
+    // Cargar artículos asignados
+    await loadArticulosAsignados(reservaId);
+    
+    articulosModal.show();
+}
+
+// Cargar artículos asignados a una reserva
+async function loadArticulosAsignados(reservaId) {
+    const container = document.getElementById('articulosAsignados');
+    
+    try {
+        const response = await axios.get(`/api/v1/reservas/${reservaId}/articulos`);
+        articulosAsignadosActuales = response.data; // Guardar para referencia
+        
+        if (articulosAsignadosActuales.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-inbox me-2"></i>
+                    No hay artículos asignados a esta reserva
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="list-group">
+                ${articulosAsignadosActuales.map(art => `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-box text-primary me-2"></i>
+                            <strong>${art.nombre}</strong>
+                            ${art.descripcion ? `<br><small class="text-muted">${art.descripcion}</small>` : ''}
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            ${art.categoria ? `<span class="badge bg-secondary">${art.categoria}</span>` : ''}
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-secondary" onclick="modificarCantidadArticulo(${art.id}, -1)" title="Reducir cantidad" ${art.cantidad <= 1 ? 'disabled' : ''}>
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button class="btn btn-outline-info" disabled style="cursor: default;">
+                                    ${art.cantidad}
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="modificarCantidadArticulo(${art.id}, 1)" title="Aumentar cantidad">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarArticuloDeReserva(${art.id})" title="Eliminar completamente">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        // Inicializar el estado del formulario de agregar/actualizar
+        actualizarInfoArticulo();
+        
+    } catch (error) {
+        console.error('Error cargando artículos asignados:', error);
+        container.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error al cargar los artículos asignados
+            </div>
+        `;
+    }
+}
+
+// Agregar artículo a la reserva
+async function agregarArticuloAReserva() {
+    const articuloId = document.getElementById('articuloSelect').value;
+    const cantidad = parseInt(document.getElementById('articuloCantidad').value);
+    
+    if (!articuloId) {
+        showError('Debe seleccionar un artículo');
+        return;
+    }
+    
+    if (!cantidad || cantidad < 1) {
+        showError('La cantidad debe ser mayor a 0');
+        return;
+    }
+    
+    try {
+        await axios.post(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}?cantidad=${cantidad}`);
+        showSuccess('Artículo agregado/actualizado exitosamente');
+        
+        // Recargar lista de artículos asignados
+        await loadArticulosAsignados(currentReservaId);
+        
+        // Recargar disponibilidad del select
+        await cargarDisponibilidadArticulos(currentReservaId);
+        
+        // Actualizar el estado del formulario (el select mantiene su valor)
+        actualizarInfoArticulo();
+    } catch (error) {
+        console.error('Error agregando artículo:', error);
+        showError(error.response?.data?.detail || 'Error al agregar el artículo');
+    }
+}
+
+// Modificar cantidad de un artículo en la reserva
+async function modificarCantidadArticulo(articuloId, cambio) {
+    try {
+        // Encontrar el artículo actual
+        const articuloActual = articulosAsignadosActuales.find(a => a.id === articuloId);
+        if (!articuloActual) {
+            showError('Artículo no encontrado');
+            return;
+        }
+        
+        const nuevaCantidad = articuloActual.cantidad + cambio;
+        
+        if (nuevaCantidad < 1) {
+            showError('La cantidad mínima es 1. Use el botón de eliminar para quitar el artículo.');
+            return;
+        }
+        
+        // Usar el endpoint POST con modo='reemplazar' para establecer la cantidad exacta
+        await axios.post(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}?cantidad=${nuevaCantidad}&modo=reemplazar`);
+        showSuccess(`Cantidad actualizada a ${nuevaCantidad}`);
+        
+        // Recargar lista
+        await loadArticulosAsignados(currentReservaId);
+        
+        // Recargar disponibilidad del select
+        await cargarDisponibilidadArticulos(currentReservaId);
+        
+        // Actualizar el estado del formulario
+        actualizarInfoArticulo();
+    } catch (error) {
+        console.error('Error modificando cantidad:', error);
+        showError(error.response?.data?.detail || 'Error al modificar la cantidad');
+    }
+}
+
+// Eliminar artículo de la reserva
+async function eliminarArticuloDeReserva(articuloId) {
+    if (!confirm('¿Está seguro de eliminar este artículo completamente de la reserva?')) return;
+    
+    try {
+        await axios.delete(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}`);
+        showSuccess('Artículo eliminado exitosamente');
+        
+        // Recargar lista
+        await loadArticulosAsignados(currentReservaId);
+        
+        // Recargar disponibilidad del select
+        await cargarDisponibilidadArticulos(currentReservaId);
+        
+        // Actualizar el estado del formulario
+        actualizarInfoArticulo();
+    } catch (error) {
+        console.error('Error eliminando artículo:', error);
+        showError('Error al eliminar el artículo');
+    }
+}
+</script>
 {% endblock %}

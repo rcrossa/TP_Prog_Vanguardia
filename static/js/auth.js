@@ -2,18 +2,40 @@ class AuthManager {
     constructor() {
         // Intentar obtener token de localStorage primero, luego de cookies
         this.token = localStorage.getItem('token') || this.getCookie('token');
+        
         this.user = null;
-        if (localStorage.getItem('user')) {
+        const userStr = localStorage.getItem('user');
+        
+        if (userStr) {
             try {
-                this.user = JSON.parse(localStorage.getItem('user'));
+                this.user = JSON.parse(userStr);
             } catch (e) {
                 console.error('Error parsing user data:', e);
                 localStorage.removeItem('user');
             }
         }
         
+        // Si hay token pero no hay usuario, obtenerlo del servidor
+        if (this.token && !this.user) {
+            this.recoverUserFromServer();
+        }
+        
         this.setupAxiosInterceptors();
         this.init();
+    }
+    
+    async recoverUserFromServer() {
+        try {
+            const response = await axios.get('/api/v1/personas/me');
+            this.setUser(response.data);
+        } catch (error) {
+            console.error('No se pudo recuperar usuario del servidor:', error);
+            
+            // Solo hacer logout si es error 401 (no autenticado)
+            if (error.response?.status === 401) {
+                this.logout();
+            }
+        }
     }
     
     getCookie(name) {
@@ -32,9 +54,6 @@ class AuthManager {
             const token = this.getToken();
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
-                console.log('Token agregado a request:', config.url);
-            } else {
-                console.log('No hay token para request:', config.url);
             }
             return config;
         });
@@ -43,9 +62,37 @@ class AuthManager {
         axios.interceptors.response.use(
             (response) => response,
             (error) => {
-                if (error.response?.status === 401) {
+                const status = error.response?.status;
+                const url = error.config?.url;
+                const detail = error.response?.data?.detail;
+                
+                // Solo hacer logout en errores de autenticación REALES:
+                // 1. Error 401 (siempre es problema de token)
+                // 2. Error 403 SOLO en endpoints de autenticación (como /me)
+                //    pero NO en endpoints protegidos por permisos (como /personas)
+                
+                if (status === 401) {
+                    // 401 = No autenticado, token inválido o expirado
                     this.logout();
-                    window.location.href = '/login';
+                    if (window.location.pathname !== '/login') {
+                        alert('⚠️ Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+                        window.location.href = '/login';
+                    }
+                } else if (status === 403) {
+                    // 403 puede ser:
+                    // - "Usuario inactivo" = problema de autenticación → logout
+                    // - "No tienes permisos de administrador" = problema de permisos → NO logout
+                    const isAuthProblem = detail?.includes('inactivo') || 
+                                         detail?.includes('inválido') ||
+                                         url?.includes('/me');
+                    
+                    if (isAuthProblem) {
+                        this.logout();
+                        if (window.location.pathname !== '/login') {
+                            alert('⚠️ Tu cuenta está inactiva o tu sesión expiró.');
+                            window.location.href = '/login';
+                        }
+                    }
                 }
                 return Promise.reject(error);
             }
@@ -67,25 +114,18 @@ class AuthManager {
     }
     
     initLoginPage() {
-        console.log('Inicializando página de login...');
-        
         // Si ya está autenticado, verificar que el token sea válido antes de redirigir
         if (this.isAuthenticated()) {
-            console.log('Usuario ya autenticado, verificando token...');
             this.getCurrentUser()
                 .then(() => {
-                    console.log('Token válido, redirigiendo a dashboard...');
                     window.location.href = '/';
                 })
                 .catch((error) => {
-                    console.log('Token inválido, limpiando y permaneciendo en login:', error);
                     this.logout();
                     // No redirigir, quedarse en login
                 });
             return;
         }
-        
-        console.log('Usuario no autenticado, configurando formulario de login...');
         const loginForm = document.getElementById('loginForm');
         const togglePassword = document.querySelector('.toggle-password');
         
@@ -99,22 +139,20 @@ class AuthManager {
     }
     
     checkAuthStatus() {
-        console.log('Verificando estado de autenticación...');
-        
         if (!this.isAuthenticated()) {
-            console.log('Usuario no autenticado, redirigiendo a login...');
             // Evitar loop infinito - solo redirigir si no estamos ya en login
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
         } else {
-            console.log('Usuario autenticado, verificando token...');
             // Verificar que el token siga siendo válido
             this.getCurrentUser().catch((error) => {
-                console.log('Token inválido o expirado:', error);
-                this.logout();
-                if (window.location.pathname !== '/login') {
-                    window.location.href = '/login';
+                // Solo hacer logout si es error 401 (no autenticado)
+                if (error.response?.status === 401) {
+                    this.logout();
+                    if (window.location.pathname !== '/login') {
+                        window.location.href = '/login';
+                    }
                 }
             });
         }
@@ -139,6 +177,10 @@ class AuthManager {
             });
             
             const { access_token, user } = response.data;
+            
+            if (!user || !user.id) {
+                throw new Error('Error de autenticación: datos de usuario incompletos');
+            }
             
             this.setToken(access_token);
             this.setUser(user);
@@ -173,8 +215,6 @@ class AuthManager {
         
         // Limpiar headers de axios
         delete axios.defaults.headers.common['Authorization'];
-        
-        this.updateUI();
     }
     
     updateUI() {
@@ -259,6 +299,9 @@ class AuthManager {
     setUser(user) {
         this.user = user;
         localStorage.setItem('user', JSON.stringify(user));
+        
+        // Aplicar o remover clase is-admin inmediatamente
+        this.applyAdminClass();
     }
     
     getUser() {
@@ -274,7 +317,31 @@ class AuthManager {
         this.setUser(response.data);
         return response.data;
     }
+    
+    // Método para aplicar la clase de admin al body inmediatamente
+    applyAdminClass() {
+        // Verificación ESTRICTA: solo si is_admin es exactamente true
+        if (this.user && this.user.is_admin === true) {
+            document.body.classList.add('is-admin');
+        } else {
+            document.body.classList.remove('is-admin');
+        }
+    }
 }
 
 // Crear instancia global
 window.authManager = new AuthManager();
+window.auth = window.authManager; // Alias para compatibilidad
+
+// Aplicar clase de admin inmediatamente si hay usuario en localStorage
+// Esto evita el "flash" de contenido al recargar la página
+if (window.authManager.user) {
+    // Verificación ESTRICTA: solo agregar clase si is_admin es EXACTAMENTE true
+    if (window.authManager.user.is_admin === true) {
+        document.body.classList.add('is-admin');
+    } else {
+        document.body.classList.remove('is-admin');
+    }
+} else {
+    document.body.classList.remove('is-admin');
+}
