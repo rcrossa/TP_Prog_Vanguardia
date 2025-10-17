@@ -23,76 +23,15 @@ router = APIRouter(prefix="/personas", tags=["personas"])
     "/", 
     response_model=Persona, 
     status_code=status.HTTP_201_CREATED,
-    summary="➕ Crear nueva persona",
-    description="Registra una nueva persona en el sistema con validación de email único",
-    response_description="Persona creada exitosamente con ID asignado",
-    responses={
-        201: {
-            "description": "Persona creada exitosamente",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "id": 1,
-                        "nombre": "Juan Pérez",
-                        "email": "juan.perez@email.com",
-                        "is_admin": False,
-                        "is_active": True
-                    }
-                }
-            }
-        },
-        400: {
-            "description": "Error de validación - Email ya existe o datos inválidos",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Ya existe una persona con el email juan.perez@email.com"
-                    }
-                }
-            }
-        }
-    }
+    summary="Crear nueva persona",
+    description="Registra una nueva persona en el sistema (solo administradores)"
 )
 def create_persona(
     persona_data: PersonaCreate,
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_admin_user)
 ):
-    """
-    ## 👤 Crear una nueva persona (Solo Administradores)
-    
-    Registra una nueva persona en el sistema con las siguientes validaciones:
-    
-    ### � Permisos Requeridos
-    - **Solo administradores** pueden crear nuevas personas
-    
-    ### �📝 Campos Requeridos
-    - **nombre**: Nombre completo de la persona (mínimo 2 caracteres)
-    - **email**: Dirección de email válida y única en el sistema
-    - **password**: Contraseña del usuario (mínimo 6 caracteres)
-    - **is_admin**: Permisos de administrador (true/false)
-    - **is_active**: Estado del usuario (true/false)
-    
-    ### ✅ Validaciones Automáticas
-    - Email debe tener formato válido
-    - Email debe ser único (no puede repetirse)
-    - Nombre no puede estar vacío
-    - Contraseña se hashea automáticamente
-    
-    ### 📤 Respuesta
-    Retorna la persona creada con su ID único asignado automáticamente.
-    
-    ### 💡 Ejemplo de Uso
-    ```json
-    {
-        "nombre": "María González",
-        "email": "maria.gonzalez@universidad.edu",
-        "password": "securepassword123",
-        "is_admin": false,
-        "is_active": true
-    }
-    ```
-    """
+    """Crear nueva persona en el sistema (solo administradores)."""
     try:
         return PersonaService.create_persona(db, persona_data)
     except ValueError as e:
@@ -104,19 +43,7 @@ def create_persona(
 
 @router.post("/login", response_model=PersonaLoginResponse)
 def login_user(login_data: PersonaLogin, db: Session = Depends(get_db)):
-    """
-    Autenticar usuario y obtener token de acceso.
-    
-    Args:
-        login_data: Credenciales de login (email y password)
-        db: Sesión de base de datos
-        
-    Returns:
-        Token de acceso y datos del usuario
-        
-    Raises:
-        HTTPException: Si las credenciales son incorrectas
-    """
+    """Autenticar usuario y obtener token de acceso."""
     user = PersonaService.authenticate_user(db, login_data.email, login_data.password)
     if not user:
         raise HTTPException(
@@ -140,15 +67,7 @@ def login_user(login_data: PersonaLogin, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=Persona)
 def get_current_user_info(current_user: PersonaModel = Depends(get_current_user)):
-    """
-    Obtener información del usuario autenticado actualmente.
-    
-    Args:
-        current_user: Usuario actual obtenido del token JWT
-        
-    Returns:
-        Datos del usuario autenticado
-    """
+    """Obtener información del usuario autenticado."""
     return current_user
 
 
@@ -159,16 +78,7 @@ def get_personas(
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_admin_user)
 ):
-    """
-    Obtener lista de personas con paginación (Solo Administradores).
-    
-    - **skip**: Número de registros a omitir (default: 0)
-    - **limit**: Máximo número de registros a retornar (default: 100)
-    
-    🔐 **Requiere permisos de administrador**
-    
-    Retorna lista de personas ordenadas por ID.
-    """
+    """Obtener lista de personas con paginación (solo administradores)."""
     if limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -184,13 +94,7 @@ def get_persona(
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_admin_user)
 ):
-    """
-    Obtener una persona específica por su ID.
-    
-    - **persona_id**: ID único de la persona
-    
-    Retorna los datos completos de la persona.
-    """
+    """Obtener una persona específica por ID."""
     persona = PersonaService.get_persona_by_id(db, persona_id)
     if not persona:
         raise HTTPException(
@@ -206,8 +110,7 @@ def get_persona_by_email(
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_admin_user)
 ):
-    """
-    Obtener una persona por su dirección de email.
+    """Obtener una persona por su email.
     
     - **email**: Dirección de email de la persona
     
@@ -229,15 +132,7 @@ def update_persona(
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_admin_user)
 ):
-    """
-    Actualizar los datos de una persona existente.
-    
-    - **persona_id**: ID de la persona a actualizar
-    - **nombre**: Nuevo nombre (opcional)
-    - **email**: Nuevo email (opcional, debe ser único)
-    
-    Retorna los datos actualizados de la persona.
-    """
+    """Actualizar datos de una persona existente."""
     try:
         persona = PersonaService.update_persona(db, persona_id, persona_data)
         if not persona:
@@ -259,14 +154,7 @@ def delete_persona(
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_admin_user)
 ):
-    """
-    Eliminar una persona del sistema.
-    
-    - **persona_id**: ID de la persona a eliminar
-    
-    No retorna contenido si la eliminación es exitosa.
-    Solo se puede eliminar si no tiene reservas activas.
-    """
+    """Eliminar una persona del sistema."""
     try:
         success = PersonaService.delete_persona(db, persona_id)
         if not success:
@@ -286,23 +174,14 @@ def count_personas(
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_admin_user)
 ):
-    """
-    Obtener el número total de personas registradas.
-    
-    Retorna el conteo total de personas en el sistema.
-    """
+    """Obtener el número total de personas registradas."""
     count = PersonaService.count_personas(db)
     return {"total": count}
 
 
 @router.post("/web-login")
 def web_login_user(login_data: PersonaLogin, db: Session = Depends(get_db)):
-    """
-    Autenticar usuario para navegación web y configurar cookies.
-    
-    Este endpoint es específico para el login desde el navegador,
-    configurando automáticamente las cookies necesarias.
-    """
+    """Autenticar usuario para navegación web y configurar cookies."""
     from fastapi.responses import JSONResponse
     
     user = PersonaService.authenticate_user(db, login_data.email, login_data.password)

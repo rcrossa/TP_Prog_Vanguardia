@@ -20,14 +20,7 @@ def create_sala(
     sala_data: SalaCreate,
     db: Session = Depends(get_db)
 ):
-    """
-    Crear una nueva sala.
-    
-    - **nombre**: Nombre de la sala
-    - **capacidad**: Capacidad máxima de la sala (debe ser mayor a 0)
-    
-    Retorna la sala creada con su ID asignado.
-    """
+    """Crear una nueva sala."""
     try:
         return SalaService.create_sala(db, sala_data)
     except ValueError as e:
@@ -44,15 +37,7 @@ def get_salas(
     min_capacidad: Optional[int] = Query(None, description="Capacidad mínima requerida"),
     db: Session = Depends(get_db)
 ):
-    """
-    Obtener lista de salas con filtros opcionales.
-    
-    - **skip**: Número de registros a omitir (default: 0)
-    - **limit**: Máximo número de registros a retornar (default: 100)
-    - **min_capacidad**: Capacidad mínima requerida (opcional)
-    
-    Retorna lista de salas filtradas.
-    """
+    """Obtener lista de salas con filtros opcionales."""
     if limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -70,16 +55,7 @@ def get_salas_by_capacidad(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    """
-    Obtener salas por rango de capacidad.
-    
-    - **min_capacidad**: Capacidad mínima requerida
-    - **max_capacidad**: Capacidad máxima permitida (opcional)
-    - **skip**: Número de registros a omitir (default: 0)
-    - **limit**: Máximo número de registros a retornar (default: 100)
-    
-    Retorna salas que cumplan con el rango de capacidad especificado.
-    """
+    """Obtener salas por rango de capacidad."""
     if limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -106,13 +82,7 @@ def get_sala(
     sala_id: int,
     db: Session = Depends(get_db)
 ):
-    """
-    Obtener una sala específica por su ID.
-    
-    - **sala_id**: ID único de la sala
-    
-    Retorna los datos completos de la sala.
-    """
+    """Obtener una sala específica por ID."""
     sala = SalaService.get_sala_by_id(db, sala_id)
     if not sala:
         raise HTTPException(
@@ -128,15 +98,7 @@ def update_sala(
     sala_data: SalaUpdate,
     db: Session = Depends(get_db)
 ):
-    """
-    Actualizar los datos de una sala existente.
-    
-    - **sala_id**: ID de la sala a actualizar
-    - **nombre**: Nuevo nombre (opcional)
-    - **capacidad**: Nueva capacidad (opcional, debe ser mayor a 0)
-    
-    Retorna los datos actualizados de la sala.
-    """
+    """Actualizar datos de una sala existente."""
     try:
         sala = SalaService.update_sala(db, sala_id, sala_data)
         if not sala:
@@ -157,14 +119,7 @@ def delete_sala(
     sala_id: int,
     db: Session = Depends(get_db)
 ):
-    """
-    Eliminar una sala del sistema.
-    
-    - **sala_id**: ID de la sala a eliminar
-    
-    No retorna contenido si la eliminación es exitosa.
-    Solo se puede eliminar si no tiene reservas activas.
-    """
+    """Eliminar una sala del sistema."""
     try:
         success = SalaService.delete_sala(db, sala_id)
         if not success:
@@ -184,12 +139,6 @@ def count_salas(
     min_capacidad: Optional[int] = Query(None, description="Filtrar conteo por capacidad mínima"),
     db: Session = Depends(get_db)
 ):
-    """
-    Obtener el número total de salas.
-    
-    - **min_capacidad**: Filtrar conteo por capacidad mínima (opcional)
-    
-    Retorna el conteo de salas en el sistema.
-    """
+    """Obtener el número total de salas."""
     count = SalaService.count_salas(db, min_capacidad)
     return {"total": count, "min_capacidad": min_capacidad}
