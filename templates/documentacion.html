@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Documentación del Proyecto{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@0.16"></script>
+<style>
+    .container-fluid {
+        height: calc(100vh - 56px);
+        padding: 0;
+    }
+    
+    #markmap-container {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .toolbar {
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .toolbar button {
+        margin: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <div class="btn-group-vertical">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="zoomIn()" title="Acercar">
+            <i class="fas fa-search-plus"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="zoomOut()" title="Alejar">
+            <i class="fas fa-search-minus"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="resetZoom()" title="Reiniciar vista">
+            <i class="fas fa-compress-arrows-alt"></i>
+        </button>
+        <hr class="my-1">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()" title="Pantalla completa">
+            <i class="fas fa-expand"></i>
+        </button>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <svg id="markmap-container"></svg>
+</div>
+
+<script>
+    // Markdown content pasado desde el backend
+    const markdownContent = {{ readme_content|tojson }};
+    
+    // Función para inicializar el mapa mental
+    async function initMarkmap() {
+        try {
+            // Esperar a que markmap esté disponible
+            if (typeof markmap === 'undefined') {
+                console.log('Esperando a que Markmap se cargue...');
+                setTimeout(initMarkmap, 100);
+                return;
+            }
+            
+            const { Markmap, loadCSS, loadJS } = markmap;
+            
+            // Crear instancia de Markmap
+            const mm = Markmap.create('#markmap-container', {
+                duration: 500,
+                maxWidth: 300,
+                color: (node) => {
+                    // Colores según el nivel de profundidad
+                    const colors = ['#4285f4', '#34a853', '#fbbc04', '#ea4335', '#9c27b0'];
+                    return colors[node.depth % colors.length];
+                },
+                paddingX: 20,
+                autoFit: true,
+                initialExpandLevel: 2
+            });
+            
+            // Transformar el markdown y renderizar
+            const { root } = markmap.transform(markdownContent);
+            mm.setData(root);
+            mm.fit();
+            
+            // Guardar referencia global para controles
+            window.markmapInstance = mm;
+            
+        } catch (error) {
+            console.error('Error al inicializar Markmap:', error);
+        }
+    }
+    
+    // Funciones de control
+    function zoomIn() {
+        if (window.markmapInstance) {
+            const svg = window.markmapInstance.svg;
+            const currentScale = svg.getScale();
+            svg.setScale(currentScale * 1.2);
+        }
+    }
+    
+    function zoomOut() {
+        if (window.markmapInstance) {
+            const svg = window.markmapInstance.svg;
+            const currentScale = svg.getScale();
+            svg.setScale(currentScale / 1.2);
+        }
+    }
+    
+    function resetZoom() {
+        if (window.markmapInstance) {
+            window.markmapInstance.fit();
+        }
+    }
+    
+    function toggleFullscreen() {
+        const container = document.querySelector('.container-fluid');
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => {
+                console.error('Error al entrar en pantalla completa:', err);
+            });
+            // Cambiar icono
+            event.target.closest('button').querySelector('i').classList.replace('fa-expand', 'fa-compress');
+        } else {
+            document.exitFullscreen();
+            event.target.closest('button').querySelector('i').classList.replace('fa-compress', 'fa-expand');
+        }
+    }
+    
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', () => {
+        initMarkmap();
+    });
+</script>
+{% endblock %}

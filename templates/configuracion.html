@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración del Sistema{% endblock %}
+
+{% block extra_head %}
+<!-- Markmap dependencies (offline/local) -->
+<script src="/static/js/vendor/markmap/d3.min.js"></script>
+<!-- Importante: markmap-lib ANTES que markmap-view para evitar sobreescritura de window.markmap -->
+<script src="/static/js/vendor/markmap/markmap-lib.min.js"></script>
+<script src="/static/js/vendor/markmap/markmap-view.min.js"></script>
+<style>
+    .config-stats .card { 
+        cursor: default; 
+        transition: transform 0.2s; 
+    }
+    .config-stats .card:hover { 
+        transform: translateY(-2px); 
+    }
+    
+    #markmap-wrapper {
+        position: relative;
+        width: 100%;
+        height: 70vh;
+        min-height: 500px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        background: #fff;
+    }
+    
+    #markmap-container {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .markmap-toolbar {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 1000;
+        background: white;
+        padding: 8px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .markmap-toolbar .btn {
+        margin: 0 2px;
+    }
+    
+    /* Fullscreen styles */
+    #markmap-wrapper.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 9999;
+        border-radius: 0;
+    }
+    
+    #markmap-wrapper.fullscreen .markmap-toolbar {
+        background: rgba(255, 255, 255, 0.95);
+    }
+    
+    .loading-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #666;
+        font-size: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-cog me-2"></i>Configuración</h2>
+            <small class="text-muted">Panel de administración</small>
+        </div>
+    </div>
+
+    <div class="row config-stats mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Usuarios</h6>
+                    <h3 class="card-text">{{ stats.total_usuarios }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Reservas</h6>
+                    <h3 class="card-text">{{ stats.total_reservas }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Salas</h6>
+                    <h3 class="card-text">{{ stats.total_salas }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Artículos</h6>
+                    <h3 class="card-text">{{ stats.total_articulos }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" id="configTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="prefs-tab" data-bs-toggle="tab" data-bs-target="#prefs" type="button" role="tab">Preferencias</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab">Documentación técnica</button>
+        </li>
+    </ul>
+
+    <div class="tab-content p-3 border border-top-0" id="configTabsContent">
+    <div class="tab-pane fade" id="prefs" role="tabpanel">
+            <h5>Preferencias del sistema</h5>
+            <form id="prefsForm" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tema</label>
+                    <select id="themeSelect" class="form-select">
+                        <option value="light">Claro</option>
+                        <option value="dark">Oscuro</option>
+                        <option value="auto">Auto (sistema)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Notificaciones</label>
+                    <select id="notifySelect" class="form-select">
+                        <option value="all">Todas</option>
+                        <option value="important">Solo importantes</option>
+                        <option value="none">Ninguna</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary" onclick="savePrefs()">Guardar preferencias</button>
+                </div>
+            </form>
+        </div>
+
+    <div class="tab-pane fade show active" id="docs" role="tabpanel">
+            <div id="markmap-wrapper">
+                <div class="markmap-toolbar">
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="cfgZoomIn()" title="Acercar">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="cfgZoomOut()" title="Alejar">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="cfgReset()" title="Ajustar">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" onclick="cfgToggleFullscreen()" title="Pantalla completa" id="fullscreenBtn">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <svg id="markmap-container"></svg>
+                <div class="loading-message" id="loadingMsg">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Cargando mapa mental...
+                </div>
+            </div>
+            <p class="mt-3 text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                El mapa mental se genera automáticamente a partir del README del proyecto.
+                Use los controles para navegar y explorar la documentación.
+            </p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- README JSON inyectado de forma segura para Markmap -->
+<script id="readmeJson" type="application/json">{{ readme_content|tojson }}</script>
+<script>
+'use strict';
+
+// ========================================
+// VARIABLES GLOBALES (CONFIG MODULE)
+// ========================================
+let cfgMarkmapInit = false;
+let cfgMMInstance = null;
+let cfgSvg = null;
+// Inyectar README de forma segura como string JSON
+const cfgReadmeContent = JSON.parse(document.getElementById('readmeJson').textContent);
+let cfgMarkmapAttempts = 0;
+const cfgMaxAttempts = 30; // ~9s con intervalos de 300ms
+
+// ========================================
+// FUNCIONES DE PREFERENCIAS
+// ========================================
+
+/**
+ * Guarda las preferencias del usuario en localStorage
+ */
+function savePreferences() {
+    const theme = document.getElementById('themeSelect').value;
+    const notify = document.getElementById('notifySelect').value;
+    localStorage.setItem('prefs_theme', theme);
+    localStorage.setItem('prefs_notify', notify);
+    alert('Preferencias guardadas exitosamente');
+}
+
+// ========================================
+// FUNCIONES DE MARKMAP - ZOOM Y FULLSCREEN
+// ========================================
+
+/**
+ * Aumenta el zoom del mapa mental
+ */
+function cfgZoomIn() {
+    tryZoomBy(1.2);
+}
+
+/**
+ * Disminuye el zoom del mapa mental
+ */
+function cfgZoomOut() {
+    tryZoomBy(1 / 1.2);
+}
+
+/**
+ * Aplica un factor de zoom usando el comportamiento interno de d3.zoom
+ * @param {number} factor
+ */
+function tryZoomBy(factor) {
+    if (cfgMMInstance && cfgMMInstance.svg && cfgMMInstance.zoom) {
+        // svg es un d3 selection; zoom es d3.zoom()
+        cfgMMInstance.svg
+            .transition()
+            .duration(200)
+            .call(cfgMMInstance.zoom.scaleBy, factor);
+    } else {
+        console.warn('Zoom no disponible todavía');
+    }
+}
+
+/**
+ * Resetea y ajusta el mapa al contenedor
+ */
+function cfgReset() { 
+    if (cfgMMInstance) {
+        cfgMMInstance.fit();
+    }
+}
+
+/**
+ * Alterna entre modo fullscreen y normal
+ */
+function cfgToggleFullscreen() {
+    const wrapper = document.getElementById('markmap-wrapper');
+    const btn = document.getElementById('fullscreenBtn');
+    const icon = btn.querySelector('i');
+    
+    if (wrapper.classList.contains('fullscreen')) {
+        exitFullscreen(wrapper, icon, btn);
+    } else {
+        enterFullscreen(wrapper, icon, btn);
+    }
+    
+    // Reajustar el mapa después de cambiar el tamaño
+    setTimeout(function() {
+        if (cfgMMInstance) {
+            cfgMMInstance.fit();
+        }
+    }, 100);
+}
+
+/**
+ * Activa el modo fullscreen
+ */
+function enterFullscreen(wrapper, icon, btn) {
+    wrapper.classList.add('fullscreen');
+    icon.classList.remove('fa-expand');
+    icon.classList.add('fa-compress');
+    btn.setAttribute('title', 'Salir de pantalla completa');
+}
+
+/**
+ * Desactiva el modo fullscreen
+ */
+function exitFullscreen(wrapper, icon, btn) {
+    wrapper.classList.remove('fullscreen');
+    icon.classList.remove('fa-compress');
+    icon.classList.add('fa-expand');
+    btn.setAttribute('title', 'Pantalla completa');
+}
+
+// ========================================
+// FUNCIONES DE MARKMAP - INICIALIZACIÓN
+// ========================================
+
+/**
+ * Intenta inicializar Markmap esperando que el autoloader esté disponible
+ */
+function attemptMarkmapInit() {
+    const loadingMsg = document.getElementById('loadingMsg');
+    const hasMarkmap = typeof window.markmap !== 'undefined';
+    const hasView = hasMarkmap && !!window.markmap.Markmap;
+    const hasLib = hasMarkmap && !!window.markmap.Transformer;
+
+    if (!hasMarkmap || !hasView || !hasLib) {
+        cfgMarkmapAttempts += 1;
+        if (cfgMarkmapAttempts === 1) {
+            console.log('⏳ Cargando dependencias Markmap...');
+        }
+        if (cfgMarkmapAttempts >= cfgMaxAttempts) {
+            console.error('❌ Timeout cargando librerías Markmap');
+            if (loadingMsg) {
+                loadingMsg.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>No se pudo cargar Markmap. Revisa tu conexión o el bloqueo de CDN y recarga la página.';
+                loadingMsg.style.color = '#dc3545';
+            }
+            return;
+        }
+        setTimeout(attemptMarkmapInit, 300);
+        return;
+    }
+
+    renderMarkmap();
+}
+
+/**
+ * Renderiza el mapa mental usando Markmap
+ */
+function renderMarkmap() {
+    const loadingMsg = document.getElementById('loadingMsg');
+    
+    try {
+        console.log('✅ Markmap disponible, creando visualización...');
+        
+        const { Transformer, Markmap } = window.markmap;
+        
+        // Transformar markdown
+        const transformer = new Transformer();
+        const { root, features } = transformer.transform(cfgReadmeContent);
+        
+        console.log('📊 Contenido transformado, nodos:', root);
+        
+        // Obtener el elemento SVG
+        const svgEl = document.getElementById('markmap-container');
+        
+        // Crear Markmap con configuración
+        cfgMMInstance = createMarkmapInstance(svgEl);
+        
+        // Aplicar assets
+        const { styles } = transformer.getUsedAssets(features);
+        if (styles) {
+            cfgMMInstance.setOptions({ styles });
+        }
+        
+        // Renderizar
+        cfgMMInstance.setData(root);
+        cfgMMInstance.fit();
+        
+        // Guardar referencia al SVG
+        cfgSvg = svgEl;
+        
+        // Ocultar mensaje de carga
+        hideLoadingMessage(loadingMsg);
+        
+        console.log('✨ Markmap renderizado exitosamente!');
+    } catch (e) {
+        handleMarkmapError(e, loadingMsg);
+    }
+}
+
+/**
+ * Crea una instancia de Markmap con configuración personalizada
+ */
+function createMarkmapInstance(svgEl) {
+    return window.markmap.Markmap.create(svgEl, {
+        duration: 500,
+        maxWidth: 300,
+        paddingX: 20,
+    initialExpandLevel: 0,
+        autoFit: true,
+        color: function(node) {
+            const colors = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1'];
+            return colors[node.depth % colors.length];
+        }
+    });
+}
+
+/**
+ * Oculta el mensaje de carga
+ */
+function hideLoadingMessage(loadingMsg) {
+    if (loadingMsg) {
+        loadingMsg.style.display = 'none';
+    }
+}
+
+/**
+ * Maneja errores durante la inicialización de Markmap
+ */
+function handleMarkmapError(error, loadingMsg) {
+    console.error('❌ Error:', error);
+    if (loadingMsg) {
+        loadingMsg.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error: ' + error.message;
+        loadingMsg.style.color = '#dc3545';
+    }
+}
+
+/**
+ * Inicializa el mapa mental (solo una vez)
+ */
+function initConfigMarkmap() {
+    if (cfgMarkmapInit) {
+        return;
+    }
+    cfgMarkmapInit = true;
+
+    console.log('📝 Iniciando Markmap, contenido:', cfgReadmeContent.substring(0, 100) + '...');
+    attemptMarkmapInit();
+}
+
+// ========================================
+// EVENT LISTENERS
+// ========================================
+
+/**
+ * Maneja el evento de mostrar la pestaña de documentación
+ */
+function handleDocsTabShown() {
+    console.log('📖 Pestaña de documentación mostrada');
+    initConfigMarkmap();
+}
+
+/**
+ * Maneja el evento de presionar ESC para salir de fullscreen
+ */
+function handleEscapeKey(e) {
+    if (e.key === 'Escape') {
+        const wrapper = document.getElementById('markmap-wrapper');
+        if (wrapper && wrapper.classList.contains('fullscreen')) {
+            cfgToggleFullscreen();
+        }
+    }
+}
+
+/**
+ * Inicializa todos los event listeners
+ */
+function initEventListeners() {
+    const docsTab = document.querySelector('#docs-tab');
+    if (docsTab) {
+        docsTab.addEventListener('shown.bs.tab', handleDocsTabShown);
+    }
+    
+    // Si la pestaña está activa por hash
+    if (location.hash === '#docs' && docsTab) {
+        const docsTabEl = new bootstrap.Tab(docsTab);
+        docsTabEl.show();
+        initConfigMarkmap();
+    }
+    
+    // Soporte para ESC en fullscreen
+    document.addEventListener('keydown', handleEscapeKey);
+}
+
+// ========================================
+// INICIALIZACIÓN
+// ========================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    initEventListeners();
+});
+
+// Exponer funciones necesarias globalmente para onclick handlers
+window.savePrefs = savePreferences;
+window.cfgZoomIn = cfgZoomIn;
+window.cfgZoomOut = cfgZoomOut;
+window.cfgReset = cfgReset;
+window.cfgToggleFullscreen = cfgToggleFullscreen;
+</script>
+{% endblock %}
