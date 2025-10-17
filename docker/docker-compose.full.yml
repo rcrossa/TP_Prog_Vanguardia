@@ -1,0 +1,199 @@
+version: '3.8'
+
+# =========================================================================
+# MODO COMPLETO: Todo el Stack (Python + Java + PostgreSQL + pgAdmin)
+# =========================================================================
+# Usa este archivo para ejecutar todo en contenedores Docker
+# Ideal para: demos, testing de integración, deploy, CI/CD
+#
+# COMANDOS:
+#   Iniciar:  docker-compose up --build
+#   Parar:    docker-compose down
+#   Ver logs: docker-compose logs -f [servicio]
+#
+# LÍMITES DE MEMORIA TOTALES: ~1.5 GB
+# =========================================================================
+
+services:
+  # -----------------------------------------------------------------------
+  # PostgreSQL Database
+  # -----------------------------------------------------------------------
+  postgres:
+    container_name: reservas_db
+    image: postgres:15-alpine
+    restart: unless-stopped
+    
+    deploy:
+      resources:
+        limits:
+          memory: ${POSTGRES_MEMORY_LIMIT:-512m}
+          cpus: '${POSTGRES_CPU_LIMIT:-0.5}'
+        reservations:
+          memory: ${POSTGRES_MEMORY_RESERVATION:-256m}
+    
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reservas_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    
+    networks:
+      - reservas_network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-reservas_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -----------------------------------------------------------------------
+  # Servicio Python (FastAPI)
+  # -----------------------------------------------------------------------
+  python-service:
+    container_name: reservas_python
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    
+    deploy:
+      resources:
+        limits:
+          memory: ${PYTHON_MEMORY_LIMIT:-384m}
+          cpus: '${PYTHON_CPU_LIMIT:-0.5}'
+        reservations:
+          memory: ${PYTHON_MEMORY_RESERVATION:-192m}
+    
+    environment:
+      # Database
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-reservas_db}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
+      
+      # Security
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production-min-32-chars}
+      - JWT_SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production-min-32-chars}
+      - JWT_ALGORITHM=${ALGORITHM:-HS256}
+      - JWT_EXPIRATION_TIME=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      
+      # App
+      - DEBUG=true
+      - PYTHONUNBUFFERED=1
+    
+    ports:
+      - "${PYTHON_SERVICE_PORT:-8000}:8000"
+    
+    volumes:
+      - ../app:/app/app
+      - ../templates:/app/templates
+      - ../static:/app/static
+      - ../main.py:/app/main.py
+    
+    networks:
+      - reservas_network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # -----------------------------------------------------------------------
+  # Servicio Java (Spring Boot)
+  # -----------------------------------------------------------------------
+  java-service:
+    container_name: reservas_java
+    build:
+      context: ../java-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    
+    deploy:
+      resources:
+        limits:
+          memory: ${JAVA_MEMORY_LIMIT:-512m}
+          cpus: '${JAVA_CPU_LIMIT:-0.5}'
+        reservations:
+          memory: ${JAVA_MEMORY_RESERVATION:-256m}
+    
+    environment:
+      # Database
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-reservas_db}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
+      
+      # JPA/Hibernate
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_SHOW_SQL=true
+      
+      # Server
+      - SERVER_PORT=${JAVA_SERVICE_PORT:-8080}
+      
+      # Java Options (configurado desde .env)
+      - JAVA_OPTS=-Xmx${JAVA_XMX:-384m} -Xms${JAVA_XMS:-192m}
+    
+    ports:
+      - "${JAVA_SERVICE_PORT:-8080}:8080"
+    
+    networks:
+      - reservas_network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # -----------------------------------------------------------------------
+  # pgAdmin - Interfaz Web para PostgreSQL
+  # -----------------------------------------------------------------------
+  pgadmin:
+    container_name: reservas_pgadmin
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    
+    deploy:
+      resources:
+        limits:
+          memory: ${PGADMIN_MEMORY_LIMIT:-256m}
+          cpus: '${PGADMIN_CPU_LIMIT:-0.25}'
+        reservations:
+          memory: ${PGADMIN_MEMORY_RESERVATION:-128m}
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    
+    networks:
+      - reservas_network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# =========================================================================
+# Redes y Volúmenes
+# =========================================================================
+networks:
+  reservas_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local

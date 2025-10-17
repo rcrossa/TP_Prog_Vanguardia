@@ -1,0 +1,100 @@
+version: '3.8'
+
+# =========================================================================
+# MODO HÍBRIDO: Solo Base de Datos + pgAdmin
+# =========================================================================
+# Usa este archivo cuando quieras desarrollar con hot-reload en VS Code/IntelliJ
+# Los servicios Python y Java se ejecutan manualmente en tu IDE
+#
+# COMANDO: docker-compose -f docker-compose.db-only.yml up
+# =========================================================================
+
+services:
+  # -----------------------------------------------------------------------
+  # PostgreSQL Database
+  # -----------------------------------------------------------------------
+  postgres:
+    container_name: reservas_db
+    image: postgres:15-alpine
+    restart: unless-stopped
+    
+    # Límite de memoria configurado desde .env
+    deploy:
+      resources:
+        limits:
+          memory: ${POSTGRES_MEMORY_LIMIT:-512m}
+          cpus: '${POSTGRES_CPU_LIMIT:-0.5}'
+        reservations:
+          memory: ${POSTGRES_MEMORY_RESERVATION:-256m}
+    
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reservas_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    
+    networks:
+      - reservas_network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -----------------------------------------------------------------------
+  # pgAdmin - Interfaz Web para PostgreSQL
+  # -----------------------------------------------------------------------
+  pgadmin:
+    container_name: reservas_pgadmin
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    
+    # Límite de memoria configurado desde .env
+    deploy:
+      resources:
+        limits:
+          memory: ${PGADMIN_MEMORY_LIMIT:-256m}
+          cpus: '${PGADMIN_CPU_LIMIT:-0.25}'
+        reservations:
+          memory: ${PGADMIN_MEMORY_RESERVATION:-128m}
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    
+    networks:
+      - reservas_network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# =========================================================================
+# Redes y Volúmenes
+# =========================================================================
+networks:
+  reservas_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
