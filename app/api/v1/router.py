@@ -12,7 +12,6 @@ from app.api.v1.endpoints import (
     salas_router,
     reservas_router
 )
-from app.api.v1.endpoints.demo import router as demo_router
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.integration import router as integration_router
 
@@ -24,5 +23,4 @@ api_router.include_router(personas_router)
 api_router.include_router(articulos_router)
 api_router.include_router(salas_router)
 api_router.include_router(reservas_router)
-api_router.include_router(demo_router)
 api_router.include_router(integration_router, tags=["🔗 Integration"])

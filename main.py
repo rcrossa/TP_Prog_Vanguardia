@@ -97,11 +97,7 @@ app = FastAPI(
             "description": "📅 **Sistema de Reservas** - Motor inteligente de reservas con detección automática de conflictos. Soporta reservas de artículos y salas con validaciones temporales.",
         },
         {
-            "name": "🎪 Demo Avanzado",
-            "description": "🎪 **Características Avanzadas** - Endpoints de demostración que muestran capacidades avanzadas como búsqueda inteligente, analytics y predicciones.",
-        },
-        {
-            "name": "🏠 Sistema",
+            "name": " Sistema",
             "description": "🏠 **Información del Sistema** - Endpoints de sistema incluyendo health checks, estadísticas y información general de la API.",
         },
     ]
