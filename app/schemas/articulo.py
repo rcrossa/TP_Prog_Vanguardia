@@ -18,6 +18,24 @@ class ArticuloBase(BaseModel):
         description="Nombre descriptivo del artículo",
         examples=["Laptop Dell XPS 13", "Proyector Epson", "Mesa de Reuniones", "Libro: Python Programming"]
     )
+    descripcion: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Descripción detallada del artículo",
+        examples=["Laptop de alta gama para desarrollo"]
+    )
+    cantidad: int = Field(
+        1,
+        ge=0,
+        description="Cantidad disponible del artículo",
+        examples=[1, 5, 10]
+    )
+    categoria: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Categoría del artículo",
+        examples=["Informática", "Electrónica", "Mobiliario"]
+    )
     disponible: bool = Field(
         True,
         description="Estado de disponibilidad del artículo para reservas",
@@ -29,7 +47,7 @@ class ArticuloCreate(ArticuloBase):
     """
     Esquema para crear un nuevo artículo.
     
-    Por defecto, los artículos se crean como disponibles.
+    Por defecto, los artículos se crean como disponibles con cantidad 1.
     El nombre debe ser descriptivo y único para evitar confusiones.
     """
     
@@ -37,6 +55,9 @@ class ArticuloCreate(ArticuloBase):
         json_schema_extra={
             "example": {
                 "nombre": "MacBook Pro 16 pulgadas",
+                "descripcion": "Laptop de alta gama para desarrollo",
+                "cantidad": 3,
+                "categoria": "Informática",
                 "disponible": True
             }
         }

@@ -26,8 +26,11 @@ class Articulo(Base):
     __tablename__ = "articulos"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    nombre: Mapped[str] = mapped_column(String(255), nullable=False)
-    disponible: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    descripcion: Mapped[str] = mapped_column(String(500), nullable=True)
+    cantidad: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    categoria: Mapped[str] = mapped_column(String(50), nullable=True)
+    disponible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     # Relación con reservas
     reservas: Mapped[List[Reserva]] = relationship(back_populates="articulo")
