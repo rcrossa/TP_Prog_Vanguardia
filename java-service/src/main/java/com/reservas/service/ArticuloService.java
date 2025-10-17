@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Servicio para gestión de Artículos
@@ -31,7 +30,7 @@ public class ArticuloService {
         log.debug("Obteniendo todos los artículos");
         return articuloRepository.findAll().stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -53,7 +52,7 @@ public class ArticuloService {
         log.debug("Obteniendo artículos disponibles");
         return articuloRepository.findByDisponibleTrue().stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -124,7 +123,7 @@ public class ArticuloService {
         log.debug("Buscando artículos de categoría: {}", categoria);
         return articuloRepository.findByCategoria(categoria).stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -135,7 +134,7 @@ public class ArticuloService {
         log.debug("Buscando artículos con nombre: {}", nombre);
         return articuloRepository.findByNombreContainingIgnoreCase(nombre).stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

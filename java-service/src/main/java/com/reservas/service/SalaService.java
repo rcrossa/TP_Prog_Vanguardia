@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Servicio para gestión de Salas
@@ -31,7 +30,7 @@ public class SalaService {
         log.debug("Obteniendo todas las salas");
         return salaRepository.findAll().stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -53,7 +52,7 @@ public class SalaService {
         log.debug("Obteniendo salas disponibles");
         return salaRepository.findByDisponibleTrue().stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -124,7 +123,7 @@ public class SalaService {
         log.debug("Buscando salas con nombre: {}", nombre);
         return salaRepository.findByNombreContainingIgnoreCase(nombre).stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -135,7 +134,7 @@ public class SalaService {
         log.debug("Buscando salas con capacidad mínima: {}", capacidad);
         return salaRepository.findByCapacidadGreaterThanEqual(capacidad).stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
