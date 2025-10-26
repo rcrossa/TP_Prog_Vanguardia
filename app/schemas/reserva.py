@@ -1,3 +1,12 @@
+"""reserva"""
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+# Constantes para ejemplos de fechas
+EXAMPLE_FECHA_INICIO = "2025-10-16T09:00:00"
+EXAMPLE_FECHA_FIN = "2025-10-16T17:00:00"
+EXAMPLE_FECHA_INICIO_2 = "2025-10-17T14:00:00"
+EXAMPLE_FECHA_FIN_2 = "2025-10-17T16:00:00"
 """
 Esquemas Pydantic para el modelo Reserva.
 
@@ -5,10 +14,6 @@ Este módulo define los esquemas de validación y serialización
 para las operaciones CRUD del modelo Reserva.
 """
 
-from datetime import datetime
-from typing import Optional
-
-from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ReservaBase(BaseModel):
@@ -23,12 +28,12 @@ class ReservaBase(BaseModel):
     fecha_hora_inicio: datetime = Field(
         ...,
         description="Fecha y hora de inicio de la reserva (formato ISO 8601)",
-        examples=["2025-10-16T09:00:00", "2025-10-17T14:30:00", "2025-10-18T08:00:00"],
+        examples=[EXAMPLE_FECHA_INICIO, EXAMPLE_FECHA_INICIO_2, "2025-10-18T08:00:00"],
     )
     fecha_hora_fin: datetime = Field(
         ...,
         description="Fecha y hora de fin de la reserva (formato ISO 8601)",
-        examples=["2025-10-16T10:00:00", "2025-10-17T16:30:00", "2025-10-18T10:00:00"],
+        examples=[EXAMPLE_FECHA_FIN, "2025-10-17T16:30:00", "2025-10-18T10:00:00"],
     )
     id_articulo: Optional[int] = Field(
         None,
@@ -77,8 +82,8 @@ class ReservaCreate(ReservaBase):
                     "description": "Reserva de artículo",
                     "value": {
                         "id_persona": 1,
-                        "fecha_hora_inicio": "2025-10-16T09:00:00",
-                        "fecha_hora_fin": "2025-10-16T17:00:00",
+                        "fecha_hora_inicio": EXAMPLE_FECHA_INICIO,
+                        "fecha_hora_fin": EXAMPLE_FECHA_FIN,
                         "id_articulo": 1,
                         "id_sala": None,
                     },
@@ -87,8 +92,8 @@ class ReservaCreate(ReservaBase):
                     "description": "Reserva de sala",
                     "value": {
                         "id_persona": 2,
-                        "fecha_hora_inicio": "2025-10-17T14:00:00",
-                        "fecha_hora_fin": "2025-10-17T16:00:00",
+                        "fecha_hora_inicio": EXAMPLE_FECHA_INICIO_2,
+                        "fecha_hora_fin": EXAMPLE_FECHA_FIN_2,
                         "id_articulo": None,
                         "id_sala": 1,
                     },
@@ -112,12 +117,12 @@ class ReservaUpdate(BaseModel):
     fecha_hora_inicio: Optional[datetime] = Field(
         None,
         description="Nueva fecha y hora de inicio",
-        examples=["2025-10-16T10:00:00", "2025-10-17T15:00:00"],
+        examples=["2025-10-16T10:00:00", EXAMPLE_FECHA_INICIO_2],
     )
     fecha_hora_fin: Optional[datetime] = Field(
         None,
         description="Nueva fecha y hora de fin",
-        examples=["2025-10-16T12:00:00", "2025-10-17T17:00:00"],
+        examples=["2025-10-16T12:00:00", EXAMPLE_FECHA_FIN_2],
     )
     id_articulo: Optional[int] = Field(
         None,
@@ -159,8 +164,8 @@ class Reserva(ReservaBase):
                     "value": {
                         "id": 1,
                         "id_persona": 1,
-                        "fecha_hora_inicio": "2025-10-16T09:00:00",
-                        "fecha_hora_fin": "2025-10-16T17:00:00",
+                        "fecha_hora_inicio": EXAMPLE_FECHA_INICIO,
+                        "fecha_hora_fin": EXAMPLE_FECHA_FIN,
                         "id_articulo": 1,
                         "id_sala": None,
                     },
@@ -170,8 +175,8 @@ class Reserva(ReservaBase):
                     "value": {
                         "id": 2,
                         "id_persona": 2,
-                        "fecha_hora_inicio": "2025-10-17T14:00:00",
-                        "fecha_hora_fin": "2025-10-17T16:00:00",
+                        "fecha_hora_inicio": EXAMPLE_FECHA_INICIO_2,
+                        "fecha_hora_fin": EXAMPLE_FECHA_FIN_2,
                         "id_articulo": None,
                         "id_sala": 1,
                     },

@@ -35,9 +35,12 @@ let salaToDelete = null;
 async function loadSalas() {
     try {
         const response = await axios.get('/api/v1/salas/');
-        salas = response.data;
+        // Limpiar y actualizar la variable global correctamente
+        salas = Array.isArray(response.data) ? response.data.slice() : [];
         renderSalas(salas);
     } catch (error) {
+        salas = [];
+        renderSalas(salas);
         console.error('Error al cargar salas:', error);
         showError('Error al cargar las salas');
     }
@@ -174,8 +177,10 @@ async function saveSala() {
             showSuccess('Sala creada exitosamente');
         }
         
-        salaModal.hide();
+        // Limpiar el formulario antes de cerrar el modal
+        document.getElementById('salaForm').reset();
         await loadSalas();
+        salaModal.hide();
     } catch (error) {
         console.error('Error al guardar sala:', error);
         if (error.response?.data?.detail) {
@@ -203,19 +208,34 @@ async function deleteSala(id) {
  */
 async function confirmDelete() {
     if (!salaToDelete) return;
-    
+    const deleteBtn = document.querySelector('#confirmDeleteModal .btn-danger');
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Eliminando...';
+    deleteBtn.disabled = true;
     try {
         await axios.delete(`/api/v1/salas/${salaToDelete}`);
         showSuccess('Sala eliminada exitosamente');
-        
+        await loadSalas();
         const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
         confirmModal.hide();
-        
         salaToDelete = null;
-        await loadSalas();
     } catch (error) {
         console.error('Error al eliminar sala:', error);
-        showError('Error al eliminar la sala: ' + (error.response?.data?.detail || error.message));
+            let errorMsg = 'No se pudo eliminar la sala. El sistema de gestión de salas no está disponible. Intente más tarde.';
+            if (error.response?.data?.detail) {
+                // Si el backend envía un mensaje específico, lo mostramos
+                if (error.response.data.detail.includes('No se encontró una sala')) {
+                    errorMsg = 'La sala ya fue eliminada o sincronizada previamente.';
+                } else {
+                    errorMsg = error.response.data.detail;
+                }
+            }
+            showError(errorMsg);
+            const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+            confirmModal.hide();
+    } finally {
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = false;
     }
 }
 

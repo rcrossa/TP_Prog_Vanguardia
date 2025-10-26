@@ -1,19 +1,15 @@
+
 """
 Modelo de datos para artículos reservables.
 
 Este módulo define el modelo Articulo que representa los recursos físicos
 que pueden ser reservados en el sistema (proyectores, laptops, etc.).
 """
-
 from __future__ import annotations
-
 from typing import TYPE_CHECKING, List
-
 from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.core.database import Base
-
 if TYPE_CHECKING:
     from app.models.reserva import Reserva
 

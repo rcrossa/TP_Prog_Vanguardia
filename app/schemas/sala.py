@@ -1,12 +1,11 @@
+
 """
 Esquemas Pydantic para el modelo Sala.
 
 Este módulo define los esquemas de validación y serialización
 para las operaciones CRUD del modelo Sala.
 """
-
 from typing import Optional
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -32,6 +31,21 @@ class SalaBase(BaseModel):
         description="Capacidad máxima de personas que puede albergar la sala",
         examples=[10, 25, 50, 100, 300],
     )
+    disponible: bool = Field(
+        default=True,
+        description="Indica si la sala está disponible para reservas",
+        examples=[True, False],
+    )
+    ubicacion: Optional[str] = Field(
+        default="",
+        description="Ubicación física de la sala",
+        examples=["Edificio A, Piso 2", "Laboratorio Sur"],
+    )
+    descripcion: Optional[str] = Field(
+        default="",
+        description="Descripción adicional de la sala",
+        examples=["Sala equipada con proyector", "Aula para capacitaciones"],
+    )
 
 
 class SalaCreate(SalaBase):
@@ -44,7 +58,13 @@ class SalaCreate(SalaBase):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"nombre": "Sala de Reuniones Executive", "capacidad": 12}
+            "example": {
+                "nombre": "Sala de Reuniones Executive",
+                "capacidad": 12,
+                "disponible": True,
+                "ubicacion": "Edificio B, Piso 1",
+                "descripcion": "Sala con TV y pizarrón"
+            }
         }
     )
 
@@ -90,7 +110,14 @@ class Sala(SalaBase):
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
-            "example": {"id": 1, "nombre": "Sala de Conferencias A", "capacidad": 25}
+            "example": {
+                "id": 1,
+                "nombre": "Sala de Conferencias A",
+                "capacidad": 25,
+                "disponible": True,
+                "ubicacion": "Edificio A, Piso 2",
+                "descripcion": "Sala equipada con proyector"
+            }
         },
     )
 

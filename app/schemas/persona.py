@@ -1,12 +1,11 @@
+
 """
 Esquemas Pydantic para el modelo Persona.
 
 Este módulo define los esquemas de validación y serialización
 para las operaciones CRUD del modelo Persona.
 """
-
 from typing import Optional
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 

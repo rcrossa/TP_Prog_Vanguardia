@@ -519,13 +519,22 @@ async function saveArticulo() {
     const id = document.getElementById('articuloId').value;
     const cantidadValue = document.getElementById('articuloCantidad').value;
     const descripcionValue = document.getElementById('articuloDescripcion').value.trim();
-    
+    const nombreValue = document.getElementById('articuloNombre').value.trim();
+    const categoriaValue = document.getElementById('articuloCategoria').value.trim();
+    const disponibleValue = document.getElementById('articuloDisponible').checked;
+
+    // Validar que todos los campos estén completos
+    if (!nombreValue || !descripcionValue || !cantidadValue || !categoriaValue) {
+        showError('Todos los campos son obligatorios.');
+        return;
+    }
+
     const data = {
-        nombre: document.getElementById('articuloNombre').value,
-        descripcion: descripcionValue || null,
-        cantidad: cantidadValue ? parseInt(cantidadValue) : 1,
-        categoria: document.getElementById('articuloCategoria').value || null,
-        disponible: document.getElementById('articuloDisponible').checked
+        nombre: nombreValue,
+        descripcion: descripcionValue,
+        cantidad: parseInt(cantidadValue),
+        categoria: categoriaValue,
+        disponible: disponibleValue
     };
     
     try {

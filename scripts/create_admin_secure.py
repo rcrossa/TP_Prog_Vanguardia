@@ -16,20 +16,20 @@ Uso:
        python scripts/create_admin_secure.py
        # Te pedirá ingresar los datos manualmente
 """
+
 import getpass
 import os
 import sys
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.schemas.persona import PersonaCreate
+from app.services.persona_service import PersonaService
+from app.repositories.persona_repository import PersonaRepository
 
 # Ajustar el path para importar desde la raíz del proyecto
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 sys.path.append(project_root)
-
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.schemas.persona import PersonaCreate
-from app.services.persona_service import PersonaService
 
 
 def get_admin_credentials():
@@ -38,9 +38,15 @@ def get_admin_credentials():
     Primero intenta variables de entorno, luego prompt interactivo.
     """
     # Intentar obtener de variables de entorno
-    nombre = os.getenv("ADMIN_NAME")
-    email = os.getenv("ADMIN_EMAIL")
-    password = os.getenv("ADMIN_PASSWORD")
+    nombre = os.getenv(
+        "ADMIN_NAME"
+    )
+    email = os.getenv(
+        "ADMIN_EMAIL"
+    )
+    password = os.getenv(
+        "ADMIN_PASSWORD"
+    )
 
     # Si no están las variables de entorno, pedirlas interactivamente
     if not all([nombre, email, password]):
@@ -61,13 +67,14 @@ def get_admin_credentials():
                 print("❌ Las contraseñas no coinciden.")
                 sys.exit(1)
 
-    # Validar que no estén vacías
-    if not all([nombre, email, password]):
-        print("❌ Error: Todos los campos son obligatorios.")
+
+    # Validar que no estén vacías y sean str
+    if not all([nombre, email, password]) or not isinstance(nombre, str) or not isinstance(email, str) or not isinstance(password, str):
+        print("❌ Error: Todos los campos son obligatorios y deben ser texto.")
         sys.exit(1)
 
     # Advertencia si se usa una contraseña débil
-    if len(password) < 8:
+    if password is None or not isinstance(password, str) or len(password) < 8:
         print("⚠️  ADVERTENCIA: La contraseña es muy corta (menos de 8 caracteres)")
         confirmar = input("¿Continuar de todos modos? (s/N): ").strip().lower()
         if confirmar != "s":
@@ -91,13 +98,20 @@ def create_admin_user():
     db: Session = next(db_gen)
 
     try:
-        # Crear datos del admin
+
+        # Crear datos del admin (asegurando que no sean None)
+        if not all([nombre, email, password]) or not isinstance(nombre, str) or not isinstance(email, str) or not isinstance(password, str):
+            print("❌ Error: No se puede crear el usuario admin, datos inválidos.")
+            sys.exit(1)
         admin_data = PersonaCreate(
-            nombre=nombre, email=email, password=password, is_admin=True, is_active=True
+            nombre=str(nombre), 
+            email=str(email), 
+            password=str(password), 
+            is_admin=True, 
+            is_active=True
         )
 
         # Verificar si ya existe
-        from app.repositories.persona_repository import PersonaRepository
 
         existing_admin = PersonaRepository.get_by_email(db, admin_data.email)
 

@@ -1,13 +1,12 @@
+
 """
 Configuración y conexión a la base de datos.
 
 Este módulo configura la conexión a PostgreSQL usando SQLAlchemy
 y proporciona la sesión de base de datos para toda la aplicación.
 """
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-
 from app.core.config import settings
 
 # Base para los modelos

@@ -2,18 +2,19 @@
 Script para inicializar la base de datos con los datos de ejemplo de la consigna
 """
 
-from datetime import datetime
 
+from datetime import datetime, timezone
+from sqlalchemy.exc import SQLAlchemyError
 from app.auth.jwt_handler import get_password_hash
 from app.core.database import Base, SessionLocal
 from app.models import Articulo, Persona, Reserva, Sala
+from app.core.database import engine
 
 
 def init_database():
     """Crear las tablas y cargar datos de ejemplo"""
 
     # Crear todas las tablas
-    from app.core.database import engine
 
     Base.metadata.create_all(bind=engine)
 
@@ -35,7 +36,7 @@ def init_database():
                 hashed_password=get_password_hash("admin123"),
                 is_active=True,
                 is_admin=True,
-                created_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
             ),
             Persona(
                 id=2,
@@ -44,7 +45,7 @@ def init_database():
                 hashed_password=get_password_hash("user123"),
                 is_active=True,
                 is_admin=False,
-                created_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
             ),
             Persona(
                 id=3,
@@ -53,7 +54,7 @@ def init_database():
                 hashed_password=get_password_hash("user123"),
                 is_active=True,
                 is_admin=False,
-                created_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
             ),
         ]
 
@@ -111,11 +112,11 @@ def init_database():
         # Guardar cambios
         db.commit()
         print("Base de datos inicializada exitosamente con los datos de ejemplo.")
-
-    except Exception as e:
+    except SQLAlchemyError as e:
         db.rollback()
         print(f"Error al inicializar la base de datos: {e}")
     finally:
+        db.close()
         db.close()
 
 

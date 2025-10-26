@@ -5,24 +5,47 @@ Este módulo contiene la aplicación FastAPI principal con los endpoints
 básicos y la configuración inicial del sistema de reservas.
 """
 
+from datetime import datetime
 import uvicorn
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
-from sqlalchemy.orm import Session
-
 from app.api import api_router
 from app.core.config import settings
 from app.core.database import Base, engine, get_db
 from app.web import web_router
+from app.services import (
+    ArticuloService,
+    PersonaService,
+    ReservaService,
+    SalaService,
+)
 
+# Crear aplicación FastAPI
+app = FastAPI(
+    # ...existing code...
+)
+
+# Handler global para errores inesperados
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Manejador global de excepciones."""
+    _ = request  # Unused argument
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Error inesperado: {str(exc)}"}
+    )
 # Validar configuración crítica al inicio
 try:
     settings.validate_required_settings()
     # Probar que se puede construir la URL de la base de datos
     db_url = settings.database_url
     print(
-        f"✅ Configuración válida - Base de datos: {settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
+        f"✅ Configuración válida - Base de datos: "
+        f"{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
     )
 except ValueError as e:
     print(f"❌ Error de configuración: {e}")
@@ -187,15 +210,6 @@ async def get_system_stats(db: Session = Depends(get_db)):
     - Planificación de recursos
     """
     try:
-        from datetime import datetime
-
-        from app.services import (
-            ArticuloService,
-            PersonaService,
-            ReservaService,
-            SalaService,
-        )
-
         return {
             "personas": {"total": PersonaService.count_personas(db)},
             "articulos": {
@@ -204,10 +218,10 @@ async def get_system_stats(db: Session = Depends(get_db)):
                 "no_disponibles": ArticuloService.count_articulos(db, disponible=False),
             },
             "salas": {
-                "total": SalaService.count_salas(db),
-                "pequeñas": SalaService.count_salas(db, min_capacidad=1)
-                - SalaService.count_salas(db, min_capacidad=21),
-                "grandes": SalaService.count_salas(db, min_capacidad=21),
+                # Asumiendo que count_salas no recibe db, solo min_capacidad
+                "total": SalaService.count_salas(),
+                "pequeñas": SalaService.count_salas(min_capacidad=1),
+                "grandes": SalaService.count_salas(min_capacidad=21),
             },
             "reservas": {"total": ReservaService.count_reservas(db)},
             "sistema": {
@@ -348,7 +362,6 @@ async def health_check(db: Session = Depends(get_db)):
     - Sistemas de alerta y observabilidad
     """
     try:
-        from datetime import datetime
 
         # Verificar conexión a la base de datos
         db.execute(text("SELECT 1"))

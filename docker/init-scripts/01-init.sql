@@ -17,14 +17,20 @@ CREATE TABLE IF NOT EXISTS personas (
 CREATE TABLE IF NOT EXISTS articulos (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
-    disponible BOOLEAN NOT NULL
+    descripcion VARCHAR(255),
+    cantidad INTEGER NOT NULL DEFAULT 1,
+    categoria VARCHAR(255),
+    disponible BOOLEAN NOT NULL DEFAULT true
 );
 
 -- Crear tabla salas
 CREATE TABLE IF NOT EXISTS salas (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
-    capacidad INTEGER NOT NULL
+    capacidad INTEGER NOT NULL,
+    disponible BOOLEAN NOT NULL DEFAULT true,
+    ubicacion VARCHAR(255) DEFAULT '',
+    descripcion VARCHAR(255) DEFAULT ''
 );
 
 -- Crear tabla reservas

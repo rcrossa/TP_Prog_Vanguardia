@@ -1,44 +1,47 @@
+
 """
 Endpoints de la API para el modelo Articulo.
 
 Este módulo define los endpoints REST para las operaciones CRUD
 del modelo Articulo utilizando FastAPI.
 """
-
+from datetime import datetime
 from typing import List, Optional
-
+from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-
 from app.core.database import get_db
 from app.schemas.articulo import Articulo, ArticuloCreate, ArticuloUpdate
+from app.services.java_client import JavaServiceClient
 from app.services.articulo_service import ArticuloService
 
 router = APIRouter(prefix="/articulos", tags=["articulos"])
 
 
 @router.post("/", response_model=Articulo, status_code=status.HTTP_201_CREATED)
-def create_articulo(articulo_data: ArticuloCreate, db: Session = Depends(get_db)):
-    """Crear un nuevo artículo."""
-    return ArticuloService.create_articulo(db, articulo_data)
+async def create_articulo(articulo_data: ArticuloCreate):
+    """Crear un nuevo artículo directamente en el microservicio Java."""
+    java_payload = articulo_data.model_dump()
+    result = await JavaServiceClient.create_articulo(java_payload)
+    if result is None:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "No se pudo crear el artículo en el servicio Java."}
+        )
+    return result
 
 
 @router.get("/", response_model=List[Articulo])
-def get_articulos(
-    skip: int = 0,
-    limit: int = 100,
-    disponible: Optional[bool] = Query(None, description="Filtrar por disponibilidad"),
-    db: Session = Depends(get_db),
-):
-    """Obtener lista de artículos con filtros opcionales."""
-    if limit > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
+async def get_articulos():
+    """Obtener lista de artículos directamente desde el microservicio Java."""
+    articulos = await JavaServiceClient.get_articulos()
+    if articulos is None:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "No se pudo obtener la lista de artículos desde el servicio Java."}
         )
-
-    return ArticuloService.get_articulos(db, skip, limit, disponible)
+    return articulos
 
 
 @router.get("/disponibles", response_model=List[Articulo])
@@ -63,16 +66,15 @@ def get_disponibilidad_articulos(
     db: Session = Depends(get_db),
 ):
     """Obtener disponibilidad de artículos para un período específico."""
-    from datetime import datetime
 
     try:
         fecha_inicio_dt = datetime.fromisoformat(fecha_inicio.replace("Z", "+00:00"))
         fecha_fin_dt = datetime.fromisoformat(fecha_fin.replace("Z", "+00:00"))
-    except ValueError:
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Formato de fecha inválido. Use formato ISO (YYYY-MM-DDTHH:MM:SS)",
-        )
+        ) from exc
 
     # Obtener todos los artículos disponibles
     articulos = ArticuloService.get_articulos(db, skip=0, limit=1000)
@@ -182,7 +184,6 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
     Nota: Las unidades reservadas solo incluyen las reservas que están activas EN ESTE MOMENTO
     (fecha_hora_inicio <= ahora <= fecha_hora_fin). Las reservas futuras no se cuentan.
     """
-    from datetime import datetime
 
     # Obtener todos los artículos usando el servicio
     articulos = ArticuloService.get_articulos(db, 0, 1000)
@@ -234,7 +235,6 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
 @router.get("/disponibilidad/actual")
 def get_disponibilidad_actual_articulos(db: Session = Depends(get_db)):
     """Obtener disponibilidad actual de todos los artículos."""
-    from datetime import datetime
 
     # Obtener todos los artículos
     articulos = ArticuloService.get_articulos(db, 0, 1000)
@@ -284,29 +284,51 @@ def get_disponibilidad_actual_articulos(db: Session = Depends(get_db)):
 
 
 @router.get("/{articulo_id}", response_model=Articulo)
-def get_articulo(articulo_id: int, db: Session = Depends(get_db)):
-    """Obtener un artículo específico por ID."""
-    articulo = ArticuloService.get_articulo_by_id(db, articulo_id)
-    if not articulo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró un artículo con ID {articulo_id}",
+async def get_articulo(articulo_id: int):
+    """Obtener un artículo específico por ID desde el microservicio Java."""
+    result = await JavaServiceClient.get_articulo(articulo_id)
+    if result is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "detail": f"No se encontró un artículo con ID {articulo_id} en el servicio Java."
+                }
         )
-    return articulo
+    return result
 
 
 @router.put("/{articulo_id}", response_model=Articulo)
-def update_articulo(
-    articulo_id: int, articulo_data: ArticuloUpdate, db: Session = Depends(get_db)
-):
-    """Actualizar datos de un artículo existente."""
-    articulo = ArticuloService.update_articulo(db, articulo_id, articulo_data)
-    if not articulo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró un artículo con ID {articulo_id}",
+async def update_articulo(articulo_id: int, articulo_data: ArticuloUpdate):
+    """Actualizar datos de un artículo directamente en el microservicio Java."""
+    # Obtener el artículo actual desde Java para rellenar campos faltantes
+    articulo_actual = await JavaServiceClient.get_articulo(articulo_id)
+    if articulo_actual is None:
+        return JSONResponse(
+            status_code=404,
+            content={"detail":
+                     f"No se encontró un artículo con ID {articulo_id} en el servicio Java."}
         )
-    return articulo
+
+    data_dict = articulo_data.model_dump(exclude_unset=True)
+    payload = {
+        "nombre": data_dict.get("nombre", articulo_actual.get("nombre")),
+        "descripcion": data_dict.get("descripcion", articulo_actual.get("descripcion")),
+        "cantidad": data_dict.get("cantidad", articulo_actual.get("cantidad", 1)),
+        "categoria": data_dict.get("categoria", articulo_actual.get("categoria")),
+        "disponible": data_dict.get("disponible", articulo_actual.get("disponible", True)),
+    }
+
+    result = await JavaServiceClient.update_articulo(articulo_id, payload)
+    if result is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "detail": (
+                    f"No se encontró un artículo con ID {articulo_id} en el servicio Java."
+                )
+            }
+        )
+    return result
 
 
 @router.patch("/{articulo_id}/toggle-disponibilidad", response_model=Articulo)
@@ -323,23 +345,27 @@ def toggle_disponibilidad(articulo_id: int, db: Session = Depends(get_db)):
     if not articulo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró un artículo con ID {articulo_id}",
+            detail=(
+                f"No se encontró un artículo con ID {articulo_id}"
+            ),
         )
     return articulo
 
 
 @router.delete("/{articulo_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_articulo(articulo_id: int, db: Session = Depends(get_db)):
-    """Eliminar un artículo del sistema."""
-    try:
-        success = ArticuloService.delete_articulo(db, articulo_id)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No se encontró un artículo con ID {articulo_id}",
-            )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+async def delete_articulo(articulo_id: int):
+    """Eliminar un artículo directamente en el microservicio Java."""
+    result = await JavaServiceClient.delete_articulo(articulo_id)
+    if not result:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "detail": (
+                    f"No se encontró un artículo con ID {articulo_id} en el servicio Java."
+                )
+            }
+        )
+    return JSONResponse(status_code=204, content={})
 
 
 @router.get("/count/total")
@@ -396,31 +422,27 @@ def get_reservas_articulo(articulo_id: int, db: Session = Depends(get_db)):
 
     # Procesar reservas directas
     for row in result_directas:
-        reservas.append(
-            {
-                "id": row[0],
-                "id_persona": row[1],
-                "fecha_hora_inicio": row[2].isoformat() if row[2] else None,
-                "fecha_hora_fin": row[3].isoformat() if row[3] else None,
-                "persona_nombre": row[4],
-                "tipo": "Reserva Directa",
-                "cantidad": 1,
-            }
-        )
+        reservas.append({
+            "id": row[0],
+            "id_persona": row[1],
+            "fecha_hora_inicio": row[2].isoformat() if row[2] else None,
+            "fecha_hora_fin": row[3].isoformat() if row[3] else None,
+            "persona_nombre": row[4],
+            "tipo": "Reserva Directa",
+            "cantidad": 1,
+        })
 
     # Procesar reservas de salas
     for row in result_salas:
-        reservas.append(
-            {
-                "id": row[0],
-                "id_persona": row[1],
-                "fecha_hora_inicio": row[2].isoformat() if row[2] else None,
-                "fecha_hora_fin": row[3].isoformat() if row[3] else None,
-                "persona_nombre": row[4],
-                "sala_nombre": row[5],
-                "cantidad": row[6],
-                "tipo": "Reserva de Sala",
-            }
-        )
+        reservas.append({
+            "id": row[0],
+            "id_persona": row[1],
+            "fecha_hora_inicio": row[2].isoformat() if row[2] else None,
+            "fecha_hora_fin": row[3].isoformat() if row[3] else None,
+            "persona_nombre": row[4],
+            "sala_nombre": row[5],
+            "cantidad": row[6],
+            "tipo": "Reserva de Sala",
+        })
 
     return reservas

@@ -1,14 +1,12 @@
+
 """
 Servicio para operaciones de negocio de Persona.
 
 Este módulo contiene la lógica de negocio para el modelo Persona,
 incluyendo validaciones y operaciones complejas.
 """
-
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
-
 from app.auth.jwt_handler import verify_password
 from app.models.persona import Persona
 from app.repositories.persona_repository import PersonaRepository

@@ -1,24 +1,149 @@
-"""
-Endpoints de la API para el modelo Reserva.
-
-Este módulo define los endpoints REST para las operaciones CRUD
-del modelo Reserva utilizando FastAPI.
-"""
-
+""" Reservas API endpoints."""
 from datetime import datetime
 from typing import List, Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-
 from app.core.database import get_db
+from app.repositories.articulo_repository import ArticuloRepository
+from app.repositories.reserva_repository import ReservaRepository
 from app.schemas.reserva import Reserva, ReservaCreate, ReservaUpdate
 from app.services.reserva_service import ReservaService
 from app.auth.dependencies import (
     get_current_user,
 )
 from app.models.persona import Persona as PersonaModel
+def _verificar_reserva_existente(db, reserva_id):
+    reserva = ReservaRepository.get_by_id(db, reserva_id)
+    if not reserva:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró una reserva con ID {reserva_id}",
+        )
+    return reserva
+
+def _verificar_permiso_modificar_reserva(reserva, current_user):
+    if not current_user.is_admin and reserva.id_persona != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para modificar los artículos de esta reserva",
+        )
+
+def _verificar_reserva_es_sala(reserva):
+    if not reserva.id_sala:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se pueden asignar artículos a reservas de salas",
+        )
+
+def _verificar_articulo_existente(db, articulo_id):
+    articulo = ArticuloRepository.get_by_id(db, articulo_id)
+    if not articulo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró un artículo con ID {articulo_id}",
+        )
+    if not articulo.disponible:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El artículo '{articulo.nombre}' no está disponible para reservas",
+        )
+    return articulo
+
+def _obtener_asignacion_existente(db, reserva_id, articulo_id):
+    result = db.execute(
+        text(
+            """
+            SELECT cantidad FROM reserva_articulos WHERE 
+            reserva_id = :reserva_id AND articulo_id = :articulo_id
+            """
+        ),
+        {"reserva_id": reserva_id, "articulo_id": articulo_id}
+    ).fetchone()
+    return result[0] if result else 0
+
+def _validar_stock(nueva_cantidad, articulo, total_reservado_otras,
+                   cantidad_ya_asignada, cantidad, modo):
+    disponible = articulo.cantidad - total_reservado_otras + cantidad_ya_asignada
+    if nueva_cantidad > disponible:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"No hay suficiente cantidad disponible. "
+                f"Ya asignado en esta reserva: {cantidad_ya_asignada}, "
+                f"{'Quieres establecer' if modo == 'reemplazar' else 'Quieres agregar'}: " 
+                f"{cantidad}, "
+                f"Total necesario: {nueva_cantidad}, Disponible: {disponible} "
+                f"(Stock total: {articulo.cantidad}, Reservado en otras: {total_reservado_otras})"
+            ),
+        )
+
+def _calcular_total_reservado_otras(db, reserva_id, articulo_id):
+    result = db.execute(
+        text(
+            """
+            SELECT SUM(ra.cantidad) FROM reserva_articulos ra
+            JOIN reservas r ON ra.reserva_id = r.id
+            WHERE ra.articulo_id = :articulo_id
+            AND ra.reserva_id != :reserva_id
+            AND r.fecha_hora_fin >= NOW()
+            """
+        ),
+        {"articulo_id": articulo_id, "reserva_id": reserva_id}
+    ).fetchone()
+    return result[0] if result and result[0] else 0
+
+def _insertar_o_actualizar_articulo(db, reserva_id, articulo_id,
+                                    cantidad, modo, cantidad_ya_asignada,
+                                    articulo, total_reservado_otras):
+    if cantidad_ya_asignada:
+        nueva_cantidad = cantidad if modo == "reemplazar" else cantidad_ya_asignada + cantidad
+        _validar_stock(nueva_cantidad, articulo,
+                       total_reservado_otras, cantidad_ya_asignada, cantidad, modo)
+        db.execute(
+            text(
+                """
+            UPDATE reserva_articulos
+            SET cantidad = :nueva_cantidad
+            WHERE reserva_id = :reserva_id 
+            AND articulo_id = :articulo_id
+            """
+            ),
+            {
+                "reserva_id": reserva_id,
+                "articulo_id": articulo_id,
+                "nueva_cantidad": nueva_cantidad,
+            },
+        )
+    else:
+        cantidad_disponible_para_agregar = articulo.cantidad - total_reservado_otras
+        if cantidad > cantidad_disponible_para_agregar:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No hay suficiente cantidad disponible. Solicitado: "
+                f"{cantidad}, Disponible: {cantidad_disponible_para_agregar}"
+                f" (Stock total: {articulo.cantidad}, Reservado en otras: {total_reservado_otras})",
+            )
+        db.execute(
+            text(
+                """
+            INSERT INTO reserva_articulos (reserva_id, articulo_id, cantidad)
+            VALUES (:reserva_id, :articulo_id, :cantidad)
+            """
+            ),
+            {
+                "reserva_id": reserva_id,
+                "articulo_id": articulo_id,
+                "cantidad": cantidad,
+            },
+        )
+
+
+# Endpoints de la API para el modelo Reserva.
+# Este módulo define los endpoints REST para las operaciones CRUD
+# del modelo Reserva utilizando FastAPI.
+
+MAX_LIMIT = 100
 
 router = APIRouter(prefix="/reservas", tags=["reservas"])
 
@@ -51,7 +176,7 @@ def create_reserva(
 @router.get("/", response_model=List[Reserva])
 def get_reservas(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = MAX_LIMIT,
     db: Session = Depends(get_db),
     current_user: PersonaModel = Depends(get_current_user),
 ):
@@ -60,10 +185,10 @@ def get_reservas(
     - Admin: ve todas las reservas
     - No admin: solo ve sus propias reservas
     """
-    if limit > 100:
+    if limit > MAX_LIMIT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
+            detail=f"El límite máximo es {MAX_LIMIT} registros",
         )
 
     if current_user.is_admin:
@@ -101,13 +226,13 @@ def get_reserva(
 
 @router.get("/persona/{persona_id}", response_model=List[Reserva])
 def get_reservas_by_persona(
-    persona_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+    persona_id: int, skip: int = 0, limit: int = MAX_LIMIT, db: Session = Depends(get_db)
 ):
     """Obtener reservas de una persona específica."""
-    if limit > 100:
+    if limit > MAX_LIMIT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
+            detail=f"El límite máximo es {MAX_LIMIT} registros",
         )
 
     return ReservaService.get_reservas_by_persona(db, persona_id, skip, limit)
@@ -115,13 +240,13 @@ def get_reservas_by_persona(
 
 @router.get("/sala/{sala_id}", response_model=List[Reserva])
 def get_reservas_by_sala(
-    sala_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+    sala_id: int, skip: int = 0, limit: int = MAX_LIMIT, db: Session = Depends(get_db)
 ):
     """Obtener reservas de una sala específica."""
-    if limit > 100:
+    if limit > MAX_LIMIT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
+            detail=f"El límite máximo es {MAX_LIMIT} registros",
         )
 
     return ReservaService.get_reservas_by_sala(db, sala_id, skip, limit)
@@ -129,13 +254,13 @@ def get_reservas_by_sala(
 
 @router.get("/articulo/{articulo_id}", response_model=List[Reserva])
 def get_reservas_by_articulo(
-    articulo_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+    articulo_id: int, skip: int = 0, limit: int = MAX_LIMIT, db: Session = Depends(get_db)
 ):
     """Obtener reservas de un artículo específico."""
-    if limit > 100:
+    if limit > MAX_LIMIT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
+            detail=f"El límite máximo es {MAX_LIMIT} registros",
         )
 
     return ReservaService.get_reservas_by_articulo(db, articulo_id, skip, limit)
@@ -148,14 +273,14 @@ def get_reservas_by_fecha_range(
         None, description="Fecha y hora de fin del rango"
     ),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = MAX_LIMIT,
     db: Session = Depends(get_db),
 ):
     """Obtener reservas en un rango de fechas."""
-    if limit > 100:
+    if limit > MAX_LIMIT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
+            detail=f"El límite máximo es {MAX_LIMIT} registros",
         )
 
     if fecha_fin and fecha_fin <= fecha_inicio:
@@ -332,154 +457,16 @@ def add_articulo_to_reserva(
     - Admin: puede gestionar artículos de cualquier reserva
     - No admin: solo puede gestionar artículos de sus reservas
     """
-    # Verificar que la reserva existe
-    from app.repositories.reserva_repository import ReservaRepository
-
-    reserva = ReservaRepository.get_by_id(db, reserva_id)
-    if not reserva:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró una reserva con ID {reserva_id}",
-        )
-
-    if not current_user.is_admin and reserva.id_persona != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permisos para modificar los artículos de esta reserva",
-        )
-
-    if not reserva.id_sala:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Solo se pueden asignar artículos a reservas de salas",
-        )
-
-    # Verificar que el artículo existe y obtener su cantidad total
-    from app.repositories.articulo_repository import ArticuloRepository
-
-    articulo = ArticuloRepository.get_by_id(db, articulo_id)
-    if not articulo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró un artículo con ID {articulo_id}",
-        )
-
-    if not articulo.disponible:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"El artículo '{articulo.nombre}' no está disponible para reservas",
-        )
-
-    # Primero verificar si ya existe la asignación
-    existing = db.execute(
-        text(
-            """
-        SELECT cantidad FROM reserva_articulos
-        WHERE reserva_id = :reserva_id AND articulo_id = :articulo_id
-        """
-        ),
-        {"reserva_id": reserva_id, "articulo_id": articulo_id},
-    ).fetchone()
-
-    cantidad_ya_asignada = existing[0] if existing else 0
-
-    # Calcular cantidad reservada en el mismo período de tiempo (EXCLUYENDO la reserva actual)
-    # Incluye reservas directas del artículo Y artículos en reservas de sala
-    result = db.execute(
-        text(
-            """
-        SELECT COALESCE(SUM(cantidad_usada), 0) as total_reservado
-        FROM (
-            -- Reservas directas del artículo
-            SELECT 1 as cantidad_usada
-            FROM reservas r
-            WHERE r.id_articulo = :articulo_id
-            AND r.id != :reserva_id
-            AND r.fecha_hora_fin >= :fecha_inicio
-            AND r.fecha_hora_inicio <= :fecha_fin
-
-            UNION ALL
-
-            -- Artículos en reservas de sala (EXCLUYENDO esta reserva)
-            SELECT ra.cantidad as cantidad_usada
-            FROM reserva_articulos ra
-            JOIN reservas r ON ra.reserva_id = r.id
-            WHERE ra.articulo_id = :articulo_id
-            AND ra.reserva_id != :reserva_id
-            AND r.fecha_hora_fin >= :fecha_inicio
-            AND r.fecha_hora_inicio <= :fecha_fin
-        ) as reservas_activas
-        """
-        ),
-        {
-            "articulo_id": articulo_id,
-            "reserva_id": reserva_id,
-            "fecha_inicio": reserva.fecha_hora_inicio,
-            "fecha_fin": reserva.fecha_hora_fin,
-        },
-    )
-
-    total_reservado_otras = result.scalar() or 0
-
-    # Calcular disponibilidad considerando lo que ya tiene asignado esta reserva
-    # Total disponible = Stock total - Reservado en otras - Lo que YA tiene esta reserva
-    cantidad_disponible_para_agregar = (
-        articulo.cantidad - total_reservado_otras - cantidad_ya_asignada
-    )
-
-    if existing:
-        # Ya existe - decidir si SUMAR o REEMPLAZAR
-        if modo == "reemplazar":
-            nueva_cantidad = cantidad
-        else:  # modo == "sumar" (default)
-            nueva_cantidad = cantidad_ya_asignada + cantidad
-
-        # Validar que no exceda el stock total
-        if nueva_cantidad > articulo.cantidad - total_reservado_otras:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No hay suficiente cantidad disponible. Ya asignado en esta reserva: {cantidad_ya_asignada}, {'Quieres establecer' if modo == 'reemplazar' else 'Quieres agregar'}: {cantidad}, Total necesario: {nueva_cantidad}, Disponible: {articulo.cantidad - total_reservado_otras} (Stock total: {articulo.cantidad}, Reservado en otras: {total_reservado_otras})",
-            )
-
-        db.execute(
-            text(
-                """
-            UPDATE reserva_articulos
-            SET cantidad = :nueva_cantidad
-            WHERE reserva_id = :reserva_id AND articulo_id = :articulo_id
-            """
-            ),
-            {
-                "reserva_id": reserva_id,
-                "articulo_id": articulo_id,
-                "nueva_cantidad": nueva_cantidad,
-            },
-        )
-    else:
-        # No existe - INSERTAR nuevo registro
-        # Validar que no exceda el stock disponible
-        if cantidad > cantidad_disponible_para_agregar:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No hay suficiente cantidad disponible. Solicitado: {cantidad}, Disponible: {cantidad_disponible_para_agregar} (Stock total: {articulo.cantidad}, Reservado en otras: {total_reservado_otras})",
-            )
-
-        db.execute(
-            text(
-                """
-            INSERT INTO reserva_articulos (reserva_id, articulo_id, cantidad)
-            VALUES (:reserva_id, :articulo_id, :cantidad)
-            """
-            ),
-            {
-                "reserva_id": reserva_id,
-                "articulo_id": articulo_id,
-                "cantidad": cantidad,
-            },
-        )
-
+    reserva = _verificar_reserva_existente(db, reserva_id)
+    _verificar_permiso_modificar_reserva(reserva, current_user)
+    _verificar_reserva_es_sala(reserva)
+    articulo = _verificar_articulo_existente(db, articulo_id)
+    cantidad_ya_asignada = _obtener_asignacion_existente(db, reserva_id, articulo_id)
+    total_reservado_otras = _calcular_total_reservado_otras(db, reserva_id, articulo_id)
+    _insertar_o_actualizar_articulo(db, reserva_id, articulo_id,
+                                    cantidad, modo, cantidad_ya_asignada,
+                                    articulo, total_reservado_otras)
     db.commit()
-
     return {"message": "Artículo agregado a la reserva exitosamente"}
 
 

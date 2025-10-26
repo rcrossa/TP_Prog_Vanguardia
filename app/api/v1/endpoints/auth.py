@@ -63,7 +63,7 @@ router = APIRouter(prefix="/auth", tags=["🔐 Autenticación"])
         },
     },
 )
-async def login(login_data: UserLogin, db: Session = Depends(get_db)):
+def login(login_data: UserLogin, db: Session = Depends(get_db)):
     """
     ## 🔑 Iniciar Sesión
 
@@ -135,7 +135,7 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
         },
     },
 )
-async def register(register_data: UserRegister, db: Session = Depends(get_db)):
+def register(register_data: UserRegister, db: Session = Depends(get_db)):
     """
     ## 📝 Registrar Nueva Cuenta
 
@@ -187,7 +187,7 @@ async def register(register_data: UserRegister, db: Session = Depends(get_db)):
     summary="👤 Perfil Usuario",
     description="Obtener información del usuario autenticado actual",
 )
-async def get_user_profile(current_user: Persona = Depends(get_current_active_user)):
+def get_user_profile(current_user: Persona = Depends(get_current_active_user)):
     """
     ## 👤 Obtener Perfil de Usuario
 
@@ -228,7 +228,7 @@ async def get_user_profile(current_user: Persona = Depends(get_current_active_us
     summary="🔒 Cambiar Contraseña",
     description="Cambiar contraseña del usuario autenticado",
 )
-async def change_password(
+def change_password(
     password_data: UserChangePassword,
     current_user: Persona = Depends(get_current_active_user),
     db: Session = Depends(get_db),
@@ -265,7 +265,7 @@ async def change_password(
     summary="🚪 Cerrar Sesión",
     description="Cerrar sesión del usuario (información para el cliente)",
 )
-async def logout(current_user: Persona = Depends(get_current_active_user)):
+def logout(current_user: Persona = Depends(get_current_active_user)):
     """
     ## 🚪 Cerrar Sesión
 
@@ -298,7 +298,7 @@ async def logout(current_user: Persona = Depends(get_current_active_user)):
     summary="👥 Listar Usuarios (Admin)",
     description="Obtener lista de todos los usuarios - Solo administradores",
 )
-async def list_users(
+def list_users(
     db: Session = Depends(get_db), admin_user: Persona = Depends(get_current_admin_user)
 ):
     """
@@ -339,7 +339,7 @@ async def list_users(
     summary="🔄 Activar/Desactivar Usuario (Admin)",
     description="Cambiar estado activo de un usuario - Solo administradores",
 )
-async def toggle_user_active(
+def toggle_user_active(
     user_id: int,
     db: Session = Depends(get_db),
     admin_user: Persona = Depends(get_current_admin_user),

@@ -1,130 +1,109 @@
+
 """
 Endpoints de la API para el modelo Sala.
 
 Este módulo define los endpoints REST para las operaciones CRUD
 del modelo Sala utilizando FastAPI.
 """
-
-from typing import List, Optional
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
+from typing import List
+from fastapi.responses import JSONResponse
+from httpx import HTTPError
+from fastapi import APIRouter, status
+from app.services.java_client import JavaServiceClient
 from app.schemas.sala import Sala, SalaCreate, SalaUpdate
-from app.services.sala_service import SalaService
+
 
 router = APIRouter(prefix="/salas", tags=["salas"])
 
 
 @router.post("/", response_model=Sala, status_code=status.HTTP_201_CREATED)
-def create_sala(sala_data: SalaCreate, db: Session = Depends(get_db)):
-    """Crear una nueva sala."""
+async def create_sala(sala_data: SalaCreate):
+    """Crear una nueva sala directamente en el microservicio Java."""
     try:
-        return SalaService.create_sala(db, sala_data)
+        java_payload = sala_data.model_dump()
+        result = await JavaServiceClient.create_sala(java_payload)
+        if result is None:
+            return JSONResponse(status_code=503,
+                                content={"detail": "No se pudo crear la sala en el servicio Java."})
+        return result
+    except HTTPError as e:
+        return JSONResponse(status_code=502, content={"detail": f"Error de red: {str(e)}"})
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})
+
+
 
 
 @router.get("/", response_model=List[Sala])
-def get_salas(
-    skip: int = 0,
-    limit: int = 100,
-    min_capacidad: Optional[int] = Query(
-        None, description="Capacidad mínima requerida"
-    ),
-    db: Session = Depends(get_db),
-):
-    """Obtener lista de salas con filtros opcionales."""
-    if limit > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
-        )
-
-    return SalaService.get_salas(db, skip, limit, min_capacidad)
+async def get_salas():
+    """Obtener lista de salas directamente desde el microservicio Java."""
+    try:
+        salas = await JavaServiceClient.get_salas()
+        if salas is None:
+            return JSONResponse(status_code=503,
+                                content={
+                                    "No se pudo obtener la lista de salas desde el servicio Java."
+                                })
+        return salas
+    except HTTPError as e:
+        return JSONResponse(status_code=502, content={"detail": f"Error de red: {str(e)}"})
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})
 
 
 @router.get("/capacidad/{min_capacidad}", response_model=List[Sala])
-def get_salas_by_capacidad(
-    min_capacidad: int,
-    max_capacidad: Optional[int] = Query(None, description="Capacidad máxima"),
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-):
-    """Obtener salas por rango de capacidad."""
-    if limit > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El límite máximo es 100 registros",
-        )
+async def get_salas_by_capacidad(min_capacidad: int):
+    """No implementado: usar microservicio Java para filtros avanzados."""
+    return JSONResponse(status_code=501,
+                        content={ "Funcionalidad no implementada."})
 
-    if min_capacidad <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La capacidad mínima debe ser mayor a 0",
-        )
-
-    if max_capacidad is not None and max_capacidad < min_capacidad:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La capacidad máxima debe ser mayor o igual a la mínima",
-        )
-
-    return SalaService.get_salas_by_capacidad(
-        db, min_capacidad, max_capacidad, skip, limit
-    )
 
 
 @router.get("/{sala_id}", response_model=Sala)
-def get_sala(sala_id: int, db: Session = Depends(get_db)):
-    """Obtener una sala específica por ID."""
-    sala = SalaService.get_sala_by_id(db, sala_id)
-    if not sala:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró una sala con ID {sala_id}",
-        )
-    return sala
+@router.get("/{sala_id}", response_model=Sala)
+async def get_sala(sala_id: int):
+    """Obtener una sala específica por ID desde el microservicio Java."""
+    result = await JavaServiceClient.get_sala(sala_id)
+    if result is None:
+        return JSONResponse(status_code=404,
+                            content={f"No se encontró una sala con ID {sala_id}."})
+    return result
 
 
 @router.put("/{sala_id}", response_model=Sala)
-def update_sala(sala_id: int, sala_data: SalaUpdate, db: Session = Depends(get_db)):
-    """Actualizar datos de una sala existente."""
+async def update_sala(sala_id: int, sala_data: SalaUpdate):
+    """Actualizar datos de una sala directamente en el microservicio Java."""
     try:
-        sala = SalaService.update_sala(db, sala_id, sala_data)
-        if not sala:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No se encontró una sala con ID {sala_id}",
-            )
-        return sala
+        java_payload = sala_data.model_dump(exclude_unset=True)
+        result = await JavaServiceClient.update_sala(sala_id, java_payload)
+        if result is None:
+            return JSONResponse(status_code=404,
+                                content={f"No se encontró una sala con ID {sala_id}."})
+        return result
+    except HTTPError as e:
+        return JSONResponse(status_code=502, content={"detail": f"Error de red: {str(e)}"})
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})
 
 
-@router.delete("/{sala_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_sala(sala_id: int, db: Session = Depends(get_db)):
-    """Eliminar una sala del sistema."""
+@router.delete("/{sala_id}", response_model=dict)
+async def delete_sala(sala_id: int):
+    """Eliminar una sala directamente en el microservicio Java."""
     try:
-        success = SalaService.delete_sala(db, sala_id)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No se encontró una sala con ID {sala_id}",
-            )
+        result = await JavaServiceClient.delete_sala(sala_id)
+        if not result:
+            return JSONResponse(status_code=404,
+                                content={f"No se encontró una sala con ID {sala_id}."})
+        return {"success": True}
+    except HTTPError as e:
+        return JSONResponse(status_code=502, content={"detail": f"Error de red: {str(e)}"})
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})
 
 
 @router.get("/count/total")
-def count_salas(
-    min_capacidad: Optional[int] = Query(
-        None, description="Filtrar conteo por capacidad mínima"
-    ),
-    db: Session = Depends(get_db),
-):
-    """Obtener el número total de salas."""
-    count = SalaService.count_salas(db, min_capacidad)
-    return {"total": count, "min_capacidad": min_capacidad}
+@router.get("/count/total")
+async def count_salas():
+    """No implementado: usar microservicio Java para conteo."""
+    return JSONResponse(status_code=501,
+                        content={ "Funcionalidad no implementada."})

@@ -1,21 +1,17 @@
+
 """
 Modelo de datos para personas/usuarios del sistema.
 
 Este módulo define el modelo Persona que representa a los usuarios
 que pueden realizar reservas en el sistema.
 """
-
 from __future__ import annotations
-
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
-
 from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-
 from app.core.database import Base
-
 if TYPE_CHECKING:
     from app.models.reserva import Reserva
 
@@ -50,7 +46,8 @@ class Persona(Base):
     reservas: Mapped[List[Reserva]] = relationship(back_populates="persona")
 
     def __repr__(self):
-        return f"<Persona(id={self.id}, nombre='{self.nombre}', email='{self.email}', is_active={self.is_active})>"
+        return f"<Persona(id={self.id}, nombre='{self.nombre}', email='{self.email}'," \
+               f" is_active={self.is_active})>"
 
     def has_password(self) -> bool:
         """Verificar si el usuario tiene una contraseña configurada."""

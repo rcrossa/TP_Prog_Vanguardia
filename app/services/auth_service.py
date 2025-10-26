@@ -1,16 +1,14 @@
+
 """
 Servicio de autenticación para el Sistema de Reservas.
 
 Este módulo contiene la lógica de negocio para autenticación,
 login, registro y gestión de usuarios.
 """
-
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.auth.jwt_handler import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     create_access_token,
@@ -85,7 +83,7 @@ class AuthService:
             )
 
         # Actualizar último login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
         db.commit()
         db.refresh(user)
 
@@ -155,7 +153,7 @@ class AuthService:
             hashed_password=hashed_password,
             is_active=True,
             is_admin=False,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         db.add(user)

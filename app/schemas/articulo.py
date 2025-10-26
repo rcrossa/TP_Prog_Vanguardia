@@ -1,12 +1,11 @@
+
 """
 Esquemas Pydantic para el modelo Articulo.
 
 Este módulo define los esquemas de validación y serialización
 para las operaciones CRUD del modelo Articulo.
 """
-
 from typing import Optional
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -83,13 +82,37 @@ class ArticuloUpdate(BaseModel):
         description="Nuevo nombre del artículo",
         examples=["Laptop Dell XPS 15 Actualizada", "Proyector 4K Nuevo"],
     )
+    descripcion: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Nueva descripción del artículo",
+        examples=["Laptop actualizada para desarrollo avanzado"],
+    )
+    cantidad: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Nueva cantidad disponible",
+        examples=[1, 5, 10],
+    )
+    categoria: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Nueva categoría",
+        examples=["Informática", "Electrónica", "Mobiliario"],
+    )
     disponible: Optional[bool] = Field(
         None, description="Nuevo estado de disponibilidad", examples=[True, False]
     )
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"nombre": "iPad Pro 12.9 pulgadas", "disponible": False}
+            "example": {
+                "nombre": "iPad Pro 12.9 pulgadas",
+                "descripcion": "Tablet profesional para diseño gráfico",
+                "cantidad": 2,
+                "categoria": "Informática",
+                "disponible": False
+            }
         }
     )
 

@@ -1,3 +1,16 @@
+"""auth"""
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+# Constantes para valores repetidos
+
+MIN_PASSWORD_LENGTH = 6
+TOKEN_EXPIRES_IN = 1800
+# Constantes para ejemplos
+EXAMPLE_EMAIL = "juan@ejemplo.com"
+EXAMPLE_USER_EMAIL = "usuario@ejemplo.com"
+EXAMPLE_NOMBRE = "Juan Pérez"
+EXAMPLE_PASSWORD = "micontraseña123"
 """
 Esquemas Pydantic para autenticación y autorización.
 
@@ -5,21 +18,17 @@ Este módulo define los esquemas para login, registro, tokens
 y respuestas de autenticación.
 """
 
-from datetime import datetime
-from typing import Optional
-
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
-
-
 class UserLogin(BaseModel):
     """Esquema para login de usuario."""
 
     email: EmailStr = Field(..., description="Email del usuario")
-    password: str = Field(..., min_length=6, description="Contraseña del usuario")
+    password: str = Field(..., min_length=MIN_PASSWORD_LENGTH,
+                          description=f"Contraseña del usuario "
+                          f"(mínimo {MIN_PASSWORD_LENGTH} caracteres)")
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"email": "usuario@ejemplo.com", "password": "micontraseña123"}
+            "example": {"email": EXAMPLE_USER_EMAIL, "password": EXAMPLE_PASSWORD}
         }
     )
 
@@ -32,17 +41,18 @@ class UserRegister(BaseModel):
     )
     email: EmailStr = Field(..., description="Email único del usuario")
     password: str = Field(
-        ..., min_length=6, description="Contraseña (mínimo 6 caracteres)"
+        ..., min_length=MIN_PASSWORD_LENGTH,
+        description=f"Contraseña (mínimo {MIN_PASSWORD_LENGTH} caracteres)"
     )
     confirm_password: str = Field(..., description="Confirmación de contraseña")
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "nombre": "Juan Pérez",
-                "email": "juan@ejemplo.com",
-                "password": "micontraseña123",
-                "confirm_password": "micontraseña123",
+                "nombre": EXAMPLE_NOMBRE,
+                "email": EXAMPLE_EMAIL,
+                "password": EXAMPLE_PASSWORD,
+                "confirm_password": EXAMPLE_PASSWORD,
             }
         }
     )
@@ -56,7 +66,9 @@ class UserChangePassword(BaseModel):
     """Esquema para cambio de contraseña."""
 
     current_password: str = Field(..., description="Contraseña actual")
-    new_password: str = Field(..., min_length=6, description="Nueva contraseña")
+    new_password: str = Field(..., min_length=MIN_PASSWORD_LENGTH,
+                              description=f"Nueva contraseña (mínimo "
+                              f"{MIN_PASSWORD_LENGTH} caracteres)")
     confirm_new_password: str = Field(
         ..., description="Confirmación de nueva contraseña"
     )
@@ -78,7 +90,7 @@ class Token(BaseModel):
             "example": {
                 "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "token_type": "bearer",
-                "expires_in": 1800,
+                "expires_in": TOKEN_EXPIRES_IN,
             }
         }
     )
@@ -107,8 +119,8 @@ class UserProfile(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "nombre": "Juan Pérez",
-                "email": "juan@ejemplo.com",
+                "nombre": EXAMPLE_NOMBRE,
+                "email": EXAMPLE_EMAIL,
                 "is_active": True,
                 "is_admin": False,
                 "created_at": "2025-10-15T21:00:00",
@@ -132,8 +144,8 @@ class LoginResponse(BaseModel):
                 "message": "Login exitoso",
                 "user": {
                     "id": 1,
-                    "nombre": "Juan Pérez",
-                    "email": "juan@ejemplo.com",
+                    "nombre": EXAMPLE_NOMBRE,
+                    "email": EXAMPLE_EMAIL,
                     "is_active": True,
                     "is_admin": False,
                     "has_password": True,
@@ -141,7 +153,7 @@ class LoginResponse(BaseModel):
                 "token": {
                     "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                     "token_type": "bearer",
-                    "expires_in": 1800,
+                    "expires_in": TOKEN_EXPIRES_IN,
                 },
             }
         }

@@ -1,14 +1,12 @@
+
 """
 Repositorio para operaciones CRUD de Persona.
 
 Este módulo contiene las operaciones de base de datos para el modelo Persona,
 incluyendo crear, leer, actualizar y eliminar registros.
 """
-
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
-
 from app.models.persona import Persona
 from app.schemas.persona import PersonaCreate, PersonaUpdate
 

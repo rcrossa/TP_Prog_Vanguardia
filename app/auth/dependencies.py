@@ -20,7 +20,7 @@ from app.repositories.persona_repository import PersonaRepository
 security = HTTPBearer()
 
 
-async def get_current_user(
+def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> Persona:
@@ -65,7 +65,7 @@ async def get_current_user(
     return user
 
 
-async def get_current_active_user(
+def get_current_active_user(
     current_user: Persona = Depends(get_current_user),
 ) -> Persona:
     """
@@ -87,7 +87,7 @@ async def get_current_active_user(
     return current_user
 
 
-async def get_current_admin_user(
+def get_current_admin_user(
     current_user: Persona = Depends(get_current_active_user),
 ) -> Persona:
     """
@@ -110,7 +110,7 @@ async def get_current_admin_user(
     return current_user
 
 
-async def get_optional_current_user(
+def get_optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> Optional[Persona]:

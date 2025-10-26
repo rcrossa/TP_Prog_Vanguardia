@@ -1,14 +1,12 @@
+
 """
 Repositorio para operaciones CRUD de Sala.
 
 Este módulo contiene las operaciones de base de datos para el modelo Sala,
 incluyendo crear, leer, actualizar y eliminar registros.
 """
-
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
-
 from app.models.sala import Sala
 from app.schemas.sala import SalaCreate, SalaUpdate
 
@@ -19,7 +17,13 @@ class SalaRepository:
     @staticmethod
     def create(db: Session, sala_data: SalaCreate) -> Sala:
         """Crear una nueva sala."""
-        db_sala = Sala(nombre=sala_data.nombre, capacidad=sala_data.capacidad)
+        db_sala = Sala(
+            nombre=sala_data.nombre,
+            capacidad=sala_data.capacidad,
+            ubicacion=getattr(sala_data, "ubicacion", ""),
+            disponible=getattr(sala_data, "disponible", True),
+            descripcion=getattr(sala_data, "descripcion", "")
+        )
         db.add(db_sala)
         db.commit()
         db.refresh(db_sala)

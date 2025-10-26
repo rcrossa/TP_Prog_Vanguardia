@@ -11,19 +11,20 @@ Script para crear un usuario administrador inicial.
     Para producción, usar variables de entorno o prompts seguros.
     Ver: create_admin_secure.py para una versión más segura.
 """
+
+
 import os
 import sys
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.schemas.persona import PersonaCreate
+from app.services.persona_service import PersonaService
+from app.repositories.persona_repository import PersonaRepository
 
 # Ajustar el path para importar desde la raíz del proyecto
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 sys.path.append(project_root)
-
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.schemas.persona import PersonaCreate
-from app.services.persona_service import PersonaService
 
 
 def create_admin_user():
@@ -46,7 +47,6 @@ def create_admin_user():
         )
 
         # Verificar si ya existe
-        from app.repositories.persona_repository import PersonaRepository
 
         existing_admin = PersonaRepository.get_by_email(db, admin_data.email)
 
@@ -69,10 +69,9 @@ def create_admin_user():
         print(f"   Nombre: {admin_user.nombre}")
 
         return admin_user
-
-    except Exception as e:
+    except Exception as exc:
         db.rollback()
-        print(f"❌ Error creando usuario admin: {e}")
+        print(f"❌ Error creando usuario admin: {exc}")
         raise
     finally:
         db.close()

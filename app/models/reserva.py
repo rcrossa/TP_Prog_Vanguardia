@@ -1,20 +1,16 @@
+
 """
 Modelo de datos para reservas del sistema.
 
 Este módulo define el modelo Reserva que representa las reservas
 realizadas por personas para artículos o salas específicas.
 """
-
 from __future__ import annotations
-
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
-
 from sqlalchemy import DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.core.database import Base
-
 if TYPE_CHECKING:
     from app.models.articulo import Articulo
     from app.models.persona import Persona

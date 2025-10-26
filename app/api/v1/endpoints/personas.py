@@ -1,16 +1,15 @@
+
 """
 Endpoints de la API para el modelo Persona.
 
 Este módulo define los endpoints REST para las operaciones CRUD
 del modelo Persona utilizando FastAPI.
 """
-
 from datetime import timedelta
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-
 from app.auth.dependencies import get_current_admin_user, get_current_user
 from app.auth.jwt_handler import create_access_token
 from app.core.database import get_db
@@ -37,13 +36,13 @@ router = APIRouter(prefix="/personas", tags=["personas"])
 def create_persona(
     persona_data: PersonaCreate,
     db: Session = Depends(get_db),
-    current_user: PersonaModel = Depends(get_current_admin_user),
+    _current_user: PersonaModel = Depends(get_current_admin_user),
 ):
     """Crear nueva persona en el sistema (solo administradores)."""
     try:
         return PersonaService.create_persona(db, persona_data)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.post("/login", response_model=PersonaLoginResponse)
@@ -76,7 +75,7 @@ def get_personas(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: PersonaModel = Depends(get_current_admin_user),
+    _current_user: PersonaModel = Depends(get_current_admin_user),
 ):
     """Obtener lista de personas con paginación (solo administradores)."""
     if limit > 100:
@@ -92,7 +91,7 @@ def get_personas(
 def get_persona(
     persona_id: int,
     db: Session = Depends(get_db),
-    current_user: PersonaModel = Depends(get_current_admin_user),
+    _current_user: PersonaModel = Depends(get_current_admin_user),
 ):
     """Obtener una persona específica por ID."""
     persona = PersonaService.get_persona_by_id(db, persona_id)
@@ -108,7 +107,7 @@ def get_persona(
 def get_persona_by_email(
     email: str,
     db: Session = Depends(get_db),
-    current_user: PersonaModel = Depends(get_current_admin_user),
+    _current_user: PersonaModel = Depends(get_current_admin_user),
 ):
     """Obtener una persona por su email.
 
@@ -130,7 +129,7 @@ def update_persona(
     persona_id: int,
     persona_data: PersonaUpdate,
     db: Session = Depends(get_db),
-    current_user: PersonaModel = Depends(get_current_admin_user),
+    _current_user: PersonaModel = Depends(get_current_admin_user),
 ):
     """Actualizar datos de una persona existente."""
     try:
@@ -142,14 +141,14 @@ def update_persona(
             )
         return persona
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.delete("/{persona_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_persona(
     persona_id: int,
     db: Session = Depends(get_db),
-    current_user: PersonaModel = Depends(get_current_admin_user),
+    _current_user: PersonaModel = Depends(get_current_admin_user),
 ):
     """Eliminar una persona del sistema."""
     try:
@@ -160,13 +159,13 @@ def delete_persona(
                 detail=f"No se encontró una persona con ID {persona_id}",
             )
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.get("/count/total")
 def count_personas(
     db: Session = Depends(get_db),
-    current_user: PersonaModel = Depends(get_current_admin_user),
+    _current_user: PersonaModel = Depends(get_current_admin_user),
 ):
     """Obtener el número total de personas registradas."""
     count = PersonaService.count_personas(db)
@@ -176,7 +175,6 @@ def count_personas(
 @router.post("/web-login")
 def web_login_user(login_data: PersonaLogin, db: Session = Depends(get_db)):
     """Autenticar usuario para navegación web y configurar cookies."""
-    from fastapi.responses import JSONResponse
 
     user = PersonaService.authenticate_user(db, login_data.email, login_data.password)
     if not user:

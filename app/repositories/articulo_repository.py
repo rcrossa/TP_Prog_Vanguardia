@@ -1,14 +1,12 @@
+
 """
 Repositorio para operaciones CRUD de Articulo.
 
 Este módulo contiene las operaciones de base de datos para el modelo Articulo,
 incluyendo crear, leer, actualizar y eliminar registros.
 """
-
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
-
 from app.models.articulo import Articulo
 from app.schemas.articulo import ArticuloCreate, ArticuloUpdate
 

@@ -1,12 +1,11 @@
+
 """
 Router principal de la API v1.
 
 Este módulo configura todos los routers de endpoints
 y los agrupa bajo el prefijo /api/v1.
 """
-
 from fastapi import APIRouter
-
 from app.api.v1.endpoints import (
     articulos_router,
     personas_router,

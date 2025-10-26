@@ -4,11 +4,14 @@ Endpoint de demostración para probar integración con Java Service.
 Este endpoint muestra cómo Python puede consultar datos desde Java.
 """
 
-import logging
 
+import logging
 from fastapi import APIRouter, HTTPException
 
 from app.services.java_client import JavaServiceClient
+
+# Constante para la URL del Java Service
+JAVA_SERVICE_URL = "http://localhost:8080"
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +31,13 @@ async def check_java_service_health():
         return {
             "status": "healthy",
             "message": "✅ Java Service está disponible y respondiendo",
-            "java_service_url": "http://localhost:8080",
+            "java_service_url": JAVA_SERVICE_URL,
         }
     else:
         return {
             "status": "unhealthy",
             "message": "❌ Java Service NO está disponible",
-            "java_service_url": "http://localhost:8080",
+            "java_service_url": JAVA_SERVICE_URL,
         }
 
 
@@ -72,7 +75,7 @@ async def validate_sala_with_java(sala_id: int):
     Args:
         sala_id: ID de la sala a validar
     """
-    logger.info(f"🔗 Validando sala {sala_id} contra Java Service...")
+    logger.info("🔗 Validando sala %s contra Java Service...", sala_id)
 
     # Verificar si existe
     exists = await JavaServiceClient.validate_sala_exists(sala_id)
@@ -105,7 +108,7 @@ async def validate_articulo_with_java(articulo_id: int):
     Args:
         articulo_id: ID del artículo a validar
     """
-    logger.info(f"🔗 Validando artículo {articulo_id} contra Java Service...")
+    logger.info("🔗 Validando artículo %s contra Java Service...", articulo_id)
 
     # Verificar si existe
     exists = await JavaServiceClient.validate_articulo_exists(articulo_id)
@@ -142,9 +145,9 @@ async def integration_demo():
         "title": "🔗 Demostración de Integración Python ↔ Java",
         "description": "Este endpoint muestra cómo Python se comunica con Java via HTTP",
         "java_service": {
-            "url": "http://localhost:8080",
+            "url": JAVA_SERVICE_URL,
             "status": "✅ Disponible" if java_healthy else "❌ No disponible",
-            "swagger": "http://localhost:8080/swagger-ui.html",
+            "swagger": f"{JAVA_SERVICE_URL}/swagger-ui.html",
         },
         "examples": {
             "health_check": "/api/v1/integration/health",

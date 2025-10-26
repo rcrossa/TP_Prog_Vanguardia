@@ -1,24 +1,23 @@
+
+
 """
 Servicio para operaciones de negocio de Reserva.
 
 Este módulo contiene la lógica de negocio para el modelo Reserva,
 incluyendo validaciones complejas y operaciones de reservas.
 """
-
-import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import List, Optional
-
+import asyncio
+from sqlalchemy import text
 from sqlalchemy.orm import Session
-
 from app.models.reserva import Reserva
 from app.repositories.reserva_repository import ReservaRepository
 from app.schemas.reserva import ReservaCreate, ReservaUpdate
-from app.services.articulo_service import ArticuloService
 from app.services.java_client import JavaServiceClient
 from app.services.persona_service import PersonaService
-from app.services.sala_service import SalaService
+from app.repositories.articulo_repository import ArticuloRepository
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,8 @@ class ReservaService:
         """
         # Validar que la persona existe
         if not PersonaService.validate_persona_exists(db, reserva_data.id_persona):
-            raise ValueError(f"No existe una persona con ID {reserva_data.id_persona}")
+            raise ValueError(f"No existe una persona con ID "
+                             f"{reserva_data.id_persona}")
 
         # Validar fechas
         if reserva_data.fecha_hora_fin <= reserva_data.fecha_hora_inicio:
@@ -54,9 +54,11 @@ class ReservaService:
         now = datetime.now()
         margin_minutes = 30
         cutoff_time = now - timedelta(minutes=margin_minutes)
-        
+
         if reserva_data.fecha_hora_inicio < cutoff_time:
-            raise ValueError(f"No se pueden crear reservas con más de {margin_minutes} minutos en el pasado")
+            raise ValueError(
+                f"No se pueden crear reservas con más de {margin_minutes} minutos en el pasado"
+            )
 
         # Una reserva debe ser para un artículo O una sala, no ambos ni ninguno
         has_articulo = reserva_data.id_articulo is not None
@@ -80,146 +82,99 @@ class ReservaService:
         return ReservaRepository.create(db, reserva_data)
 
     @staticmethod
-    def _validate_articulo_reservation(
-        db: Session, reserva_data: ReservaCreate
-    ) -> None:
+    def _validate_articulo_reservation(db: Session, reserva_data: ReservaCreate) -> None:
         """
-        Validar reserva de artículo.
-
-        Verifica que:
-        1. El artículo existe y está disponible
-        2. Hay suficiente cantidad disponible en el período solicitado
+        Validar reserva de artículo SOLO si el servicio Java está disponible.
+        Si el servicio Java no responde, se muestra un error claro y no se permite la reserva.
         """
         if reserva_data.id_articulo is None:
             return
 
-        # Verificar que el artículo existe y está disponible
-        if not ArticuloService.validate_articulo_disponible(
-            db, reserva_data.id_articulo
-        ):
+    # ...existing code...
+        # Verificar disponibilidad del servicio Java
+        is_java_up = asyncio.run(JavaServiceClient.check_service_health())
+        if not is_java_up:
             raise ValueError(
-                f"El artículo con ID {reserva_data.id_articulo} no existe o no está disponible"
+                "El sistema de gestión de artículos no está disponible en este momento. "
+                "Por favor, intente más tarde."
             )
-
-        # Obtener el artículo para verificar la cantidad total
-        from app.repositories.articulo_repository import ArticuloRepository
-
+        # Validar existencia y disponibilidad del artículo en Java
+        java_validation = asyncio.run(
+            JavaServiceClient.validate_articulo_exists(reserva_data.id_articulo))
+        if not java_validation:
+            raise ValueError(
+                f"El artículo con ID {reserva_data.id_articulo} "
+                f"no existe en el sistema de gestión de artículos."
+            )
+        # Obtener el artículo para verificar la cantidad total (local)
         articulo = ArticuloRepository.get_by_id(db, reserva_data.id_articulo)
-
         if not articulo:
-            raise ValueError(f"El artículo con ID {reserva_data.id_articulo} no existe")
-
+            raise ValueError(
+                f"El artículo con ID {reserva_data.id_articulo} no existe"
+            )
         # Calcular cuántas unidades están reservadas en el mismo período
-        from sqlalchemy import text
-
         result = db.execute(
             text(
                 """
-            SELECT COALESCE(SUM(cantidad_usada), 0) as total_reservado
-            FROM (
-                -- Reservas directas del artículo
-                SELECT 1 as cantidad_usada
-                FROM reservas r
-                WHERE r.id_articulo = :articulo_id
-                AND r.fecha_hora_fin >= :fecha_inicio
-                AND r.fecha_hora_inicio <= :fecha_fin
-
-                UNION ALL
-
-                -- Artículos en reservas de sala
-                SELECT ra.cantidad as cantidad_usada
-                FROM reserva_articulos ra
-                JOIN reservas r ON ra.reserva_id = r.id
-                WHERE ra.articulo_id = :articulo_id
-                AND r.fecha_hora_fin >= :fecha_inicio
-                AND r.fecha_hora_inicio <= :fecha_fin
-            ) as reservas_activas
-            """
+                SELECT COALESCE(SUM(cantidad_usada), 0) as total_reservado
+                FROM (
+                    SELECT 1 as cantidad_usada
+                    FROM reservas r
+                    WHERE r.id_articulo = :articulo_id
+                    AND r.fecha_hora_fin >= NOW()
+                    UNION ALL
+                    SELECT ra.cantidad as cantidad_usada
+                    FROM reserva_articulos ra
+                    JOIN reservas r ON ra.reserva_id = r.id
+                    WHERE ra.articulo_id = :articulo_id
+                    AND r.fecha_hora_fin >= NOW()
+                ) as reservas_activas
+                """
             ),
             {
                 "articulo_id": reserva_data.id_articulo,
-                "fecha_inicio": reserva_data.fecha_hora_inicio,
-                "fecha_fin": reserva_data.fecha_hora_fin,
             },
         )
-
         total_reservado = result.scalar() or 0
         cantidad_disponible = articulo.cantidad - total_reservado
-
         if cantidad_disponible < 1:
             raise ValueError(
-                f"No hay unidades disponibles del artículo '{articulo.nombre}' en el período solicitado. "
-                f"Total: {articulo.cantidad}, Ya reservado: {total_reservado}"
+                f"No hay unidades disponibles del artículo '{articulo.nombre}' "
+                f"en el período solicitado. "
+                f"Total: {articulo.cantidad}, "
+                f"Ya reservado: {total_reservado}"
             )
 
     @staticmethod
     def _validate_sala_reservation(db: Session, reserva_data: ReservaCreate) -> None:
         """
-        Validar reserva de sala.
-
-        🔗 INTEGRACIÓN CON JAVA SERVICE:
-        Primero intenta validar la sala contra el servicio Java.
-        Si Java no está disponible, hace fallback a validación local.
+        Validar reserva de sala SOLO si el servicio Java está disponible.
+        Si el servicio Java no responde, se muestra un error claro y no se permite la reserva.
         """
         if reserva_data.id_sala is None:
             return
 
-        # 🔗 INTEGRACIÓN: Intentar validar con Java Service primero
-        java_service_available = False
-        try:
-            # Verificar si la sala existe en Java Service
-            java_validation = asyncio.run(
-                JavaServiceClient.validate_sala_exists(reserva_data.id_sala)
+    # ...existing code...
+        # Verificar disponibilidad del servicio Java
+        is_java_up = asyncio.run(JavaServiceClient.check_service_health())
+        if not is_java_up:
+            raise ValueError(
+                "El sistema de gestión de salas no está disponible en este momento. "
+                "Por favor, intente más tarde."
             )
-            java_service_available = True
-
-            if java_validation:
-                logger.info(
-                    f"✅ Sala {reserva_data.id_sala} validada contra Java Service"
-                )
-
-                # Verificar también si está disponible
-                is_disponible = asyncio.run(
-                    JavaServiceClient.check_sala_disponible(reserva_data.id_sala)
-                )
-
-                if not is_disponible:
-                    raise ValueError(
-                        f"La sala con ID {reserva_data.id_sala} no está disponible según Java Service"
-                    )
-            else:
-                # Si Java dice que no existe, intentar fallback local
-                logger.warning(
-                    f"⚠️ Sala {reserva_data.id_sala} no encontrada en Java Service, intentando validación local"
-                )
-                if not SalaService.validate_sala_exists(db, reserva_data.id_sala):
-                    raise ValueError(
-                        f"No existe una sala con ID {reserva_data.id_sala} ni en Java Service ni localmente"
-                    )
-                logger.info(
-                    f"✅ Sala {reserva_data.id_sala} validada localmente (fallback)"
-                )
-
-        except ValueError:
-            # Re-lanzar ValueError de validación solo si Java estaba disponible
-            if java_service_available:
-                raise
-            # Si Java no estaba disponible, intentar validación local
-            logger.warning(
-                f"⚠️ Error de validación con Java Service, usando validación local"
+        # Validar existencia y disponibilidad de la sala en Java
+        java_validation = asyncio.run(JavaServiceClient.validate_sala_exists(reserva_data.id_sala))
+        if not java_validation:
+            raise ValueError(
+                f"La sala con ID {reserva_data.id_sala}"
+                f" no existe en el sistema de gestión de salas."
             )
-            if not SalaService.validate_sala_exists(db, reserva_data.id_sala):
-                raise ValueError(f"No existe una sala con ID {reserva_data.id_sala}")
-        except Exception as e:
-            # Si hay error de conexión con Java, hacer fallback a validación local
-            logger.warning(
-                f"⚠️ No se pudo conectar con Java Service: {str(e)}. Usando validación local."
+        is_disponible = asyncio.run(JavaServiceClient.check_sala_disponible(reserva_data.id_sala))
+        if not is_disponible:
+            raise ValueError(
+                f"La sala con ID {reserva_data.id_sala} "
+                f"no está disponible según el sistema de gestión de salas."
             )
-
-            # FALLBACK: Validación local si Java no está disponible
-            if not SalaService.validate_sala_exists(db, reserva_data.id_sala):
-                raise ValueError(f"No existe una sala con ID {reserva_data.id_sala}")
-
         # Verificar conflictos de horario en la sala (siempre se hace localmente)
         conflicts = ReservaRepository.check_conflicts(
             db,
@@ -227,10 +182,9 @@ class ReservaService:
             reserva_data.fecha_hora_inicio,
             reserva_data.fecha_hora_fin,
         )
-
         if conflicts:
             raise ValueError(
-                f"Ya existe una reserva en la sala para el horario especificado"
+                "Ya existe una reserva en la sala para el horario especificado"
             )
 
     @staticmethod
@@ -377,11 +331,15 @@ class ReservaService:
         )
 
         if fecha_fin <= fecha_inicio:
-            raise ValueError("La fecha de fin debe ser posterior a la fecha de inicio")
+            raise ValueError(
+                "La fecha de fin debe ser posterior a la fecha de inicio"
+            )
 
         # Validar que no se está reservando en el pasado
         if fecha_inicio < datetime.now():
-            raise ValueError("No se pueden modificar reservas para fechas pasadas")
+            raise ValueError(
+                "No se pueden modificar reservas para fechas pasadas"
+            )
 
         # Si se está cambiando el artículo, validar disponibilidad
         if (
@@ -389,7 +347,7 @@ class ReservaService:
             and reserva_data.id_articulo != current_reserva.id_articulo
         ):
             # Crear objeto temporal para validación
-            from app.schemas.reserva import ReservaCreate
+
 
             temp_data = ReservaCreate(
                 id_persona=(
@@ -409,7 +367,6 @@ class ReservaService:
             reserva_data.id_sala is not None
             and reserva_data.id_sala != current_reserva.id_sala
         ):
-            from app.schemas.reserva import ReservaCreate
 
             temp_data = ReservaCreate(
                 id_persona=(
@@ -428,7 +385,7 @@ class ReservaService:
         if current_reserva.id_articulo and (
             reserva_data.fecha_hora_inicio or reserva_data.fecha_hora_fin
         ):
-            from app.schemas.reserva import ReservaCreate
+
 
             temp_data = ReservaCreate(
                 id_persona=(
@@ -442,9 +399,6 @@ class ReservaService:
                 id_sala=None,
             )
             # Validar disponibilidad excluyendo la reserva actual
-            from sqlalchemy import text
-
-            from app.repositories.articulo_repository import ArticuloRepository
 
             articulo = ArticuloRepository.get_by_id(db, current_reserva.id_articulo)
             if articulo:
@@ -485,7 +439,8 @@ class ReservaService:
 
                 if cantidad_disponible < 1:
                     raise ValueError(
-                        f"No hay unidades disponibles del artículo '{articulo.nombre}' en el nuevo período. "
+                        f"No hay unidades disponibles del artículo '{articulo.nombre}' "
+                        f"en el nuevo período. "
                         f"Total: {articulo.cantidad}, Ya reservado: {total_reservado}"
                     )
 

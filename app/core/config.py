@@ -1,12 +1,11 @@
+
 """
 Configuración centralizada de la aplicación.
 
 Este módulo maneja todas las variables de entorno y configuraciones
 del sistema de reservas, incluyendo base de datos, JWT y seguridad.
 """
-
 import os
-
 from dotenv import load_dotenv
 
 # Cargar variables de entorno desde .env

@@ -653,7 +653,39 @@ function viewReserva(id) {
     const reserva = reservas.find(r => r.id === id);
     if (!reserva) return;
     
-    alert(`Detalles de Reserva #${id}\n\nTipo: ${reserva.id_sala ? 'Sala' : 'Artículo'}\nRecurso: ${getNombreRecurso(reserva)}\nPersona: ${getNombrePersona(reserva.id_persona)}\nInicio: ${formatDateTime(reserva.fecha_hora_inicio)}\nFin: ${formatDateTime(reserva.fecha_hora_fin)}\nEstado: ${getEstadoReserva(reserva)}`);
+        // Crear contenido para el modal
+        const modalHtml = `
+            <div class="modal fade" id="detalleReservaModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Detalles de Reserva #${id}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <ul class="list-group mb-3">
+                                <li class="list-group-item"><strong>Tipo:</strong> ${reserva.id_sala ? 'Sala' : 'Artículo'}</li>
+                                <li class="list-group-item"><strong>Recurso:</strong> ${getNombreRecurso(reserva)}</li>
+                                <li class="list-group-item"><strong>Persona:</strong> ${getNombrePersona(reserva.id_persona)}</li>
+                                <li class="list-group-item"><strong>Inicio:</strong> ${formatDateTime(reserva.fecha_hora_inicio)}</li>
+                                <li class="list-group-item"><strong>Fin:</strong> ${formatDateTime(reserva.fecha_hora_fin)}</li>
+                                <li class="list-group-item"><strong>Estado:</strong> ${getEstadoReserva(reserva)}</li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        // Eliminar modal anterior si existe
+        const oldModal = document.getElementById('detalleReservaModal');
+        if (oldModal) oldModal.remove();
+        // Insertar modal en el body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        // Mostrar modal
+        const modalInstance = new bootstrap.Modal(document.getElementById('detalleReservaModal'));
+        modalInstance.show();
 }
 
 // Editar reserva

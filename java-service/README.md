@@ -30,48 +30,10 @@ Este servicio forma parte de una arquitectura de microservicios junto con el ser
 java-service/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/reservas/
-│   │   │   ├── controller/          # Controladores REST
-│   │   │   │   ├── SalaController.java
-│   │   │   │   └── ArticuloController.java
-│   │   │   ├── service/             # Lógica de negocio
-│   │   │   │   ├── SalaService.java
-│   │   │   │   └── ArticuloService.java
-│   │   │   ├── repository/          # Repositorios JPA
-│   │   │   │   ├── SalaRepository.java
-│   │   │   │   └── ArticuloRepository.java
-│   │   │   ├── model/               # Entidades JPA
-│   │   │   │   ├── Sala.java
-│   │   │   │   └── Articulo.java
-│   │   │   ├── dto/                 # Data Transfer Objects
-│   │   │   ├── config/              # Configuraciones
-│   │   │   │   └── CorsConfig.java
-│   │   │   ├── exception/           # Manejo de excepciones
-│   │   │   └── ReservasApplication.java
-│   │   └── resources/
-│   │       └── application.properties
-│   └── test/                        # Tests unitarios e integración
-└── pom.xml
-```
-
-## 🚀 Instalación y Ejecución
-
-### Prerrequisitos
-
-- Java 17 o superior
-- Maven 3.6+
-- PostgreSQL 15 (corriendo en localhost:5432)
-- Base de datos `reservas` creada
-
-### Pasos
-
-1. **Compilar el proyecto:**
-   ```bash
-   cd java-service
-   JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn clean install
-   ```
+# Java Service - Sistema de Reservas
 
 2. **Ejecutar la aplicación (usando script helper):**
+
    ```bash
    ./run.sh
    ```
@@ -84,19 +46,9 @@ java-service/
 4. **O ejecutar el JAR:**
    ```bash
    java -jar target/reservas-service-1.0.0.jar
-   ```
-
-> ⚠️ **Nota:** Este proyecto requiere Java 21. Si tienes múltiples versiones de Java instaladas, asegúrate de usar Java 21 estableciendo `JAVA_HOME` correctamente o usando el script `run.sh`.
-
-La aplicación estará disponible en `http://localhost:8080`
 
 ## 📚 Documentación API
 
-### Swagger UI
-Accede a la documentación interactiva en:
-- **URL:** http://localhost:8080/swagger-ui.html
-
-### OpenAPI JSON
 - **URL:** http://localhost:8080/api-docs
 
 ## 🔌 Endpoints Principales

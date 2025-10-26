@@ -1,26 +1,23 @@
+
 """
 Servicio para operaciones de negocio de Articulo.
 
 Este módulo contiene la lógica de negocio para el modelo Articulo,
 incluyendo validaciones y operaciones complejas.
 """
-
+import asyncio
 from typing import List, Optional
-
 from sqlalchemy.orm import Session
-
 from app.models.articulo import Articulo
 from app.repositories.articulo_repository import ArticuloRepository
 from app.schemas.articulo import ArticuloCreate, ArticuloUpdate
-
-
+from app.services.java_client import JavaServiceClient
 class ArticuloService:
     """Servicio para operaciones de negocio de Articulo."""
-
     @staticmethod
     def create_articulo(db: Session, articulo_data: ArticuloCreate) -> Articulo:
         """
-        Crear un nuevo artículo con validaciones de negocio.
+        Crear un nuevo artículo en Python y Java. Si Java falla, no se crea localmente.
 
         Args:
             db: Sesión de base de datos
@@ -29,6 +26,17 @@ class ArticuloService:
         Returns:
             Artículo creado
         """
+
+        # Crear en Java
+        java_payload = articulo_data.model_dump()
+        java_result = asyncio.run(JavaServiceClient.create_articulo(java_payload))
+        if not java_result:
+            raise ValueError(
+                "No se pudo crear el artículo en el sistema de gestión de artículos (Java). "
+                "Intente más tarde."
+            )
+
+        # Crear localmente
         return ArticuloRepository.create(db, articulo_data)
 
     @staticmethod
@@ -36,8 +44,6 @@ class ArticuloService:
         """
         Obtener un artículo por su ID.
 
-        Args:
-            db: Sesión de base de datos
             articulo_id: ID del artículo
 
         Returns:
@@ -85,7 +91,7 @@ class ArticuloService:
         db: Session, articulo_id: int, articulo_data: ArticuloUpdate
     ) -> Optional[Articulo]:
         """
-        Actualizar un artículo existente.
+        Actualizar un artículo en el microservicio Java y luego localmente si Java responde OK.
 
         Args:
             db: Sesión de base de datos
@@ -93,8 +99,35 @@ class ArticuloService:
             articulo_data: Nuevos datos del artículo
 
         Returns:
-            Artículo actualizado o None si no existe
+            Artículo actualizado o None si no existe o si Java falla
         """
+
+        # Obtener el artículo actual para rellenar campos faltantes
+        articulo_actual = ArticuloRepository.get_by_id(db, articulo_id)
+        if not articulo_actual:
+            raise ValueError(f"No se encontró un artículo con ID {articulo_id} en la base local.")
+
+        # Construir el payload completo para Java usando dict y rellenando faltantes
+        data_dict = articulo_data.model_dump(exclude_unset=True)
+        payload = {
+            "nombre": data_dict.get("nombre", articulo_actual.nombre),
+            "descripcion": data_dict.get(
+                "descripcion",
+                getattr(articulo_actual, "descripcion", None),
+            ),
+            "cantidad": data_dict.get("cantidad", getattr(articulo_actual, "cantidad", 1)),
+            "categoria": data_dict.get("categoria", getattr(articulo_actual, "categoria", None)),
+            "disponible": data_dict.get("disponible", articulo_actual.disponible),
+        }
+
+        java_result = asyncio.run(JavaServiceClient.update_articulo(articulo_id, payload))
+        if not java_result:
+            raise ValueError(
+                f"No se encontró un artículo con ID {articulo_id} en el servicio Java "
+                f"o la actualización falló."
+            )
+
+        # Si Java responde OK, actualiza localmente
         return ArticuloRepository.update(db, articulo_id, articulo_data)
 
     @staticmethod
@@ -138,6 +171,18 @@ class ArticuloService:
         if hasattr(articulo, "reservas") and articulo.reservas:
             raise ValueError("No se puede eliminar un artículo con reservas activas")
 
+        # Eliminar en Java
+        try:
+            # Ejecutar la llamada async en sync
+            result_java = asyncio.run(JavaServiceClient.delete_articulo(articulo_id))
+            if not result_java:
+                print(
+                    f"Advertencia: El artículo {articulo_id} no se eliminó en Java "
+                    f"o no existe allí."
+                )
+        except (RuntimeError, ConnectionError) as e:
+            print(f"Error al eliminar artículo en Java: {e}")
+
         return ArticuloRepository.delete(db, articulo_id)
 
     @staticmethod
@@ -154,20 +199,8 @@ class ArticuloService:
         """
         return ArticuloRepository.count(db, disponible)
 
-    @staticmethod
-    def validate_articulo_exists(db: Session, articulo_id: int) -> bool:
-        """
-        Validar que un artículo existe.
-
-        Args:
-            db: Sesión de base de datos
-            articulo_id: ID del artículo
-
-        Returns:
-            True si existe, False si no
-        """
-        articulo = ArticuloRepository.get_by_id(db, articulo_id)
-        return articulo is not None
+    # Método eliminado: validate_articulo_exists.
+    # No existe en JavaServiceClient y no se usa correctamente.
 
     @staticmethod
     def validate_articulo_disponible(db: Session, articulo_id: int) -> bool:
