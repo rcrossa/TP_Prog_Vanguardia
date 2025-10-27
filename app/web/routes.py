@@ -5,17 +5,21 @@ Este módulo define las rutas para servir las páginas HTML
 del sistema de reservas.
 """
 
+import os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-
-from app.auth.dependencies import get_current_admin_user, get_current_user
-from app.auth.jwt_handler import extract_email_from_token, verify_token
+from app.auth.jwt_handler import extract_email_from_token
 from app.core.database import get_db
 from app.models.persona import Persona
 from app.repositories.persona_repository import PersonaRepository
-from app.services import PersonaService, ReservaService, SalaService
+from app.services import PersonaService
+from app.repositories.reserva_repository import ReservaRepository
+from app.repositories.sala_repository import SalaRepository
+from app.models.articulo import Articulo
+from app.models.reserva import Reserva
+from app.models.sala import Sala
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -73,8 +77,11 @@ def get_user_from_request(request: Request, db: Session):
 
 def require_admin_access(user: Persona, request: Request):
     """Verificar que el usuario tenga permisos de admin."""
-    if not user or not user.is_admin:
+    if not user:
         return handle_auth_error(request)
+    if not user.is_admin:
+        # Redirigir a reservas si el usuario está autenticado pero no es admin
+        return RedirectResponse(url="/reservas", status_code=302)
     return None
 
 
@@ -88,17 +95,19 @@ async def debug_auth(request: Request):
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
-    """Dashboard principal"""
+    """Dashboard principal (solo administradores)"""
     # Verificar autenticación
     current_user = get_user_from_request(request, db)
     if not current_user:
         return handle_auth_error(request)
+    # Verificar permisos de admin
+    admin_check = require_admin_access(current_user, request)
+    if admin_check:
+        return admin_check
 
     try:
         # Obtener estadísticas básicas para el dashboard
-        from app.repositories.persona_repository import PersonaRepository
-        from app.repositories.reserva_repository import ReservaRepository
-        from app.repositories.sala_repository import SalaRepository
+
 
         personas = PersonaRepository.get_all(db)
         salas = SalaRepository.get_all(db)
@@ -240,8 +249,6 @@ async def configuracion_page(request: Request, db: Session = Depends(get_db)):
         return admin_check
 
     # Leer contenido del README para la pestaña de documentación
-    import os
-
     readme_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "README.md"
     )
@@ -253,10 +260,7 @@ async def configuracion_page(request: Request, db: Session = Depends(get_db)):
         print(f"Error leyendo README: {e}")
 
     # Obtener estadísticas del sistema
-    from app.models.articulo import Articulo
-    from app.models.persona import Persona
-    from app.models.reserva import Reserva
-    from app.models.sala import Sala
+
 
     stats = {
         "total_usuarios": db.query(Persona).count(),
@@ -290,7 +294,6 @@ async def documentacion_page(request: Request, db: Session = Depends(get_db)):
         return admin_check
 
     # Leer contenido del README para el mapa mental
-    import os
 
     readme_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "README.md"

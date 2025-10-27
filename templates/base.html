@@ -25,11 +25,13 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto" id="mainNavMenu">
+                    {% if user and user.is_admin %}
                     <li class="nav-item">
                         <a class="nav-link" href="/">
                             <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
                     </li>
+                    {% endif %}
                     <li class="nav-item admin-only">
                         <a class="nav-link" href="/personas">
                             <i class="fas fa-users me-1"></i>Personas
