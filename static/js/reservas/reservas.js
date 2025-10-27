@@ -362,12 +362,16 @@ function getEstadoBadge(estado) {
 // Formatear fecha/hora
 function formatDateTime(dateString) {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    const pad = n => String(n).padStart(2, '0');
+    let hours = date.getHours();
+    const minutes = pad(date.getMinutes());
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 => 12
+    return pad(date.getDate()) + '/' +
+        pad(date.getMonth() + 1) + '/' +
+        date.getFullYear() + ' ' +
+        pad(hours) + ':' + minutes + ' ' + ampm;
 }
 
 // Filtrar reservas
@@ -458,12 +462,20 @@ function editReserva(id) {
     document.getElementById('reservaId').value = reserva.id;
     document.getElementById('idPersona').value = reserva.id_persona;
     
-    // Convertir fechas a formato ISO para el input datetime-local
+
+    // Convertir fechas a formato local para el input datetime-local
+    function toLocalDatetimeInputValue(date) {
+        const pad = n => String(n).padStart(2, '0');
+        return date.getFullYear() + '-' +
+            pad(date.getMonth() + 1) + '-' +
+            pad(date.getDate()) + 'T' +
+            pad(date.getHours()) + ':' +
+            pad(date.getMinutes());
+    }
     const fechaInicio = new Date(reserva.fecha_hora_inicio);
     const fechaFin = new Date(reserva.fecha_hora_fin);
-    
-    document.getElementById('fechaInicio').value = fechaInicio.toISOString().slice(0, 16);
-    document.getElementById('fechaFin').value = fechaFin.toISOString().slice(0, 16);
+    document.getElementById('fechaInicio').value = toLocalDatetimeInputValue(fechaInicio);
+    document.getElementById('fechaFin').value = toLocalDatetimeInputValue(fechaFin);
     
     // Configurar tipo de reserva
     if (reserva.id_sala) {
