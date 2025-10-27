@@ -1,0 +1,540 @@
+// JS para inventario.html
+// 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE
+(function() {
+    try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user && user.is_admin === true) {
+                document.body.classList.add('is-admin');
+            } else {
+                document.body.classList.remove('is-admin');
+            }
+        } else {
+            document.body.classList.remove('is-admin');
+        }
+    } catch (e) {
+        console.error('Error al verificar rol de admin:', e);
+        document.body.classList.remove('is-admin');
+    }
+})();
+
+let articulos = [];
+let isAdmin = false;
+let articuloModal;
+let reservasModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    articuloModal = new bootstrap.Modal(document.getElementById('articuloModal'));
+    reservasModal = new bootstrap.Modal(document.getElementById('reservasModal'));
+    
+    // Event listener para botón de nuevo artículo
+    const newArticuloBtn = document.getElementById('newArticuloBtn');
+    if (newArticuloBtn) {
+        newArticuloBtn.addEventListener('click', openNewArticuloModal);
+    }
+    
+    setTimeout(() => {
+        const user = window.authManager?.getUser();
+        if (!user) {
+            window.location.href = '/login';
+            return;
+        }
+        
+        // Verificar permisos de admin
+        if (!user.is_admin) {
+            alert('Acceso denegado. Solo los administradores pueden acceder a esta sección.');
+            window.location.href = '/';
+            return;
+        }
+        
+        isAdmin = user.is_admin;
+        updatePageForAdmin();
+        loadArticulos();
+    }, 200);
+    
+    // Event listeners para filtros
+    document.getElementById('searchInput').addEventListener('input', filterArticulos);
+    document.getElementById('filterCategoria').addEventListener('change', filterArticulos);
+    document.getElementById('filterDisponibilidad').addEventListener('change', filterArticulos);
+});
+
+function updatePageForAdmin() {
+    if (isAdmin) {
+        // Mostrar elementos admin-only
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = '';  // Restaurar display por defecto
+            el.style.removeProperty('display');  // Remover override
+        });
+    } else {
+        // Ocultar elementos admin-only para usuarios normales
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+}
+
+// Variable global para disponibilidad actual
+let disponibilidadActual = {};
+
+// Cargar artículos
+async function loadArticulos() {
+    try {
+        const response = await axios.get('/api/v1/articulos/');
+        articulos = response.data;
+        await loadEstadisticas(); // Cargar estadísticas reales
+        await loadDisponibilidadActual(); // Cargar disponibilidad actual
+        updateCategoriasFilter(articulos);
+        renderArticulos(articulos);
+    } catch (error) {
+        console.error('Error cargando artículos:', error);
+        showError('Error al cargar el inventario');
+    }
+}
+
+// Cargar disponibilidad actual de todos los artículos
+async function loadDisponibilidadActual() {
+    try {
+        const response = await axios.get('/api/v1/articulos/disponibilidad/actual');
+        disponibilidadActual = response.data;
+    } catch (error) {
+        console.error('Error cargando disponibilidad actual:', error);
+        disponibilidadActual = {};
+    }
+}
+
+// Cargar estadísticas del inventario
+async function loadEstadisticas() {
+    try {
+        const response = await axios.get('/api/v1/articulos/estadisticas/inventario');
+        const stats = response.data;
+        
+        // Tarjetas de artículos (tipos)
+        document.getElementById('total-articles').textContent = stats.total_articulos;
+        document.getElementById('available-articles').textContent = stats.articulos_disponibles;
+        document.getElementById('reserved-articles').textContent = stats.articulos_no_disponibles;
+        document.getElementById('total-quantity').textContent = stats.total_unidades;
+        
+        // Tarjetas de unidades (cantidad real disponible/reservada)
+        document.getElementById('available-units').textContent = stats.unidades_disponibles;
+        document.getElementById('reserved-units').textContent = stats.unidades_reservadas;
+        
+    } catch (error) {
+        console.error('Error cargando estadísticas:', error);
+        // Si falla, usar el método antiguo como fallback
+        updateStatsLegacy(articulos);
+    }
+}
+
+// Método legacy para estadísticas (fallback)
+function updateStatsLegacy(data) {
+    const total = data.length;
+    const disponibles = data.filter(a => a.disponible).length;
+    const noDisponibles = total - disponibles;
+    const cantidadTotal = data.reduce((sum, a) => sum + (a.cantidad || 0), 0);
+    
+    document.getElementById('total-articles').textContent = total;
+    document.getElementById('available-articles').textContent = disponibles;
+    document.getElementById('reserved-articles').textContent = noDisponibles;
+    document.getElementById('total-quantity').textContent = cantidadTotal;
+}
+
+// DEPRECATED: Mantener por compatibilidad pero ya no se usa
+function updateStats(data) {
+    updateStatsLegacy(data);
+}
+
+// Actualizar filtro de categorías
+function updateCategoriasFilter(data) {
+    const categorias = [...new Set(data.map(a => a.categoria).filter(c => c))];
+    const select = document.getElementById('filterCategoria');
+    const currentValue = select.value;
+    
+    select.innerHTML = '<option value="">Todas las categorías</option>';
+    categorias.forEach(cat => {
+        select.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+    
+    select.value = currentValue;
+}
+
+// Renderizar artículos
+function renderArticulos(data) {
+    const tbody = document.getElementById('articulosTableBody');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <i class="fas fa-boxes fa-2x text-muted mb-2"></i>
+                    <p class="mb-0 text-muted">No se encontraron artículos</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(articulo => {
+        const disp = disponibilidadActual[articulo.id] || { disponibles: articulo.cantidad, reservadas: 0 };
+        const disponiblesAhora = disp.disponibles;
+        const reservadas = disp.reservadas;
+        const porcentajeDisponible = articulo.cantidad > 0 ? (disponiblesAhora / articulo.cantidad) * 100 : 0;
+        
+        // Determinar color según disponibilidad
+        let colorDisponible = 'bg-success';
+        if (disponiblesAhora === 0) {
+            colorDisponible = 'bg-danger';
+        } else if (porcentajeDisponible < 50) {
+            colorDisponible = 'bg-warning';
+        }
+        
+        return `
+        <tr>
+            <td><span class="badge bg-secondary">#${articulo.id}</span></td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-box text-primary me-2"></i>
+                    <strong>${articulo.nombre}</strong>
+                </div>
+            </td>
+            <td><small class="text-muted">${articulo.descripcion || '-'}</small></td>
+            <td>
+                ${articulo.categoria ? `<span class="badge bg-info">${articulo.categoria}</span>` : '-'}
+            </td>
+            <td class="text-center">
+                <span class="badge bg-primary">${articulo.cantidad || 0}</span>
+            </td>
+            <td class="text-center">
+                <span class="badge ${colorDisponible}" title="${reservadas > 0 ? reservadas + ' reservadas ahora' : 'Ninguna reservada'}">
+                    <i class="fas fa-cube me-1"></i>
+                    ${disponiblesAhora} / ${articulo.cantidad}
+                </span>
+            </td>
+            <td>
+                <span class="badge ${articulo.disponible ? 'bg-success' : 'bg-warning'}">
+                    <i class="fas fa-${articulo.disponible ? 'check' : 'times'} me-1"></i>
+                    ${articulo.disponible ? 'Disponible' : 'No Disponible'}
+                </span>
+            </td>
+            ${isAdmin ? `
+                <td>
+                    <div class="d-flex gap-2 btn-equal-group">
+                        <button class="btn btn-sm btn-outline-info btn-3d flex-fill w-100 py-2" onclick="verReservas(${articulo.id})" aria-label="Ver Reservas" title="Ver Reservas">
+                            <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                            <span class="visually-hidden">Ver Reservas</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary btn-3d flex-fill w-100 py-2" onclick="editArticulo(${articulo.id})" aria-label="Editar" title="Editar">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
+                            <span class="visually-hidden">Editar</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-${articulo.disponible ? 'warning' : 'success'} btn-3d flex-fill w-100 py-2" 
+                                onclick="toggleDisponibilidad(${articulo.id})" 
+                                aria-label="${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}" title="${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}">
+                            <i class="fas fa-${articulo.disponible ? 'times' : 'check'}" aria-hidden="true"></i>
+                            <span class="visually-hidden">${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-3d flex-fill w-100 py-2" onclick="deleteArticulo(${articulo.id})" aria-label="Eliminar" title="Eliminar">
+                            <i class="fas fa-trash" aria-hidden="true"></i>
+                            <span class="visually-hidden">Eliminar</span>
+                        </button>
+                    </div>
+                </td>
+            ` : ''}
+        </tr>
+    `}).join('');
+}
+
+// Filtrar artículos
+function filterArticulos() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const categoriaFilter = document.getElementById('filterCategoria').value;
+    const disponibilidadFilter = document.getElementById('filterDisponibilidad').value;
+    
+    let filtered = articulos.filter(articulo => {
+        const matchSearch = articulo.nombre.toLowerCase().includes(searchTerm) ||
+                          (articulo.descripcion && articulo.descripcion.toLowerCase().includes(searchTerm));
+        
+        const matchCategoria = !categoriaFilter || articulo.categoria === categoriaFilter;
+        
+        const matchDisponibilidad = !disponibilidadFilter || 
+                                   articulo.disponible.toString() === disponibilidadFilter;
+        
+        return matchSearch && matchCategoria && matchDisponibilidad;
+    });
+    
+    renderArticulos(filtered);
+}
+
+// Abrir modal para nuevo artículo
+function openNewArticuloModal() {
+    document.getElementById('articuloForm').reset();
+    document.getElementById('articuloId').value = '';
+    document.getElementById('modalTitle').textContent = 'Nuevo Artículo';
+    document.getElementById('articuloDisponible').checked = true;
+    articuloModal.show();
+}
+
+// Editar artículo
+async function editArticulo(id) {
+    try {
+        const response = await axios.get(`/api/v1/articulos/${id}`);
+        const articulo = response.data;
+        
+        document.getElementById('articuloId').value = articulo.id;
+        document.getElementById('articuloNombre').value = articulo.nombre;
+        document.getElementById('articuloDescripcion').value = articulo.descripcion || '';
+        document.getElementById('articuloCantidad').value = articulo.cantidad || 0;
+        document.getElementById('articuloCategoria').value = articulo.categoria || '';
+        document.getElementById('articuloDisponible').checked = articulo.disponible;
+        document.getElementById('modalTitle').textContent = 'Editar Artículo';
+        
+        articuloModal.show();
+    } catch (error) {
+        console.error('Error al cargar artículo:', error);
+        showError('Error al cargar el artículo');
+    }
+}
+
+// Guardar artículo
+async function saveArticulo() {
+    const form = document.getElementById('articuloForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const id = document.getElementById('articuloId').value;
+    const cantidadValue = document.getElementById('articuloCantidad').value;
+    const descripcionValue = document.getElementById('articuloDescripcion').value.trim();
+    const nombreValue = document.getElementById('articuloNombre').value.trim();
+    const categoriaValue = document.getElementById('articuloCategoria').value.trim();
+    const disponibleValue = document.getElementById('articuloDisponible').checked;
+
+    // Validar que todos los campos estén completos
+    if (!nombreValue || !descripcionValue || !cantidadValue || !categoriaValue) {
+        showError('Todos los campos son obligatorios.');
+        return;
+    }
+
+    const data = {
+        nombre: nombreValue,
+        descripcion: descripcionValue,
+        cantidad: parseInt(cantidadValue),
+        categoria: categoriaValue,
+        disponible: disponibleValue
+    };
+    
+    try {
+        if (id) {
+            await axios.put(`/api/v1/articulos/${id}`, data);
+            showSuccess('Artículo actualizado exitosamente');
+        } else {
+            await axios.post('/api/v1/articulos/', data);
+            showSuccess('Artículo creado exitosamente');
+        }
+        
+        articuloModal.hide();
+        loadArticulos();
+    } catch (error) {
+        console.error('Error al guardar artículo:', error);
+        showError(error.response?.data?.detail || 'Error al guardar el artículo');
+    }
+}
+
+// Toggle disponibilidad
+async function toggleDisponibilidad(id) {
+    try {
+        const articulo = articulos.find(a => a.id === id);
+        if (!articulo) return;
+        
+        await axios.put(`/api/v1/articulos/${id}`, {
+            ...articulo,
+            disponible: !articulo.disponible
+        });
+        
+        showSuccess('Estado actualizado exitosamente');
+        loadArticulos();
+    } catch (error) {
+        console.error('Error al cambiar disponibilidad:', error);
+        showError('Error al cambiar el estado del artículo');
+    }
+}
+
+// Eliminar artículo
+async function deleteArticulo(id) {
+    if (!confirm('¿Está seguro de eliminar este artículo?')) return;
+    
+    try {
+        await axios.delete(`/api/v1/articulos/${id}`);
+        showSuccess('Artículo eliminado exitosamente');
+        loadArticulos();
+    } catch (error) {
+        console.error('Error al eliminar artículo:', error);
+        showError(error.response?.data?.detail || 'Error al eliminar el artículo');
+    }
+}
+
+// Ver reservas del artículo
+async function verReservas(articuloId) {
+    const articulo = articulos.find(a => a.id === articuloId);
+    if (!articulo) return;
+    
+    document.getElementById('articuloNombre').textContent = articulo.nombre;
+    reservasModal.show();
+    
+    const content = document.getElementById('reservasContent');
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 mb-0 text-muted">Cargando reservas...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await axios.get(`/api/v1/articulos/${articuloId}/reservas`);
+        const reservas = response.data;
+        
+        if (reservas.length === 0) {
+            content.innerHTML = `
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Este artículo no tiene reservas activas ni futuras.
+                </div>
+            `;
+            return;
+        }
+        
+        content.innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Reserva</th>
+                            <th>Estado</th>
+                            <th>Tipo</th>
+                            <th>Persona</th>
+                            <th>Sala</th>
+                            <th>Cantidad</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${reservas.map(r => {
+                            const ahora = new Date();
+                            const inicio = new Date(r.fecha_hora_inicio);
+                            const fin = new Date(r.fecha_hora_fin);
+                            const esActiva = inicio <= ahora && fin >= ahora;
+                            const esFutura = inicio > ahora;
+                            const estadoBadge = esActiva 
+                                ? '<span class="badge bg-success"><i class="fas fa-circle me-1"></i>Activa</span>' 
+                                : '<span class="badge bg-info"><i class="fas fa-clock me-1"></i>Futura</span>';
+                            
+                            return `
+                            <tr class="${esActiva ? 'table-success' : ''}">
+                                <td><span class="badge bg-secondary">#${r.id}</span></td>
+                                <td>${estadoBadge}</td>
+                                <td>
+                                    <span class="badge ${r.tipo === 'Reserva de Sala' ? 'bg-primary' : 'bg-info'}">
+                                        <i class="fas fa-${r.tipo === 'Reserva de Sala' ? 'door-closed' : 'box'} me-1"></i>
+                                        ${r.tipo === 'Reserva de Sala' ? 'Sala' : 'Directa'}
+                                    </span>
+                                </td>
+                                <td>${r.persona_nombre}</td>
+                                <td>${r.sala_nombre || '-'}</td>
+                                <td><span class="badge bg-primary">${r.cantidad || 1}</span></td>
+                                <td>${formatDateTime(r.fecha_hora_inicio)}</td>
+                                <td>${formatDateTime(r.fecha_hora_fin)}</td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error al cargar reservas:', error);
+        content.innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error al cargar las reservas del artículo.
+            </div>
+        `;
+    }
+}
+
+// Formatear fecha y hora
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Mostrar mensajes con Toast
+function showSuccess(message) {
+    showToast('✅ ' + message, 'success');
+}
+
+function showError(message) {
+    // Si el mensaje es un objeto, extraer el texto apropiado
+    if (typeof message === 'object') {
+        if (message.detail) {
+            message = message.detail;
+        } else if (message.message) {
+            message = message.message;
+        } else {
+            message = JSON.stringify(message);
+        }
+    }
+    showToast('❌ ' + message, 'danger');
+}
+
+// Función para mostrar Toast notifications
+function showToast(message, type = 'success') {
+    // Crear contenedor si no existe
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Determinar el tipo de alerta de Bootstrap
+    const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
+    
+    // Crear el toast
+    const toastId = 'toast_' + Date.now();
+    const toastHTML = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Mostrar el toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 3000 // 3 segundos
+    });
+    toast.show();
+    
+    // Remover del DOM después de ocultarse
+    toastElement.addEventListener('hidden.bs.toast', function () {
+        toastElement.remove();
+    });
+}
