@@ -395,64 +395,104 @@ async function verReservas(articuloId) {
     try {
         const response = await axios.get(`/api/v1/articulos/${articuloId}/reservas`);
         const reservas = response.data;
-        
-        if (reservas.length === 0) {
-            content.innerHTML = `
+        const ahora = new Date();
+        const activas = reservas.filter(r => {
+            const inicio = new Date(r.fecha_hora_inicio);
+            const fin = new Date(r.fecha_hora_fin);
+            return inicio <= ahora && fin >= ahora;
+        });
+        const futuras = reservas.filter(r => {
+            const inicio = new Date(r.fecha_hora_inicio);
+            return inicio > ahora;
+        });
+
+        let html = "";
+        if (activas.length === 0 && futuras.length === 0) {
+            html = `
                 <div class="alert alert-info mb-0">
                     <i class="fas fa-info-circle me-2"></i>
                     Este artículo no tiene reservas activas ni futuras.
                 </div>
             `;
-            return;
-        }
-        
-        content.innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Reserva</th>
-                            <th>Estado</th>
-                            <th>Tipo</th>
-                            <th>Persona</th>
-                            <th>Sala</th>
-                            <th>Cantidad</th>
-                            <th>Fecha Inicio</th>
-                            <th>Fecha Fin</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${reservas.map(r => {
-                            const ahora = new Date();
-                            const inicio = new Date(r.fecha_hora_inicio);
-                            const fin = new Date(r.fecha_hora_fin);
-                            const esActiva = inicio <= ahora && fin >= ahora;
-                            const esFutura = inicio > ahora;
-                            const estadoBadge = esActiva 
-                                ? '<span class="badge bg-success"><i class="fas fa-circle me-1"></i>Activa</span>' 
-                                : '<span class="badge bg-info"><i class="fas fa-clock me-1"></i>Futura</span>';
-                            
-                            return `
-                            <tr class="${esActiva ? 'table-success' : ''}">
-                                <td><span class="badge bg-secondary">#${r.id}</span></td>
-                                <td>${estadoBadge}</td>
-                                <td>
-                                    <span class="badge ${r.tipo === 'Reserva de Sala' ? 'bg-primary' : 'bg-info'}">
-                                        <i class="fas fa-${r.tipo === 'Reserva de Sala' ? 'door-closed' : 'box'} me-1"></i>
-                                        ${r.tipo === 'Reserva de Sala' ? 'Sala' : 'Directa'}
-                                    </span>
-                                </td>
-                                <td>${r.persona_nombre}</td>
-                                <td>${r.sala_nombre || '-'}</td>
-                                <td><span class="badge bg-primary">${r.cantidad || 1}</span></td>
-                                <td>${formatDateTime(r.fecha_hora_inicio)}</td>
-                                <td>${formatDateTime(r.fecha_hora_fin)}</td>
+        } else {
+            if (activas.length > 0) {
+                html += `
+                <h5 class='mb-2'><i class="fas fa-circle text-success me-1"></i>Reservas Activas</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Reserva</th>
+                                <th>Tipo</th>
+                                <th>Persona</th>
+                                <th>Sala</th>
+                                <th>Cantidad</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Fin</th>
                             </tr>
-                        `}).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
+                        </thead>
+                        <tbody>
+                            ${activas.map(r => `
+                                <tr class="table-success">
+                                    <td><span class="badge bg-secondary">#${r.id}</span></td>
+                                    <td>
+                                        <span class="badge ${r.tipo === 'Reserva de Sala' ? 'bg-primary' : 'bg-info'}">
+                                            <i class="fas fa-${r.tipo === 'Reserva de Sala' ? 'door-closed' : 'box'} me-1"></i>
+                                            ${r.tipo === 'Reserva de Sala' ? 'Sala' : 'Directa'}
+                                        </span>
+                                    </td>
+                                    <td>${r.persona_nombre}</td>
+                                    <td>${r.sala_nombre || '-'}</td>
+                                    <td><span class="badge bg-primary">${r.cantidad || 1}</span></td>
+                                    <td>${formatDateTime(r.fecha_hora_inicio)}</td>
+                                    <td>${formatDateTime(r.fecha_hora_fin)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                `;
+            }
+            if (futuras.length > 0) {
+                html += `
+                <h5 class='mb-2'><i class="fas fa-clock text-info me-1"></i>Reservas Futuras</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Reserva</th>
+                                <th>Tipo</th>
+                                <th>Persona</th>
+                                <th>Sala</th>
+                                <th>Cantidad</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Fin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${futuras.map(r => `
+                                <tr>
+                                    <td><span class="badge bg-secondary">#${r.id}</span></td>
+                                    <td>
+                                        <span class="badge ${r.tipo === 'Reserva de Sala' ? 'bg-primary' : 'bg-info'}">
+                                            <i class="fas fa-${r.tipo === 'Reserva de Sala' ? 'door-closed' : 'box'} me-1"></i>
+                                            ${r.tipo === 'Reserva de Sala' ? 'Sala' : 'Directa'}
+                                        </span>
+                                    </td>
+                                    <td>${r.persona_nombre}</td>
+                                    <td>${r.sala_nombre || '-'}</td>
+                                    <td><span class="badge bg-primary">${r.cantidad || 1}</span></td>
+                                    <td>${formatDateTime(r.fecha_hora_inicio)}</td>
+                                    <td>${formatDateTime(r.fecha_hora_fin)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                `;
+            }
+        }
+        content.innerHTML = html;
     } catch (error) {
         console.error('Error al cargar reservas:', error);
         content.innerHTML = `

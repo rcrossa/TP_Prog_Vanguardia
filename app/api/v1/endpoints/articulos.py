@@ -382,6 +382,13 @@ def count_articulos(
 
 @router.get("/{articulo_id}/reservas")
 def get_reservas_articulo(articulo_id: int, db: Session = Depends(get_db)):
+    # Mostrar la URL de conexión y la base activa
+    try:
+        result_dbname = db.execute(text("SELECT current_database()"))
+        dbname = result_dbname.scalar()
+        print(f"[DEBUG] current_database: {dbname}")
+    except Exception as e:
+        print(f"[DEBUG] error mostrando info de conexión: {e}")
     """Obtener reservas activas y futuras donde se usa este artículo."""
     # Reservas directas del artículo
     result_directas = db.execute(
@@ -392,14 +399,12 @@ def get_reservas_articulo(articulo_id: int, db: Session = Depends(get_db)):
         FROM reservas r
         JOIN personas p ON r.id_persona = p.id
         WHERE r.id_articulo = :articulo_id
-        AND r.fecha_hora_fin >= NOW()
         ORDER BY r.fecha_hora_inicio
         """
         ),
         {"articulo_id": articulo_id},
     )
 
-    # Reservas de salas que requieren el artículo
     result_salas = db.execute(
         text(
             """
@@ -411,17 +416,16 @@ def get_reservas_articulo(articulo_id: int, db: Session = Depends(get_db)):
         JOIN personas p ON r.id_persona = p.id
         JOIN salas s ON r.id_sala = s.id
         WHERE ra.articulo_id = :articulo_id
-        AND r.fecha_hora_fin >= NOW()
         ORDER BY r.fecha_hora_inicio
         """
         ),
         {"articulo_id": articulo_id},
     )
 
+    directas_list = list(result_directas)
+    salas_list = list(result_salas)
     reservas = []
-
-    # Procesar reservas directas
-    for row in result_directas:
+    for row in directas_list:
         reservas.append({
             "id": row[0],
             "id_persona": row[1],
@@ -431,9 +435,7 @@ def get_reservas_articulo(articulo_id: int, db: Session = Depends(get_db)):
             "tipo": "Reserva Directa",
             "cantidad": 1,
         })
-
-    # Procesar reservas de salas
-    for row in result_salas:
+    for row in salas_list:
         reservas.append({
             "id": row[0],
             "id_persona": row[1],
@@ -444,5 +446,4 @@ def get_reservas_articulo(articulo_id: int, db: Session = Depends(get_db)):
             "cantidad": row[6],
             "tipo": "Reserva de Sala",
         })
-
     return reservas

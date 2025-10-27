@@ -1,3 +1,8 @@
+/* Limitar altura de la tabla de reservas en el modal y permitir scroll */
+.modal .table-responsive {
+    max-height: 350px;
+    overflow-y: auto;
+}
 /* Reportes: cards y métricas colores consistentes */
 .card-header.bg-primary, .card-header.bg-success {
     color: #fff !important;
