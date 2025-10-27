@@ -5,6 +5,7 @@
 CREATE TABLE IF NOT EXISTS personas (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
+    apellido VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
     hashed_password VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -66,11 +67,11 @@ CREATE TABLE IF NOT EXISTS reserva_articulos (
 -- 3. Forzar cambio de contraseña en primer login
 -- 4. Usar contraseñas únicas y fuertes
 -- ============================================================================
-INSERT INTO personas (nombre, email, hashed_password, is_active, is_admin) VALUES
-('Admin User', 'admin@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, true),
-('Ana Pérez', 'ana.perez@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, false),
-('Juan Gómez', 'juan.gomez@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, false),
-('María López', 'maria.lopez@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, false)
+INSERT INTO personas (nombre, apellido, email, hashed_password, is_active, is_admin) VALUES
+('Admin', 'User', 'admin@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, true),
+('Ana', 'Pérez', 'ana.perez@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, false),
+('Juan', 'Gómez', 'juan.gomez@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, false),
+('María', 'López', 'maria.lopez@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, false)
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO articulos (nombre, descripcion, cantidad, categoria, disponible) VALUES
