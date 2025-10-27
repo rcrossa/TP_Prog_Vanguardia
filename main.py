@@ -23,6 +23,7 @@ from app.services import (
     ReservaService,
     SalaService,
 )
+from app.api.v1.endpoints import stats
 
 # Crear aplicación FastAPI
 app = FastAPI(

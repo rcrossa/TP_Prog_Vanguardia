@@ -1,5 +1,60 @@
-// JS para dashboard.html
-// Aquí se migran funciones como refreshStats, etc.
+
+// Cargar gráfico de actividad detallada (activas y pasadas)
+async function loadActividadChart() {
+    try {
+        const response = await axios.get('/api/v1/stats/actividad_detallada', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const { dias, activas, pasadas } = response.data;
+
+        const ctx = document.getElementById('actividadChart').getContext('2d');
+        if (window.actividadChartInstance) {
+            window.actividadChartInstance.destroy();
+        }
+        window.actividadChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dias,
+                datasets: [
+                    {
+                        label: 'Reservas activas',
+                        data: activas,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Reservas pasadas',
+                        data: pasadas,
+                        backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: {
+                        display: true,
+                        text: 'Reservas activas y pasadas por día'
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error al cargar gráfico de actividad detallada:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadActividadChart();
 
     // 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE antes de que la página renderice
     (function() {
@@ -21,82 +76,18 @@
         }
     })();
 
-    // Función para actualizar estadísticas
-    async function refreshStats() {
-        try {
-            const response = await axios.get('/stats');
-            const stats = response.data;
-            
-            document.getElementById('total-personas').textContent = stats.personas?.total || 0;
-            document.getElementById('total-salas').textContent = stats.salas?.total || 0;
-            document.getElementById('reservas-activas').textContent = stats.reservas?.activas || 0;
-            
-        } catch (error) {
-            console.error('Error al actualizar estadísticas:', error);
-        }
+    // 🔒 VERIFICACIÓN DE SEGURIDAD
+    // Doble verificación para asegurar que usuarios no-admin no vean contenido admin
+    const user = window.authManager?.getUser();
+    if (!user || user.is_admin !== true) {
+        document.body.classList.remove('is-admin');
+        document.querySelectorAll('.admin-only').forEach(el => {
+            if (window.getComputedStyle(el).display !== 'none') {
+                el.style.setProperty('display', 'none', 'important');
+            }
+        });
     }
 
-    // Función para verificar estado del microservicio Java
-    async function checkJavaService() {
-        try {
-            const response = await axios.get('http://localhost:8000/api/v1/personas/me', { 
-                timeout: 3000,
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-            
-            document.getElementById('java-service-status').innerHTML = `
-                <i class="fas fa-check-circle me-2"></i>
-                Java Service: Online
-            `;
-            document.getElementById('java-service-status').className = 'alert alert-success d-flex align-items-center';
-            
-            // Cargar artículos disponibles
-            loadInventoryStats();
-            
-        } catch (error) {
-            document.getElementById('java-service-status').innerHTML = `
-                <i class="fas fa-times-circle me-2"></i>
-                Java Service: Offline
-            `;
-            document.getElementById('java-service-status').className = 'alert alert-danger d-flex align-items-center';
-            
-            document.getElementById('total-articulos').innerHTML = 'N/A';
-        }
-    }
-
-    // Función para cargar estadísticas de inventario desde Java
-    async function loadInventoryStats() {
-        try {
-            const response = await axios.get('http://localhost:8000/api/v1/articulos/count/total?disponible=true');
-            document.getElementById('total-articulos').textContent = response.data.total || 0;
-        } catch (error) {
-            document.getElementById('total-articulos').textContent = 'Error';
-        }
-    }
-
-    // Cargar datos al inicio
-    document.addEventListener('DOMContentLoaded', function() {
-        refreshStats();
-        checkJavaService();
-        
-        // 🔒 VERIFICACIÓN DE SEGURIDAD
-        // Doble verificación para asegurar que usuarios no-admin no vean contenido admin
-        const user = window.authManager?.getUser();
-        
-        // Si el usuario NO es admin, forzar ocultamiento
-        if (!user || user.is_admin !== true) {
-            document.body.classList.remove('is-admin');
-            
-            // Seguridad adicional: forzar ocultamiento de cualquier elemento admin-only visible
-            document.querySelectorAll('.admin-only').forEach(el => {
-                if (window.getComputedStyle(el).display !== 'none') {
-                    el.style.setProperty('display', 'none', 'important');
-                }
-            });
-        }
-        
-        // Actualizar cada 30 segundos
-        setInterval(checkJavaService, 30000);
-    });
+    // Actualizar cada 30 segundos
+    // setInterval(checkJavaService, 30000);
+});

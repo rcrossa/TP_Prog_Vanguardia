@@ -2,5 +2,5 @@ projectKey=tp_prog_vanguardia
 serverUrl=http://localhost:9000
 serverVersion=25.8.0.112029
 dashboardUrl=http://localhost:9000/dashboard?id=tp_prog_vanguardia
-ceTaskId=dfafce65-7c54-4fed-93ea-c2e31ba2861e
-ceTaskUrl=http://localhost:9000/api/ce/task?id=dfafce65-7c54-4fed-93ea-c2e31ba2861e
+ceTaskId=e9f0c2e0-1b5d-4a81-ae64-fcb70b54f424
+ceTaskUrl=http://localhost:9000/api/ce/task?id=e9f0c2e0-1b5d-4a81-ae64-fcb70b54f424

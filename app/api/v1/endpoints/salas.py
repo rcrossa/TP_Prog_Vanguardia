@@ -101,9 +101,13 @@ async def delete_sala(sala_id: int):
         return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})
 
 
-@router.get("/count/total")
+
 @router.get("/count/total")
 async def count_salas():
-    """No implementado: usar microservicio Java para conteo."""
-    return JSONResponse(status_code=501,
-                        content={ "Funcionalidad no implementada."})
+    """Devuelve el número total de salas desde el microservicio Java."""
+    try:
+        salas = await JavaServiceClient.get_salas()
+        total = len(salas) if salas else 0
+        return {"total": total}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Error al contar salas: {str(e)}"})

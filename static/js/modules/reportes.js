@@ -266,115 +266,24 @@ class ReportesManager {
      */
     async fetchUsageStats() {
         try {
-            console.log('📈 Obteniendo estadísticas de uso REALES...');
-            
-            // Obtener datos reales desde las APIs existentes
-            const [usuariosCount, articulosCount, salasCount, reservasCount] = await Promise.all([
-                // Para usuarios, manejar el caso de que requiera autenticación
-                this.apiRequest('/api/v1/personas/count/total').catch(async () => {
-                    console.log('⚠️ API personas/count falló, intentando fallback...');
-                    try {
-                        // Fallback: obtener lista si está disponible (no forzar [] para distinguir error real)
-                        const personas = await this.apiRequest('/api/v1/personas/');
-                        const total = Array.isArray(personas) ? personas.length : 'N/A';
-                        console.log('📋 Fallback personas lista:', Array.isArray(personas) ? total : 'falló');
-                        return { total };
-                    } catch {
-                        // Si ambos fallan, mostrar que requiere permisos
-                        console.log('❌ Ambas APIs de personas fallaron');
-                        return { total: 'N/A' };
-                    }
-                }),
-                this.apiRequest('/api/v1/articulos/count/total').catch((e) => {
-                    console.log('❌ API artículos/count falló:', e);
-                    return { total: 0 };
-                }),
-                this.apiRequest('/api/v1/salas/count/total').catch((e) => {
-                    console.log('❌ API salas/count falló:', e);
-                    return { total: 0 };
-                }),
-                this.apiRequest('/api/v1/reservas/').catch((e) => {
-                    console.log('❌ API reservas falló:', e);
-                    return [];
-                })
-            ]);
-
-            console.log('📊 Respuestas de APIs:', {
-                usuariosCount,
-                articulosCount,
-                salasCount,
-                reservasCount: Array.isArray(reservasCount) ? `${reservasCount.length} reservas` : 'no es array'
-            });
-
-            // Calcular métricas reales
-            const reservas = Array.isArray(reservasCount) ? reservasCount : [];
-            let totalUsuarios = (typeof usuariosCount.total === 'number') ? usuariosCount.total : null;
-            const totalArticulos = articulosCount.total || 0;
-            const totalSalas = salasCount.total || 0;
-
-            // Fallback: si no pudimos obtener el count de personas (403, etc.),
-            // usar el total de usuarios únicos que reservaron SALAS (persona_id distinto)
-            if (totalUsuarios === null) {
-                try {
-                    const usuariosDesdeReservasSala = new Set(
-                        reservas
-                            .filter(r => !!r.sala_id && !!r.persona_id)
-                            .map(r => r.persona_id)
-                    ).size;
-                    totalUsuarios = usuariosDesdeReservasSala;
-                } catch (_) {
-                    totalUsuarios = 0;
-                }
-            }
-            
-            // Calcular disponibilidad real basada solo en reservas de SALAS hoy
-            // Disponibilidad = salas NO reservadas hoy / total salas
-            // Fecha local YYYY-MM-DD (evita desfasajes por UTC)
-            const hoyDate2 = new Date();
-            const hoy2 = `${hoyDate2.getFullYear()}-${String(hoyDate2.getMonth()+1).padStart(2,'0')}-${String(hoyDate2.getDate()).padStart(2,'0')}`;
-            const salaIdsReservadasHoy = new Set(
-                reservas
-                    .filter(reserva => {
-                        if (!reserva.fecha_hora_inicio) return false;
-                        const d = new Date(reserva.fecha_hora_inicio);
-                        const fechaReserva = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                        // contar solo reservas de salas
-                        return fechaReserva === hoy2 && !!reserva.sala_id;
-                    })
-                    .map(r => r.sala_id)
-            );
-
-            const reservasSalasHoyUnicas = salaIdsReservadasHoy.size;
-            const salasLibresHoy = Math.max(0, totalSalas - reservasSalasHoyUnicas);
-            const disponibilidadPromedio = totalSalas > 0 ?
-                Math.round((salasLibresHoy / totalSalas) * 100) : 0;
-            
-            console.log('📊 Estadísticas reales calculadas:', {
-                totalUsuarios,
-                totalArticulos, 
-                totalSalas,
-                reservasActivas: reservas.length,
-                reservasHoy: reservasSalasHoyUnicas,
-                disponibilidadPromedio
-            });
-            
+            console.log('📈 Obteniendo estadísticas de uso desde /api/v1/stats/uso...');
+            const stats = await this.apiRequest('/api/v1/stats/uso');
+            // stats: { usuariosActivos, articulosReservados, disponibilidadPromedio, totalSalas, totalArticulos }
             return {
-                usuariosActivos: totalUsuarios,
-                articulosReservados: reservas.filter(r => !!r.articulo_id).length,
-                disponibilidadPromedio: disponibilidadPromedio,
-                satisfaccion: 0, // No tenemos datos de satisfacción aún
-                totalSalas: totalSalas,
-                totalArticulos: totalArticulos
+                usuariosActivos: stats.usuariosActivos || 0,
+                articulosReservados: stats.articulosReservados || 0,
+                disponibilidadPromedio: stats.disponibilidadPromedio || 0,
+                totalSalas: stats.totalSalas || 0,
+                totalArticulos: stats.totalArticulos || 0
             };
         } catch (error) {
-            console.error('❌ Error obteniendo stats de uso reales:', error);
-            
-            // Fallback con datos claramente marcados como no disponibles
+            console.error('❌ Error obteniendo stats de uso:', error);
             return {
                 usuariosActivos: 0,
                 articulosReservados: 0,
                 disponibilidadPromedio: 0,
-                satisfaccion: 0,
+                totalSalas: 0,
+                totalArticulos: 0,
                 error: 'Datos no disponibles'
             };
         }
