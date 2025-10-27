@@ -1,124 +1,103 @@
 #!/bin/bash
-
-# Script de setup para el proyecto de reservas
+# setup.sh - Solo para Mac y Linux
 set -e
 
-echo "🚀 Configurando proyecto de Plataforma de Gestión de Reservas..."
+echo "\n🚀 Configurando Plataforma de Gestión de Reservas (Mac/Linux)"
 
-# Verificar que Docker Desktop esté ejecutándose
+# Validar dependencias mínimas
+for cmd in docker docker-compose python3 pip3; do
+    if ! command -v $cmd &>/dev/null; then
+        echo "❌ Error: '$cmd' no está instalado. Instálalo antes de continuar."
+        exit 1
+    fi
+done
+
+# Verificar que Docker esté ejecutándose
 if ! docker info > /dev/null 2>&1; then
-    echo "❌ Error: Docker Desktop no está ejecutándose"
-    echo "   Por favor, inicia Docker Desktop e intenta de nuevo"
+    echo "❌ Error: Docker no está ejecutándose. Inicia Docker Desktop o el servicio docker."
     exit 1
 fi
 
-# Función para configurar archivos .env
-configure_env_files() {
-    # Crear archivo .env si no existe
-    if [ ! -f ".env" ]; then
-        echo "📝 Creando archivo .env desde plantilla..."
-        cp .env.example .env
-        echo "✅ Archivo .env creado"
-    fi
+# Configurar archivos .env si faltan
+if [ ! -f ".env" ]; then
+    echo "📝 Creando .env desde plantilla..."
+    cp .env.example .env
+fi
+if [ ! -f "docker/.env" ]; then
+    echo "📝 Creando docker/.env desde plantilla..."
+    cp docker/.env.example docker/.env
+fi
 
-    # Crear archivo .env para Docker si no existe
-    if [ ! -f "docker/.env" ]; then
-        echo "📝 Creando docker/.env desde plantilla..."
-        cp docker/.env.example docker/.env
-        echo "✅ Docker .env creado"
-    fi
-}
+# Selección de stack a levantar
+echo "\n� ¿Qué stack deseas iniciar?"
+echo "1) Solo base de datos (db-only)"
+echo "2) Full stack (Python + Java + DB)"
+read -p "Selecciona una opción (1-2, default 1): " stack_option
+stack_file="docker-compose.db-only.yml"
+if [ "$stack_option" == "2" ]; then
+    stack_file="docker-compose.full.yml"
+fi
 
-# Preguntar al usuario sobre configuración
-echo ""
-echo "🔧 Opciones de configuración:"
-echo "1) Usar configuración por defecto (recomendado para desarrollo)"
-echo "2) Configurar credenciales personalizadas"
-echo ""
-read -p "Selecciona una opción (1-2): " config_option
-
-case $config_option in
-    1)
-        echo "✅ Usando configuración por defecto para desarrollo"
-        configure_env_files
-        ;;
-    2)
-        echo "🔧 Configuración personalizada seleccionada"
-        configure_env_files
-        echo ""
-        echo "⚠️  Por favor, edita los siguientes archivos con tus credenciales:"
-        echo "   - .env (configuración de la aplicación)"
-        echo "   - docker/.env (configuración de contenedores)"
-        echo ""
-        read -p "Presiona ENTER cuando hayas terminado de editar los archivos .env..."
-        ;;
-    *)
-        echo "❌ Opción inválida. Usando configuración por defecto."
-        configure_env_files
-        ;;
-esac
-
-# Levantar servicios de Docker
-echo "🐳 Iniciando servicios de base de datos..."
 cd docker
-docker-compose up -d
+echo "\n🐳 Levantando servicios con $stack_file ..."
+docker-compose -f $stack_file up -d
 
 # Esperar a que la base de datos esté lista
 echo "⏳ Esperando a que PostgreSQL esté listo..."
-sleep 10
-
-# Verificar conexión a base de datos
-echo "🔍 Verificando conexión a base de datos..."
-
-# Cargar variables desde docker/.env
-if [ -f ".env" ]; then
-    source .env 2>/dev/null || true
-fi
-
-DB_USER=${POSTGRES_USER:-reservas_user}
-DB_NAME=${POSTGRES_DB:-reservas}
-
-if docker exec reservas_db pg_isready -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1; then
-    echo "✅ Base de datos PostgreSQL lista"
-else
-    echo "❌ Error: No se puede conectar a PostgreSQL"
-    echo "   Verificando credenciales en docker/.env..."
-    sleep 5
-fi
-
-# Mostrar información de servicios y credenciales
-echo ""
-echo "🎉 Setup completado exitosamente!"
-echo ""
-echo "📊 Servicios disponibles:"
-echo "   PostgreSQL: localhost:5432"
-echo "   PgAdmin:    http://localhost:8080"
-echo ""
-
-# Mostrar credenciales desde los archivos .env
-echo "📋 Credenciales configuradas:"
-if [ -f ".env" ]; then
-    echo ""
-    echo "🔐 Para PostgreSQL:"
-    DB_USER_ACTUAL=$(grep "POSTGRES_USER=" docker/.env 2>/dev/null | cut -d'=' -f2 || echo "reservas_user")
-    DB_PASS_ACTUAL=$(grep "POSTGRES_PASSWORD=" docker/.env 2>/dev/null | cut -d'=' -f2 || echo "reservas_password")
-    echo "   Usuario: $DB_USER_ACTUAL"
-    echo "   Password: $DB_PASS_ACTUAL"
-    echo ""
-    echo "🔐 Para PgAdmin:"
-    PG_EMAIL=$(grep "PGADMIN_DEFAULT_EMAIL=" docker/.env 2>/dev/null | cut -d'=' -f2 || echo "admin@reservas.com")
-    PG_PASS=$(grep "PGADMIN_DEFAULT_PASSWORD=" docker/.env 2>/dev/null | cut -d'=' -f2 || echo "admin123")
-    echo "   Email: $PG_EMAIL"
-    echo "   Password: $PG_PASS"
-else
-    echo "   Consulta archivos .env y docker/.env para credenciales"
-fi
-
-echo ""
-echo "🔧 Próximos pasos:"
-echo "   1. Instalar dependencias Python: pip install -r requirements.txt"
-echo "   2. Ejecutar la aplicación: python main.py"
-echo "   3. API disponible en: http://localhost:8000/docs"
-echo ""
+for i in {1..20}; do
+    if docker-compose exec -T postgres pg_isready -U $(grep POSTGRES_USER .env | cut -d'=' -f2) > /dev/null 2>&1; then
+        echo "✅ PostgreSQL está listo."
+        break
+    fi
+    sleep 2
+done
 
 cd ..
+
+
+# Crear y activar entorno virtual
+echo "\n🐍 Configurando entorno virtual Python..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+    echo "✅ Entorno virtual creado en ./venv"
+fi
+
+# Activar entorno virtual según shell
+if [ -n "$ZSH_VERSION" ]; then
+    source venv/bin/activate
+elif [ -n "$BASH_VERSION" ]; then
+    source venv/bin/activate
+else
+    . venv/bin/activate
+fi
+
+echo "\n📦 Instalando dependencias Python en el virtualenv..."
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Mostrar credenciales
+echo "\n📋 Credenciales configuradas (docker/.env):"
+grep -E 'POSTGRES_USER|POSTGRES_PASSWORD|PGADMIN_DEFAULT_EMAIL|PGADMIN_DEFAULT_PASSWORD' docker/.env | sed 's/^/   /'
+
+
+echo "\n👤 Creando usuario administrador por defecto..."
+if [ -f "scripts/create_admin.py" ]; then
+    python scripts/create_admin.py || echo "⚠️  No se pudo crear el admin automáticamente. Puedes crearlo manualmente luego."
+else
+    echo "⚠️  scripts/create_admin.py no encontrado."
+fi
+
+echo "\n🎉 Setup completado. Servicios disponibles:"
+echo "   - PostgreSQL: localhost:5432"
+echo "   - API Python: http://localhost:8000/docs"
+echo "   - API Java:   http://localhost:8080/swagger-ui.html"
+echo "   - PgAdmin:    http://localhost:5050"
+
+echo "\n🔧 Próximos pasos:"
+echo "   1. (Opcional) Edita .env y docker/.env si necesitas credenciales personalizadas."
+echo "   2. Activa el entorno virtual en cada terminal: source venv/bin/activate"
+echo "   3. Ejecuta el servicio Python: python main.py"
+echo "   4. Ejecuta el Java Service en otra terminal:"
+echo "      cd java-service && ./mvnw spring-boot:run"
+echo "   5. Accede a la API y frontend en los puertos indicados."
+echo "\n💡 Para Windows, usa setup_win.bat."
