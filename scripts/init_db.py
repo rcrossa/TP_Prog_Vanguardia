@@ -27,61 +27,100 @@ def init_database():
             print("La base de datos ya contiene datos.")
             return
 
-        # Insertar personas (según la consigna) con contraseñas de prueba
+        # Insertar personas (según la consigna) con contraseñas de prueba y nuevos campos
         personas = [
             Persona(
-                id=1,
                 nombre="Ana Pérez",
+                apellido="Pérez",
                 email="ana.perez@organizacion.com",
                 hashed_password=get_password_hash("admin123"),
                 is_active=True,
                 is_admin=True,
-                    created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(timezone.utc),
+                last_login=None,
             ),
             Persona(
-                id=2,
                 nombre="Juan Gómez",
+                apellido="Gómez",
                 email="juan.gomez@organizacion.com",
                 hashed_password=get_password_hash("user123"),
                 is_active=True,
                 is_admin=False,
-                    created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(timezone.utc),
+                last_login=None,
             ),
             Persona(
-                id=3,
                 nombre="María López",
+                apellido="López",
                 email="maria.lopez@organizacion.com",
                 hashed_password=get_password_hash("user123"),
                 is_active=True,
                 is_admin=False,
-                    created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(timezone.utc),
+                last_login=None,
             ),
         ]
 
         for persona in personas:
             db.add(persona)
 
-        # Insertar artículos (según la consigna)
+        # Insertar artículos (según la consigna) con nuevos campos
         articulos = [
-            Articulo(id=1, nombre="Proyector Epson EB-X05", disponible=True),
-            Articulo(id=2, nombre="Laptop HP EliteBook", disponible=False),
-            Articulo(id=3, nombre="Cámara Sony Alpha a6400", disponible=True),
+            Articulo(
+                nombre="Proyector Epson EB-X05",
+                descripcion="Proyector XGA 3.300 lúmenes",
+                cantidad=1,
+                categoria="Proyector",
+                disponible=True,
+            ),
+            Articulo(
+                nombre="Laptop HP EliteBook",
+                descripcion="Notebook 14'' Intel i5",
+                cantidad=1,
+                categoria="Laptop",
+                disponible=False,
+            ),
+            Articulo(
+                nombre="Cámara Sony Alpha a6400",
+                descripcion="Cámara mirrorless 24MP",
+                cantidad=1,
+                categoria="Cámara",
+                disponible=True,
+            ),
         ]
 
         for articulo in articulos:
             db.add(articulo)
 
-        # Insertar salas (según la consigna)
+        # Insertar salas (según la consigna) con nuevos campos
         salas = [
-            Sala(id=1, nombre="Sala de Reuniones 1A", capacidad=8),
-            Sala(id=2, nombre="Sala de Conferencias B2", capacidad=20),
-            Sala(id=3, nombre="Aula de Capacitación C3", capacidad=15),
+            Sala(
+                nombre="Sala de Reuniones 1A",
+                capacidad=8,
+                disponible=True,
+                ubicacion="Edificio A, piso 1",
+                descripcion="Sala pequeña para reuniones",
+            ),
+            Sala(
+                nombre="Sala de Conferencias B2",
+                capacidad=20,
+                disponible=True,
+                ubicacion="Edificio B, piso 2",
+                descripcion="Sala grande para conferencias",
+            ),
+            Sala(
+                nombre="Aula de Capacitación C3",
+                capacidad=15,
+                disponible=True,
+                ubicacion="Edificio C, piso 3",
+                descripcion="Aula equipada para capacitaciones",
+            ),
         ]
 
         for sala in salas:
             db.add(sala)
 
-        # Insertar reservas (según la consigna)
+        # Insertar reservas (según la consigna, sin asignar id manualmente)
         reservas = [
             Reserva(
                 id_articulo=1,
