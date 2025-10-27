@@ -6,10 +6,11 @@ Microservicio Java Spring Boot para gestión de **Salas** y **Artículos** del s
 
 Este servicio forma parte de una arquitectura de microservicios junto con el servicio Python. Se encarga de la gestión transaccional de recursos físicos (salas) y artículos del inventario.
 
+
 ## 🏗️ Arquitectura
 
 - **Framework:** Spring Boot 3.3.0
-- **Java Version:** 17
+- **Java Version:** 21
 - **Build Tool:** Maven
 - **Database:** PostgreSQL (compartida con servicio Python)
 - **Puerto:** 8080
@@ -95,21 +96,9 @@ java-service/
 
 ### Artículo
 ```json
-{
-  "id": 1,
-  "nombre": "Proyector Epson",
-  "descripcion": "Proyector Full HD 3000 lúmenes",
-  "cantidad": 5,
-  "categoria": "Electrónica",
   "disponible": true
 }
 ```
-
-## ⚙️ Configuración
-
-### Base de Datos (application.properties)
-
-```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/reservas
 spring.datasource.username=postgres
 spring.datasource.password=postgres
@@ -119,10 +108,29 @@ spring.datasource.password=postgres
 
 Configurado para aceptar requests desde:
 - `http://localhost:8000` (Servicio Python)
-- `http://127.0.0.1:8000`
 
-## 🔗 Integración con Servicio Python
+3. **Ejecuta el servicio Java directamente con:**
+         ```bash
+         ./mvnw spring-boot:run
+         ```
+      (No es necesario usar `run.sh`, puedes ejecutar el comando anterior en cualquier terminal dentro de `java-service`)
+      > **Nota:** El proyecto requiere Java 21. Verifica tu versión con `java -version`.
 
+# ⚠️ Solución de problemas Java
+
+Si ves errores de compilación relacionados con la versión de Java, asegúrate de tener Java 21 instalado y activo:
+
+```bash
+java -version
+# Debe mostrar: openjdk version "21..."
+```
+
+Si tienes varias versiones instaladas, puedes forzar el uso de Java 21 con:
+
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+./mvnw spring-boot:run
+```
 Este servicio se comunica con el servicio Python (puerto 8000) que maneja:
 - Autenticación de usuarios
 - Gestión de reservas
