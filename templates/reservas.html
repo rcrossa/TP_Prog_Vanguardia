@@ -64,6 +64,8 @@
                     </tr>
                 </thead>
                 <tbody id="reservasTableBody">
+                    {# Ejemplo de cómo debería renderizarse cada reserva, el JS debe usar persona.nombre + ' ' + persona.apellido #}
+                    <!-- El contenido real se genera por JS, pero aquí va el placeholder de carga -->
                     <tr>
                         <td colspan="8" class="text-center py-4">
                             <div class="spinner-border text-primary" role="status">
@@ -121,6 +123,7 @@
                         <label class="form-label">Persona</label>
                         <select class="form-select" id="idPersona" required>
                             <option value="">Cargando personas...</option>
+                            {# Cuando se cargan las opciones por JS, mostrar nombre + apellido #}
                         </select>
                     </div>
                     

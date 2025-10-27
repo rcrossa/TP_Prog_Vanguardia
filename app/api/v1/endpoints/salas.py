@@ -6,9 +6,9 @@ Este módulo define los endpoints REST para las operaciones CRUD
 del modelo Sala utilizando FastAPI.
 """
 from typing import List
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from httpx import HTTPError
-from fastapi import APIRouter, status
 from app.services.java_client import JavaServiceClient
 from app.schemas.sala import Sala, SalaCreate, SalaUpdate
 
@@ -54,8 +54,9 @@ async def get_salas():
 @router.get("/capacidad/{min_capacidad}", response_model=List[Sala])
 async def get_salas_by_capacidad(min_capacidad: int):
     """No implementado: usar microservicio Java para filtros avanzados."""
+    # min_capacidad is not used, but kept for API compatibility
     return JSONResponse(status_code=501,
-                        content={ "Funcionalidad no implementada."})
+                        content={"detail": "Funcionalidad no implementada."})
 
 
 
@@ -109,5 +110,7 @@ async def count_salas():
         salas = await JavaServiceClient.get_salas()
         total = len(salas) if salas else 0
         return {"total": total}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"detail": f"Error al contar salas: {str(e)}"})
+    except HTTPError as e:
+        return JSONResponse(status_code=502, content={"detail": f"Error de red: {str(e)}"})
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})

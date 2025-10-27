@@ -16,8 +16,15 @@ class PersonaBase(BaseModel):
         ...,
         min_length=2,
         max_length=100,
-        description="Nombre completo de la persona",
-        examples=["Juan Pérez", "María González", "Carlos Rodríguez"],
+        description="Nombre de la persona",
+        examples=["Juan", "María", "Carlos"],
+    )
+    apellido: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        description="Apellido de la persona",
+        examples=["Pérez", "González", "Rodríguez"],
     )
     email: EmailStr = Field(
         ...,
@@ -84,6 +91,13 @@ class PersonaUpdate(BaseModel):
         max_length=100,
         description="Nuevo nombre de la persona",
         examples=["Juan Carlos Pérez", "María José González"],
+    )
+    apellido: Optional[str] = Field(
+        None,
+        min_length=2,
+        max_length=100,
+        description="Nuevo apellido de la persona",
+        examples=["Pérez", "González", "Rodríguez"],
     )
     email: Optional[EmailStr] = Field(
         None,

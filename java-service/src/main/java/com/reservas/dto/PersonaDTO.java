@@ -16,10 +16,8 @@ import lombok.AllArgsConstructor;
 public class PersonaDTO {
     
     private Long id;
-    
     private String nombre;
-    
+    private String apellido;
     private String email;
-    
     private String rol;
 }

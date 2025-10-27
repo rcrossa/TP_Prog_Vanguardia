@@ -1,3 +1,4 @@
+
 """
 Rutas web para la interfaz de usuario.
 
@@ -5,24 +6,54 @@ Este módulo define las rutas para servir las páginas HTML
 del sistema de reservas.
 """
 
+# Standard library
 import os
+from datetime import datetime
+
+# Third-party
+import pytz
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.auth.jwt_handler import extract_email_from_token
+
+# Local imports
 from app.core.database import get_db
+from app.auth.jwt_handler import extract_email_from_token
 from app.models.persona import Persona
-from app.repositories.persona_repository import PersonaRepository
-from app.services import PersonaService
-from app.repositories.reserva_repository import ReservaRepository
-from app.repositories.sala_repository import SalaRepository
-from app.models.articulo import Articulo
 from app.models.reserva import Reserva
 from app.models.sala import Sala
+from app.models.articulo import Articulo
+from app.repositories.persona_repository import PersonaRepository
+from app.repositories.reserva_repository import ReservaRepository
+from app.repositories.sala_repository import SalaRepository
+from app.services.persona_service import PersonaService
+from app.services.articulo_service import ArticuloService
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+
+# Endpoint API para reservas activas (dashboard.js)
+@router.get("/api/v1/stats/reservas")
+async def api_reservas_activas(request: Request, db: Session = Depends(get_db)):
+    current_user = get_user_from_request(request, db)
+    if not current_user:
+        return JSONResponse(status_code=401, content={"error": "No autorizado"})
+
+    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
+    ahora_local = datetime.now(local_tz)
+    reservas = ReservaRepository.get_all(db)
+    reservas_activas = []
+    for r in reservas:
+        fin = r.fecha_hora_fin
+        if fin.tzinfo is None:
+            if fin >= ahora_local.replace(tzinfo=None):
+                reservas_activas.append(r)
+        else:
+            if fin.astimezone(local_tz) >= ahora_local:
+                reservas_activas.append(r)
+    return {"reservasActivas": len(reservas_activas)}
 
 
 def handle_auth_error(request: Request):
@@ -105,23 +136,41 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     if admin_check:
         return admin_check
 
+
     try:
         # Obtener estadísticas básicas para el dashboard
-
-
         personas = PersonaRepository.get_all(db)
         salas = SalaRepository.get_all(db)
         reservas = ReservaRepository.get_all(db)
 
+        total_articulos = ArticuloService.count_articulos(db)
+        articulos_disponibles = ArticuloService.count_articulos(db, disponible=True)
+        articulos_no_disponibles = total_articulos - articulos_disponibles
+
+        # Reservas activas: fecha_hora_fin >= ahora (local time)
+        local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
+        ahora_local = datetime.now(local_tz)
+        reservas_activas = []
+        for r in reservas:
+            fin = r.fecha_hora_fin
+            # Si el datetime es naive (sin tzinfo), asumir local
+            if fin.tzinfo is None:
+                if fin >= ahora_local.replace(tzinfo=None):
+                    reservas_activas.append(r)
+            else:
+                if fin.astimezone(local_tz) >= ahora_local:
+                    reservas_activas.append(r)
+
         stats = {
             "total_personas": len(personas),
-            "total_articulos": 0,  # Gestión de artículos movida al servicio Java
-            "articulos_disponibles": 0,
-            "articulos_no_disponibles": 0,
+            "total_articulos": total_articulos,
+            "articulos_disponibles": articulos_disponibles,
+            "articulos_no_disponibles": articulos_no_disponibles,
             "total_salas": len(salas),
             "salas_pequenas": len([s for s in salas if s.capacidad <= 20]),
             "salas_grandes": len([s for s in salas if s.capacidad > 20]),
             "total_reservas": len(reservas),
+            "reservasActivas": len(reservas_activas),
         }
 
         return templates.TemplateResponse(

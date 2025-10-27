@@ -1,8 +1,8 @@
-
 """Stats endpoints for the API."""
 
 from collections import Counter
 from datetime import datetime, timedelta
+import pytz
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends
 from app.core.database import get_db
@@ -142,3 +142,20 @@ def stats_uso(
         "totalSalas": total_salas,
         "totalArticulos": total_articulos,
     }
+
+@router.get("/reservas_activas", tags=["stats"])
+def reservas_activas_endpoint(db: Session = Depends(get_db)):
+    """Devuelve el número de reservas activas (para dashboard)."""
+    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
+    ahora_local = datetime.now(local_tz)
+    reservas = db.query(Reserva).all()
+    reservas_activas = []
+    for r in reservas:
+        fin = r.fecha_hora_fin
+        if fin.tzinfo is None:
+            if fin >= ahora_local.replace(tzinfo=None):
+                reservas_activas.append(r)
+        else:
+            if fin.astimezone(local_tz) >= ahora_local:
+                reservas_activas.append(r)
+    return {"reservasActivas": len(reservas_activas)}

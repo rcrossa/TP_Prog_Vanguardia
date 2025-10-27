@@ -1,3 +1,32 @@
+// Dashboard stats loader
+async function refreshStats() {
+    try {
+        // Cargar reservas activas
+        const reservasResp = await axios.get('/api/v1/stats/reservas_activas', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const reservasStats = reservasResp.data;
+        document.getElementById('reservas-activas').textContent = reservasStats.reservasActivas ?? '...';
+
+        // Cargar unidades disponibles en inventario
+        const inventarioResp = await axios.get('/api/v1/articulos/estadisticas/inventario', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const inventarioStats = inventarioResp.data;
+        document.getElementById('total-articulos').textContent = inventarioStats.unidades_disponibles ?? '...';
+    } catch (error) {
+        console.error('Error al cargar estadísticas de reservas:', error);
+        document.getElementById('reservas-activas').textContent = '...';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    refreshStats();
+});
 
 // Cargar gráfico de actividad detallada (activas y pasadas)
 async function loadActividadChart() {

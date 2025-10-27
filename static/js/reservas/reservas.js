@@ -216,7 +216,11 @@ function updatePersonaSelect() {
     }
     
     personas.forEach(persona => {
-        select.innerHTML += `<option value="${persona.id}">${persona.nombre}</option>`;
+        let nombreCompleto = persona.nombre;
+        if (persona.apellido && persona.apellido.trim() !== '') {
+            nombreCompleto += ' ' + persona.apellido;
+        }
+        select.innerHTML += `<option value="${persona.id}">${nombreCompleto}</option>`;
     });
 }
 
@@ -335,7 +339,12 @@ function getNombreRecurso(reserva) {
 // Obtener nombre de persona
 function getNombrePersona(idPersona) {
     const persona = personas.find(p => p.id === idPersona);
-    return persona ? persona.nombre : `Persona #${idPersona}`;
+    if (!persona) return `Persona #${idPersona}`;
+    let nombreCompleto = persona.nombre;
+    if (persona.apellido && persona.apellido.trim() !== '') {
+        nombreCompleto += ' ' + persona.apellido;
+    }
+    return nombreCompleto;
 }
 
 // Obtener estado de reserva

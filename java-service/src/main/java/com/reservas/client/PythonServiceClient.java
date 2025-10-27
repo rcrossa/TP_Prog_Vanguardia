@@ -57,9 +57,16 @@ public class PythonServiceClient {
             );
             
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                logger.info("✅ Token JWT validado exitosamente para usuario: {}", 
-                    response.getBody().getNombre());
-                return Optional.of(response.getBody());
+                PersonaDTO persona = response.getBody();
+                String nombreCompleto = "";
+                if (persona != null && persona.getNombre() != null) {
+                    nombreCompleto = persona.getNombre();
+                    if (persona.getApellido() != null && !persona.getApellido().isEmpty()) {
+                        nombreCompleto += " " + persona.getApellido();
+                    }
+                }
+                logger.info("✅ Token JWT validado exitosamente para usuario: {}", nombreCompleto);
+                return Optional.of(persona);
             } else {
                 logger.warn("⚠️ Token JWT inválido: respuesta sin body");
                 return Optional.empty();
@@ -91,10 +98,15 @@ public class PythonServiceClient {
         
         if (persona.isPresent()) {
             boolean esAdmin = "admin".equalsIgnoreCase(persona.get().getRol());
+            PersonaDTO p = persona.get();
+            String nombreCompleto = p.getNombre();
+            if (p.getApellido() != null && !p.getApellido().isEmpty()) {
+                nombreCompleto += " " + p.getApellido();
+            }
             if (esAdmin) {
-                logger.info("✅ Usuario {} es administrador", persona.get().getNombre());
+                logger.info("✅ Usuario {} es administrador", nombreCompleto);
             } else {
-                logger.info("ℹ️ Usuario {} NO es administrador", persona.get().getNombre());
+                logger.info("ℹ️ Usuario {} NO es administrador", nombreCompleto);
             }
             return esAdmin;
         }

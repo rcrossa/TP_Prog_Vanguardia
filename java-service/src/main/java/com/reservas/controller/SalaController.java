@@ -88,13 +88,22 @@ public class SalaController {
             
             // Verificar que el usuario es admin
             if (!"admin".equalsIgnoreCase(persona.get().getRol())) {
-                logger.warn("⚠️ Usuario {} intentó crear sala sin permisos de admin", 
-                    persona.get().getNombre());
+                PersonaDTO p = persona.get();
+                String nombreCompleto = p.getNombre();
+                if (p.getApellido() != null && !p.getApellido().isEmpty()) {
+                    nombreCompleto += " " + p.getApellido();
+                }
+                logger.warn("⚠️ Usuario {} intentó crear sala sin permisos de admin", nombreCompleto);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Solo los administradores pueden crear salas");
             }
             
-            logger.info("✅ Sala siendo creada por admin: {}", persona.get().getNombre());
+            PersonaDTO p = persona.get();
+            String nombreCompleto = p.getNombre();
+            if (p.getApellido() != null && !p.getApellido().isEmpty()) {
+                nombreCompleto += " " + p.getApellido();
+            }
+            logger.info("✅ Sala siendo creada por admin: {}", nombreCompleto);
         } else {
             logger.warn("⚠️ Intento de crear sala sin token JWT (modo desarrollo)");
             // En desarrollo, permitir creación sin token

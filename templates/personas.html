@@ -38,6 +38,7 @@
                     <tr>
                         <th width="80">ID</th>
                         <th>Nombre</th>
+                        <th>Apellido</th>
                         <th>Email</th>
                         <th width="120">Tipo</th>
                         <th class="admin-only table-actions">Acciones</th>
@@ -72,13 +73,20 @@
             <div class="modal-body">
                 <form id="personaForm">
                     <input type="hidden" id="personaId">
-                    
                     <div class="mb-3">
                         <label for="nombre" class="form-label">
-                            <i class="fas fa-user me-1"></i>Nombre Completo *
+                            <i class="fas fa-user me-1"></i>Nombre *
                         </label>
                         <input type="text" class="form-control" id="nombre" required 
-                               placeholder="Ej: Juan Pérez">
+                               placeholder="Ej: Juan">
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="apellido" class="form-label">
+                            <i class="fas fa-user me-1"></i>Apellido *
+                        </label>
+                        <input type="text" class="form-control" id="apellido" required 
+                               placeholder="Ej: Pérez">
                         <div class="invalid-feedback"></div>
                     </div>
                     
