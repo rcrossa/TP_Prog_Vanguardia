@@ -51,12 +51,12 @@ async def get_salas():
         return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})
 
 
-@router.get("/capacidad/{min_capacidad}", response_model=List[Sala])
-async def get_salas_by_capacidad(min_capacidad: int):
-    """No implementado: usar microservicio Java para filtros avanzados."""
-    # min_capacidad is not used, but kept for API compatibility
-    return JSONResponse(status_code=501,
-                        content={"detail": "Funcionalidad no implementada."})
+# @router.get("/capacidad/{min_capacidad}", response_model=List[Sala])
+# async def get_salas_by_capacidad(min_capacidad: int):
+#     """No implementado: usar microservicio Java para filtros avanzados."""
+#     # min_capacidad is not used, but kept for API compatibility
+#     return JSONResponse(status_code=501,
+#                         content={"detail": "Funcionalidad no implementada."})
 
 
 
