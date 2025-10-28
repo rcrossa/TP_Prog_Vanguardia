@@ -25,6 +25,7 @@ class PersonaRepository:
 
         db_persona = Persona(
             nombre=persona_data.nombre,
+            apellido=persona_data.apellido,
             email=persona_data.email,
             hashed_password=hashed_password,
             is_admin=persona_data.is_admin,
