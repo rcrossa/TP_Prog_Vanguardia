@@ -128,11 +128,52 @@ class AuthManager {
         }
         const loginForm = document.getElementById('loginForm');
         const togglePassword = document.querySelector('.toggle-password');
-        
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const alertElement = document.getElementById('alert');
+
+        // Mostrar requerimientos en la vista
+        const emailReq = document.getElementById('email-requirements');
+        if (emailReq) {
+            emailReq.textContent = 'Debe ingresar un email válido (ejemplo: usuario@dominio.com)';
+            emailReq.style.display = 'block';
+        }
+        const passReq = document.getElementById('password-requirements');
+        if (passReq) {
+            passReq.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+            passReq.style.display = 'block';
+        }
+
+        // Validación en tiempo real para email
+        if (emailInput) {
+            emailInput.addEventListener('input', () => {
+                const email = emailInput.value.trim();
+                const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+                if (!email) {
+                    this.showAlert(alertElement, 'warning', 'Por favor, ingresa tu email.');
+                } else if (!emailRegex.test(email)) {
+                    this.showAlert(alertElement, 'warning', 'El email ingresado no es válido.');
+                } else {
+                    this.hideAlert(alertElement);
+                }
+            });
+        }
+        // Validación en tiempo real para password
+        if (passwordInput) {
+            passwordInput.addEventListener('input', () => {
+                const password = passwordInput.value;
+                if (password.length < 6) {
+                    this.showAlert(alertElement, 'warning', 'La contraseña debe tener al menos 6 caracteres.');
+                } else {
+                    this.hideAlert(alertElement);
+                }
+            });
+        }
+
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
-        
+
         if (togglePassword) {
             togglePassword.addEventListener('click', () => this.togglePasswordVisibility());
         }
@@ -160,44 +201,58 @@ class AuthManager {
     
     async handleLogin(event) {
         event.preventDefault();
-        
+
         const form = event.target;
-        const email = form.email.value;
+        const email = form.email.value.trim();
         const password = form.password.value;
         const submitButton = form.querySelector('button[type="submit"]');
         const alertElement = document.getElementById('alert');
-        
+
         this.hideAlert(alertElement);
         this.setLoading(submitButton, true);
-        
+
+        // Validación: email obligatorio y formato
+        if (!email) {
+            this.showAlert(alertElement, 'warning', 'Por favor, ingresa tu email.');
+            this.setLoading(submitButton, false);
+            return;
+        }
+        // Validar formato básico de email
+        const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+        if (!emailRegex.test(email)) {
+            this.showAlert(alertElement, 'warning', 'El email ingresado no es válido.');
+            this.setLoading(submitButton, false);
+            return;
+        }
+
         try {
             const response = await axios.post('/api/v1/personas/web-login', {
                 email: email,
                 password: password
             });
-            
+
             const { access_token, user } = response.data;
-            
+
             if (!user || !user.id) {
                 throw new Error('Error de autenticación: datos de usuario incompletos');
             }
-            
+
             this.setToken(access_token);
             this.setUser(user);
-            
+
             // Redirigir al dashboard
             window.location.href = '/';
-            
+
         } catch (error) {
             console.error('Error de login:', error);
-            
+
             let message = 'Error de conexión';
             if (error.response?.data?.detail) {
                 message = error.response.data.detail;
             } else if (error.response?.status === 401) {
                 message = 'Email o contraseña incorrectos';
             }
-            
+
             this.showAlert(alertElement, 'danger', message);
         } finally {
             this.setLoading(submitButton, false);
@@ -240,7 +295,8 @@ class AuthManager {
     togglePasswordVisibility() {
         const passwordInput = document.getElementById('password');
         const toggleIcon = document.querySelector('.toggle-password i');
-        
+        if (!passwordInput || !toggleIcon) return;
+
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
             toggleIcon.classList.remove('fa-eye');

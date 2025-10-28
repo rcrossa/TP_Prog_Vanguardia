@@ -81,10 +81,10 @@ grep -E 'POSTGRES_USER|POSTGRES_PASSWORD|PGADMIN_DEFAULT_EMAIL|PGADMIN_DEFAULT_P
 
 
 echo "\n👤 Creando usuario administrador por defecto..."
-if [ -f "scripts/create_admin.py" ]; then
-    python scripts/create_admin.py || echo "⚠️  No se pudo crear el admin automáticamente. Puedes crearlo manualmente luego."
+if [ -f "create_admin.py" ]; then
+    python create_admin.py || echo "⚠️  No se pudo crear el admin automáticamente. Puedes crearlo manualmente luego."
 else
-    echo "⚠️  scripts/create_admin.py no encontrado."
+    echo "⚠️  create_admin.py no encontrado."
 fi
 
 echo "\n🎉 Setup completado. Servicios disponibles:"

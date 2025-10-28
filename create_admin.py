@@ -20,11 +20,13 @@ from app.core.database import get_db
 from app.schemas.persona import PersonaCreate
 from app.services.persona_service import PersonaService
 from app.repositories.persona_repository import PersonaRepository
+from app.core import config
 
 # Ajustar el path para importar desde la raíz del proyecto
-script_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(script_dir)
-sys.path.append(project_root)
+import pathlib
+project_root = pathlib.Path(__file__).parent.resolve()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 
 def create_admin_user():
@@ -33,6 +35,20 @@ def create_admin_user():
 
     ⚠️  SOLO PARA DESARROLLO - Credenciales hardcodeadas
     """
+    # Detectar si estamos en Docker
+    def running_in_docker():
+        # Docker crea este archivo en los contenedores Linux
+        return os.path.exists('/.dockerenv') or os.getenv('DOCKER_CONTAINER', '') == 'true'
+
+    # Ajustar el host automáticamente
+    if running_in_docker():
+        os.environ['POSTGRES_HOST'] = 'postgres'
+    else:
+        os.environ['POSTGRES_HOST'] = os.getenv('POSTGRES_HOST', 'localhost')
+
+    # Forzar recarga de settings
+    config.settings.postgres_host = os.environ['POSTGRES_HOST']
+
     db_gen = get_db()
     db: Session = next(db_gen)
 
@@ -40,6 +56,7 @@ def create_admin_user():
         # ⚠️  CREDENCIALES DE DESARROLLO - NO USAR EN PRODUCCIÓN
         admin_data = PersonaCreate(
             nombre="Admin Usuario",
+            apellido="Admin",
             email="admin@test.com",
             password="admin123",  # ⚠️  Contraseña de ejemplo
             is_admin=True,
