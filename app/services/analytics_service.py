@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func, and_, or_, desc
 from app.models.reserva import Reserva
 from app.models.sala import Sala
 from app.models.articulo import Articulo
@@ -16,6 +16,12 @@ class AnalyticsService:
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days)
         
+        # Total de reservas en el periodo
+        total_reservas = self.db.query(func.count(Reserva.id)).filter(
+            Reserva.fecha_inicio >= start_date,
+            Reserva.fecha_inicio <= end_date
+        ).scalar() or 0
+        
         # Ocupación por sala
         ocupacion_salas = self.db.query(
             Sala.nombre,
@@ -23,19 +29,20 @@ class AnalyticsService:
             func.avg(
                 func.extract('epoch', Reserva.fecha_fin - Reserva.fecha_inicio) / 3600
             ).label('horas_promedio')
-        ).outerjoin(Reserva).filter(
-            or_(Reserva.fecha_inicio == None, 
-                and_(Reserva.fecha_inicio >= start_date, Reserva.fecha_inicio <= end_date))
-        ).group_by(Sala.id, Sala.nombre).all()
+        ).outerjoin(Reserva, and_(
+            Reserva.sala_id == Sala.id,
+            Reserva.fecha_inicio >= start_date,
+            Reserva.fecha_inicio <= end_date
+        )).group_by(Sala.id, Sala.nombre).all()
         
-        # Tendencia de reservas
+        # Tendencia de reservas por día
         reservas_por_dia = self.db.query(
             func.date(Reserva.fecha_inicio).label('fecha'),
             func.count(Reserva.id).label('cantidad')
         ).filter(
             Reserva.fecha_inicio >= start_date,
             Reserva.fecha_inicio <= end_date
-        ).group_by(func.date(Reserva.fecha_inicio)).all()
+        ).group_by(func.date(Reserva.fecha_inicio)).order_by('fecha').all()
         
         # Top usuarios
         top_usuarios = self.db.query(
@@ -45,21 +52,44 @@ class AnalyticsService:
         ).join(Reserva).filter(
             Reserva.fecha_inicio >= start_date,
             Reserva.fecha_inicio <= end_date
-        ).group_by(Persona.id).order_by(
-            func.count(Reserva.id).desc()
+        ).group_by(Persona.id, Persona.nombre, Persona.email).order_by(
+            desc('total_reservas')
         ).limit(5).all()
         
+        # Reservas de hoy
+        today = datetime.utcnow().date()
+        reservas_hoy = self.db.query(func.count(Reserva.id)).filter(
+            func.date(Reserva.fecha_inicio) == today
+        ).scalar() or 0
+        
+        # Salas disponibles ahora
+        now = datetime.utcnow()
+        salas_ocupadas = self.db.query(func.count(func.distinct(Reserva.sala_id))).filter(
+            Reserva.fecha_inicio <= now,
+            Reserva.fecha_fin >= now
+        ).scalar() or 0
+        
+        total_salas = self.db.query(func.count(Sala.id)).scalar() or 0
+        salas_disponibles = total_salas - salas_ocupadas
+        
         return {
+            'metricas_principales': {
+                'total_reservas': total_reservas,
+                'reservas_hoy': reservas_hoy,
+                'salas_disponibles': salas_disponibles,
+                'total_salas': total_salas,
+                'ocupacion_porcentaje': round((salas_ocupadas / total_salas * 100) if total_salas > 0 else 0, 1)
+            },
             'ocupacion_salas': [
                 {
                     'sala': sala.nombre,
                     'reservas': sala.total_reservas or 0,
-                    'horas_promedio': float(sala.horas_promedio or 0)
+                    'horas_promedio': round(float(sala.horas_promedio or 0), 1)
                 } for sala in ocupacion_salas
             ],
             'tendencia_reservas': [
                 {
-                    'fecha': reserva.fecha.strftime('%Y-%m-%d'),
+                    'fecha': reserva.fecha.strftime('%Y-%m-%d') if hasattr(reserva.fecha, 'strftime') else str(reserva.fecha),
                     'cantidad': reserva.cantidad
                 } for reserva in reservas_por_dia
             ],
@@ -74,64 +104,74 @@ class AnalyticsService:
     
     def get_prediccion_ocupacion(self, dias_adelante: int = 7) -> Dict:
         """Predicción de ocupación basada en patrones históricos"""
-        # Patrón por día de la semana
+        # Calcular promedio de reservas por día de la semana
         patron_semanal = self.db.query(
             func.extract('dow', Reserva.fecha_inicio).label('dia_semana'),
-            func.avg(func.count(Reserva.id)).label('promedio_reservas')
+            func.count(Reserva.id).label('total_reservas')
         ).group_by(
             func.extract('dow', Reserva.fecha_inicio)
-        ).subquery()
+        ).all()
+        
+        # Crear diccionario de patrones
+        patrones = {int(p.dia_semana): p.total_reservas for p in patron_semanal}
         
         # Generar predicciones
         predicciones = []
         today = datetime.utcnow().date()
         
-        for i in range(dias_adelante):
+        for i in range(1, dias_adelante + 1):
             fecha_pred = today + timedelta(days=i)
             dia_semana = fecha_pred.weekday()
             
-            # Buscar patrón histórico
-            patron = self.db.query(patron_semanal).filter(
-                patron_semanal.c.dia_semana == dia_semana
-            ).first()
+            # Domingo = 6 en Python, pero PostgreSQL usa 0
+            dia_semana_pg = (dia_semana + 1) % 7
+            
+            prediccion = patrones.get(dia_semana_pg, 0)
             
             predicciones.append({
                 'fecha': fecha_pred.strftime('%Y-%m-%d'),
-                'prediccion_reservas': int(patron.promedio_reservas) if patron else 0,
-                'confianza': 0.75  # Simplificado, se puede mejorar
+                'dia_semana': ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][dia_semana],
+                'prediccion_reservas': prediccion,
+                'confianza': 0.75 if prediccion > 0 else 0.3
             })
             
         return {'predicciones': predicciones}
     
     def get_metricas_inventario(self) -> Dict:
         """Métricas de inventario y artículos"""
-        # Artículos más utilizados
-        articulos_populares = self.db.query(
-            Articulo.nombre,
-            Articulo.stock,
-            func.count('*').label('uso_frecuencia')
-        ).group_by(Articulo.id).order_by(
-            func.count('*').desc()
-        ).limit(10).all()
+        # Stock total
+        total_articulos = self.db.query(func.count(Articulo.id)).scalar() or 0
+        stock_total = self.db.query(func.sum(Articulo.stock)).scalar() or 0
         
-        # Stock bajo
+        # Stock crítico (menos de 5 unidades)
         stock_critico = self.db.query(Articulo).filter(
             Articulo.stock < 5
         ).all()
         
+        # Artículos más utilizados (basado en relaciones con reservas)
+        # Nota: Esto requiere que tengas una tabla de asociación entre Reserva y Articulo
+        articulos_lista = self.db.query(Articulo).limit(10).all()
+        
         return {
-            'articulos_populares': [
-                {
-                    'nombre': art.nombre,
-                    'stock': art.stock,
-                    'frecuencia': art.uso_frecuencia
-                } for art in articulos_populares
-            ],
+            'resumen': {
+                'total_articulos': total_articulos,
+                'stock_total': stock_total,
+                'items_criticos': len(stock_critico)
+            },
             'stock_critico': [
                 {
+                    'id': art.id,
                     'nombre': art.nombre,
                     'stock': art.stock,
-                    'id': art.id
+                    'descripcion': art.descripcion
                 } for art in stock_critico
+            ],
+            'articulos': [
+                {
+                    'id': art.id,
+                    'nombre': art.nombre,
+                    'stock': art.stock,
+                    'descripcion': art.descripcion
+                } for art in articulos_lista
             ]
         }
