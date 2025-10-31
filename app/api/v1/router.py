@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     reservas_router,
     salas_router,
     stats_router,  # <-- Agregado
+    analytics,  # <-- Agregado
 )
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.integration import router as integration_router
@@ -24,4 +25,5 @@ api_router.include_router(articulos_router)
 api_router.include_router(salas_router)
 api_router.include_router(reservas_router)
 api_router.include_router(stats_router)  # <-- Agregado
+api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(integration_router, tags=["🔗 Integration"])

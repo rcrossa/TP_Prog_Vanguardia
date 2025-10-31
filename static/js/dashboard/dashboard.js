@@ -82,41 +82,150 @@ async function loadActividadChart() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadActividadChart();
+class DashboardManager {
+    constructor() {
+        this.charts = {};
+        this.refreshInterval = null;
+        this.init();
+    }
 
-    // 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE antes de que la página renderice
-    (function() {
+    async init() {
+        await this.loadDashboardData();
+        this.initCharts();
+        this.startAutoRefresh();
+    }
+
+    async loadDashboardData(days = 30) {
         try {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                if (user && user.is_admin === true) {
-                    document.body.classList.add('is-admin');
-                } else {
-                    document.body.classList.remove('is-admin');
+            const response = await fetch(`/api/v1/analytics/dashboard-metrics?days=${days}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
-            } else {
-                document.body.classList.remove('is-admin');
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.updateDashboard(data);
             }
-        } catch (e) {
-            console.error('Error al verificar rol de admin:', e);
-            document.body.classList.remove('is-admin');
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
         }
-    })();
+    }
 
-    // 🔒 VERIFICACIÓN DE SEGURIDAD
-    // Doble verificación para asegurar que usuarios no-admin no vean contenido admin
-    const user = window.authManager?.getUser();
-    if (!user || user.is_admin !== true) {
-        document.body.classList.remove('is-admin');
-        document.querySelectorAll('.admin-only').forEach(el => {
-            if (window.getComputedStyle(el).display !== 'none') {
-                el.style.setProperty('display', 'none', 'important');
+    updateDashboard(data) {
+        this.updateOcupacionChart(data.ocupacion_salas);
+        this.updateTendenciaChart(data.tendencia_reservas);
+        this.updateTopUsuarios(data.top_usuarios);
+        this.updateMetricas(data);
+    }
+
+    updateOcupacionChart(ocupacionData) {
+        const ctx = document.getElementById('ocupacionChart');
+        if (!ctx) return;
+
+        if this.charts.ocupacion) {
+            this.charts.ocupacion.destroy();
+        }
+
+        this.charts.ocupacion = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ocupacionData.map(item => item.sala),
+                datasets: [{
+                    data: ocupacionData.map(item => item.reservas),
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', 
+                        '#4BC0C0', '#9966FF', '#FF9F40'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const item = ocupacionData[context.dataIndex];
+                                return `${item.sala}: ${item.reservas} reservas (${item.horas_promedio.toFixed(1)}h promedio)`;
+                            }
+                        }
+                    }
+                }
             }
         });
     }
 
-    // Actualizar cada 30 segundos
-    // setInterval(checkJavaService, 30000);
+    updateTendenciaChart(tendenciaData) {
+        const ctx = document.getElementById('tendenciaChart');
+        if (!ctx) return;
+
+        if (this.charts.tendencia) {
+            this.charts.tendencia.destroy();
+        }
+
+        this.charts.tendencia = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: tendenciaData.map(item => item.fecha),
+                datasets: [{
+                    label: 'Reservas por día',
+                    data: tendenciaData.map(item => item.cantidad),
+                    borderColor: '#36A2EB',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    async loadPredictions() {
+        try {
+            const response = await fetch('/api/v1/analytics/ocupacion-prediccion', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.updatePrediccionesCard(data.predicciones);
+            }
+        } catch (error) {
+            console.error('Error loading predictions:', error);
+        }
+    }
+
+    updatePrediccionesCard(predicciones) {
+        const container = document.getElementById('prediccionesContainer');
+        if (!container) return;
+
+        container.innerHTML = predicciones.map(pred => `
+            <div class="prediction-item">
+                <div class="prediction-date">${pred.fecha}</div>
+                <div class="prediction-value">${pred.prediccion_reservas} reservas</div>
+                <div class="prediction-confidence">Confianza: ${(pred.confianza * 100).toFixed(0)}%</div>
+            </div>
+        `).join('');
+    }
+
+    startAutoRefresh() {
+        this.refreshInterval = setInterval(() => {
+            this.loadDashboardData();
+        }, 300000); // 5 minutos
+    }
+
+    // ...existing code...
+}
+
+// Initialize dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new DashboardManager();
 });

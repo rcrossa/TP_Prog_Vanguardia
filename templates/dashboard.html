@@ -19,86 +19,52 @@
     </div>
 </div>
 
-<!-- Tarjetas de Estadísticas -->
-<div class="row g-3 mb-4">
-    <!-- Total Personas - Solo visible para administradores -->
-    <div class="col-xl-3 col-md-6 admin-only">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="avatar avatar-lg bg-primary rounded">
-                            <i class="fas fa-users text-white"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="small textContent">Total Personas</div>
-                        <div class="fs-4 fw-bold text-primary" id="total-personas">
-                            {{ stats.total_personas if stats.total_personas is defined else '...' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="dashboard-container">
+    <!-- Métricas principales -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <h3>Reservas Hoy</h3>
+            <div class="metric-value" id="reservasHoy">-</div>
+        </div>
+        <div class="metric-card">
+            <h3>Ocupación Promedio</h3>
+            <div class="metric-value" id="ocupacionPromedio">-</div>
+        </div>
+        <div class="metric-card">
+            <h3>Salas Disponibles</h3>
+            <div class="metric-value" id="salasDisponibles">-</div>
+        </div>
+        <div class="metric-card">
+            <h3>Stock Crítico</h3>
+            <div class="metric-value" id="stockCritico">-</div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="avatar avatar-lg bg-success rounded">
-                            <i class="fas fa-door-open text-white"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="small textContent">Total Salas</div>
-                        <div class="fs-4 fw-bold text-success" id="total-salas">
-                            {{ stats.total_salas if stats.total_salas is defined else '...' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Gráficos principales -->
+    <div class="charts-grid">
+        <div class="chart-container">
+            <h3>Ocupación por Sala</h3>
+            <canvas id="ocupacionChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Tendencia de Reservas</h3>
+            <canvas id="tendenciaChart"></canvas>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="avatar avatar-lg bg-info rounded">
-                            <i class="fas fa-boxes text-white"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="small textContent">Artículos Disponibles</div>
-                        <div class="fs-4 fw-bold text-info" id="total-articulos">
-                            {{ stats.total_articulos if stats.total_articulos is defined else 'Cargando...' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Predicciones y alertas -->
+    <div class="insights-grid">
+        <div class="insight-card">
+            <h3>Predicciones (7 días)</h3>
+            <div id="prediccionesContainer"></div>
         </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="avatar avatar-lg bg-warning rounded">
-                            <i class="fas fa-calendar-check text-white"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="small textContent">Reservas Activas</div>
-                        <div class="fs-4 fw-bold text-warning" id="reservas-activas">
-                            {{ stats.reservasActivas if stats.reservasActivas is defined else '...' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="insight-card">
+            <h3>Top Usuarios</h3>
+            <div id="topUsuariosContainer"></div>
+        </div>
+        <div class="insight-card">
+            <h3>Alertas</h3>
+            <div id="alertasContainer"></div>
         </div>
     </div>
 </div>
