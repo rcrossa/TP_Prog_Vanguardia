@@ -230,4 +230,3 @@ async def get_dashboard_metrics(request: Request, days: int = 30, db: Session = 
             "stock_critico": stock_critico
         }
     }
-
