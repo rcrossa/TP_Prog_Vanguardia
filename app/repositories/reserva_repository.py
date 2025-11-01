@@ -54,6 +54,7 @@ class ReservaRepository:
                 joinedload(Reserva.sala),
                 joinedload(Reserva.articulo),
             )
+            .order_by(Reserva.fecha_hora_inicio.desc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -72,6 +73,7 @@ class ReservaRepository:
                 joinedload(Reserva.articulo),
             )
             .filter(Reserva.id_persona == persona_id)
+            .order_by(Reserva.fecha_hora_inicio.desc())
             .offset(skip)
             .limit(limit)
             .all()

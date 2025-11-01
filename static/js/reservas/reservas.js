@@ -94,13 +94,9 @@ async function loadReservas() {
     try {
         const response = await axios.get('/api/v1/reservas/');
         reservas = response.data;
-        // Salvaguarda: si el usuario NO es admin, filtrar solo sus reservas en cliente
-        try {
-            const user = window.authManager ? window.authManager.getUser() : null;
-            if (user && user.is_admin === false) {
-                reservas = reservas.filter(r => r.id_persona === user.id);
-            }
-        } catch (_) { /* noop */ }
+        // El backend ya maneja los permisos:
+        // - Admin ve todas las reservas
+        // - Usuario normal solo ve sus propias reservas
         renderReservas(reservas);
     } catch (error) {
         console.error('Error cargando reservas:', error);
