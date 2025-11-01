@@ -14,7 +14,7 @@ sys.path.insert(0, str(project_root))
 
 from app.core.database import get_db
 from app.prediction.prediction_service import PredictionService
-
+import traceback
 
 def main():
     """Función principal de pruebas."""
@@ -150,7 +150,7 @@ def main():
 
     except Exception as e:  # noqa: BLE001
         print(f"❌ ERROR: {str(e)}")
-        import traceback
+        
 
         traceback.print_exc()
         return 1
