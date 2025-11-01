@@ -104,10 +104,10 @@ def create_admin_user():
             print("❌ Error: No se puede crear el usuario admin, datos inválidos.")
             sys.exit(1)
         admin_data = PersonaCreate(
-            nombre=str(nombre), 
-            email=str(email), 
-            password=str(password), 
-            is_admin=True, 
+            nombre=str(nombre),
+            email=str(email),
+            password=str(password),
+            is_admin=True,
             is_active=True
         )
 

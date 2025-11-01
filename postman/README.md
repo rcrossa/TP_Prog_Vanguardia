@@ -12,7 +12,7 @@ Este directorio contiene la colección completa de Postman para testear todos lo
   - 👥 **Personas - CRUD Completo**: Gestión completa de personas
   - 🏛️ **Salas - Gestión Completa**: Administración de salas y espacios
   - 📦 **Artículos - Inventario Completo**: Gestión del inventario de equipamiento
-  - 📅 **Reservas - Sistema Completo**: Sistema de reservas con casos avanzados  
+  - 📅 **Reservas - Sistema Completo**: Sistema de reservas con casos avanzados
   - 🔬 **Testing Avanzado y QA**: Performance, seguridad y casos edge
   - ⚠️ **Manejo de Errores**: Validación de errores y casos límite
 
@@ -35,7 +35,7 @@ Crear un entorno en Postman con las siguientes variables:
 {
   "base_url": "http://localhost:8000",
   "docente_id": "1",
-  "estudiante_id": "2", 
+  "estudiante_id": "2",
   "sala_conferencias_id": "1",
   "proyector_id": "1",
   "reserva_id": "1"

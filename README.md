@@ -4,7 +4,7 @@
 
 ## 📚 Información Académica
 
-- **Asignatura:** Programación de Vanguardia  
+- **Asignatura:** Programación de Vanguardia
 - **Carrera:** Licenciatura en Tecnologías Informáticas
 - **Ciclo Lectivo:** 2025
 
@@ -23,7 +23,7 @@ Sistema moderno de gestión de reservas implementado con **arquitectura de micro
 
 ### 📊 Estado Actual del Proyecto
 
-**Última actualización:** Octubre 2025  
+**Última actualización:** Octubre 2025
 **Progreso General:** 🟢 **~75% Completado**
 
 #### ✅ Componentes Funcionales
@@ -216,7 +216,7 @@ Este proyecto cuenta con documentación completa organizada por módulos:
 
 #### 👥 Gestión de Personas (Usuarios)
 
-#### 🏛️ Administración de Salas  
+#### 🏛️ Administración de Salas
 
 #### 📅 Sistema de Reservas
     - ✅ Visualización de detalles de reserva mediante modal Bootstrap (mejora UX)
@@ -293,7 +293,7 @@ Este proyecto cuenta con documentación completa organizada por módulos:
 El sistema maneja cuatro entidades principales:
 
 - **👥 Personas** - Usuarios del sistema con nombre y email único
-- **🏛️ Salas** - Espacios físicos con capacidad definida  
+- **🏛️ Salas** - Espacios físicos con capacidad definida
 - **📦 Artículos** - Equipamiento reservable con estado de disponibilidad
 - **📅 Reservas** - Vinculación de personas con salas/artículos en fechas específicas
 
@@ -335,7 +335,7 @@ El script `setup.sh` para mac te ofrece dos opciones:
 - Perfecto para comenzar rápidamente
 
 **Opción 2: Credenciales personalizadas**
-- Te permite editar `.env` y `docker/.env` 
+- Te permite editar `.env` y `docker/.env`
 - Para usuarios que quieren credenciales específicas
 - El script espera a que termines de editarlos
 
@@ -469,7 +469,7 @@ GET http://localhost:8000/api/v1/integration/test-java-call
 ### Postman Collections
 El directorio `postman/` contiene colecciones completas para testing:
 - Testing de todos los endpoints
-- Casos de uso avanzados  
+- Casos de uso avanzados
 - Validación de errores
 
 ### Verificación de Calidad
@@ -554,25 +554,25 @@ El directorio `postman/` contiene colecciones completas para testing:
    - ⏹️ Tests de integración formales
    - ⏹️ Tests de repositorios JPA
    - ⏹️ Cobertura de código
-   
+
 2. **Mejoras de Integración:** ✅ (Funcionalidades core completadas)
    - ✅ Llamadas HTTP entre servicios - **FUNCIONANDO**
    - ✅ Validación JWT cross-service - **FUNCIONANDO**
    - ⏹️ Circuit breakers (Resilience4j) - Opcional
    - ⏹️ Service mesh (Istio) - Fuera de alcance
-   
+
 3. **Módulos Avanzados:** ⏹️ (Fuera de alcance académico)
    - ⏹️ Predicción ML con scikit-learn
    - ⏳ Analytics y dashboards con pandas
    - ⏳ Reportes PDF/Excel (reportlab/openpyxl)
    - ⏳ Visualizaciones con matplotlib/plotly
-   
+
 4. **Docker Compose Full Stack:** ⏳
    - ⏳ Modo full con Python + Java + PostgreSQL
    - ⏳ Networking entre contenedores
    - ⏳ Variables de entorno unificadas
    - ⏳ Health checks y dependencias
-   
+
 5. **Deployment:** ⏳
    - ⏳ CI/CD Pipeline
    - ⏳ Configuración de producción
@@ -743,7 +743,7 @@ TP_Prog_Vanguardia/
 ### ✅ Implementado y Funcional
 - ✅ **Python Service completo** - FastAPI + Auth JWT + CRUD + Frontend Web
 - ✅ **Java Service completo** - Spring Boot + ABM Salas + ABM Artículos + Swagger
-- ✅ **Integración HTTP Python ↔ Java** - ✅ **ACTIVA** 
+- ✅ **Integración HTTP Python ↔ Java** - ✅ **ACTIVA**
   - Python valida salas con Java al crear reservas
   - Java valida JWT con Python al crear recursos
   - Endpoints de demostración funcionando

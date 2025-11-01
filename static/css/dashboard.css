@@ -81,11 +81,40 @@
     color: #666;
 }
 
+.top-user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.top-user-item:last-child {
+    border-bottom: none;
+}
+
+.user-rank {
+    font-weight: bold;
+    color: #3498db;
+    font-size: 1.2em;
+    min-width: 40px;
+}
+
+.user-name {
+    flex: 1;
+    padding: 0 15px;
+}
+
+.user-count {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
 @media (max-width: 768px) {
     .charts-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .metrics-grid {
         grid-template-columns: repeat(2, 1fr);
     }

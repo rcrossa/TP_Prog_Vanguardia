@@ -387,6 +387,6 @@ python main.py
 
 ---
 
-**Última actualización:** 16 de octubre de 2025  
-**Versión:** 2.0 - Con integración HTTP activa  
+**Última actualización:** 16 de octubre de 2025
+**Versión:** 2.0 - Con integración HTTP activa
 **Estado:** ✅ Microservicios funcionales e integrados

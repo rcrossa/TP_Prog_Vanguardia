@@ -68,6 +68,9 @@ CREATE TABLE IF NOT EXISTS reserva_articulos (
 -- 4. Usar contraseñas únicas y fuertes
 -- ============================================================================
 
+-- Limpiar datos existentes (solo para desarrollo - garantiza IDs desde 1)
+TRUNCATE TABLE reserva_articulos, reservas, personas, articulos, salas RESTART IDENTITY CASCADE;
+
 -- Insertar personas
 INSERT INTO personas (nombre, apellido, email, hashed_password, is_active, is_admin) VALUES
 ('Admin', 'User', 'admin@organizacion.com', '$2b$12$Io25eHPVYkiIp1MD/EdDHeiuvN8Z2GXF5gSzABi7sE1m7gq6ZcY7i', true, true),
@@ -163,10 +166,12 @@ INSERT INTO reservas (id_articulo, id_sala, id_persona, fecha_hora_inicio, fecha
 (11, NULL, 6, '2025-07-29 13:30:00', '2025-07-29 16:00:00'),
 (NULL, 2, 2, '2025-07-30 10:20:00', '2025-07-30 12:50:00'),
 (2, NULL, 3, '2025-07-30 14:15:00', '2025-07-30 16:45:00'),
-(NULL, 3, 4, '2025-07-31 09:00:00', '2025-07-31 11:30:00'),
+(NULL, 3, 4, '2025-07-31 09:00:00', '2025-07-31 11:30:00')
+ON CONFLICT DO NOTHING;
 
 -- Reservas de AGOSTO 2025
 -- Semana 1 de agosto
+INSERT INTO reservas (id_articulo, id_sala, id_persona, fecha_hora_inicio, fecha_hora_fin) VALUES
 (7, NULL, 5, '2025-08-01 13:45:00', '2025-08-01 16:15:00'),
 (NULL, 4, 6, '2025-08-01 10:15:00', '2025-08-01 12:45:00'),
 (NULL, 5, 2, '2025-08-04 14:30:00', '2025-08-04 17:00:00'),
@@ -213,10 +218,12 @@ INSERT INTO reservas (id_articulo, id_sala, id_persona, fecha_hora_inicio, fecha
 (3, NULL, 2, '2025-08-28 10:15:00', '2025-08-28 12:45:00'),
 (NULL, 3, 3, '2025-08-28 14:45:00', '2025-08-28 17:15:00'),
 (11, NULL, 4, '2025-08-29 09:30:00', '2025-08-29 11:00:00'),
-(NULL, 4, 5, '2025-08-29 13:15:00', '2025-08-29 15:45:00'),
+(NULL, 4, 5, '2025-08-29 13:15:00', '2025-08-29 15:45:00')
+ON CONFLICT DO NOTHING;
 
 -- Reservas de SEPTIEMBRE 2025
 -- Semana 1 de septiembre
+INSERT INTO reservas (id_articulo, id_sala, id_persona, fecha_hora_inicio, fecha_hora_fin) VALUES
 (2, NULL, 6, '2025-09-01 10:00:00', '2025-09-01 12:30:00'),
 (NULL, 5, 2, '2025-09-01 14:30:00', '2025-09-01 17:00:00'),
 (7, NULL, 3, '2025-09-02 09:15:00', '2025-09-02 11:45:00'),
@@ -268,10 +275,12 @@ INSERT INTO reservas (id_articulo, id_sala, id_persona, fecha_hora_inicio, fecha
 (11, NULL, 6, '2025-09-29 10:30:00', '2025-09-29 12:00:00'),
 (NULL, 5, 2, '2025-09-29 14:15:00', '2025-09-29 16:45:00'),
 (2, NULL, 3, '2025-09-30 09:45:00', '2025-09-30 11:15:00'),
-(NULL, 1, 4, '2025-09-30 13:00:00', '2025-09-30 15:30:00'),
+(NULL, 1, 4, '2025-09-30 13:00:00', '2025-09-30 15:30:00')
+ON CONFLICT DO NOTHING;
 
 -- Reservas de OCTUBRE 2025
 -- Semana 1 de octubre
+INSERT INTO reservas (id_articulo, id_sala, id_persona, fecha_hora_inicio, fecha_hora_fin) VALUES
 (7, NULL, 5, '2025-10-01 10:15:00', '2025-10-01 12:45:00'),
 (NULL, 2, 6, '2025-10-01 14:45:00', '2025-10-01 17:15:00'),
 (1, NULL, 2, '2025-10-02 09:30:00', '2025-10-02 11:00:00'),
@@ -328,29 +337,38 @@ ON CONFLICT DO NOTHING;
 
 -- Insertar artículos necesarios para reservas de salas
 -- (Relacionar algunas reservas de sala con artículos adicionales)
-INSERT INTO reserva_articulos (reserva_id, articulo_id, cantidad) VALUES
--- Algunas salas de julio con equipamiento
-(2, 1, 1), (2, 5, 2),
-(6, 4, 1), (6, 9, 1),
-(10, 2, 1), (10, 10, 1),
-(13, 1, 1), (13, 6, 2),
-(17, 12, 1), (17, 5, 1),
--- Algunas salas de agosto con equipamiento
-(22, 1, 1), (22, 7, 1),
-(26, 11, 2), (26, 10, 1),
-(30, 4, 1), (30, 9, 2),
-(35, 2, 1), (35, 6, 1),
-(39, 1, 1), (39, 8, 1),
--- Algunas salas de septiembre con equipamiento
-(43, 12, 1), (43, 5, 1),
-(47, 1, 1), (47, 6, 2),
-(51, 4, 1), (51, 9, 1),
-(56, 2, 1), (56, 10, 1),
-(60, 11, 1), (60, 8, 1),
--- Algunas salas de octubre con equipamiento
-(64, 1, 1), (64, 5, 2),
-(68, 12, 1), (68, 6, 1),
-(73, 4, 1), (73, 9, 2),
-(77, 2, 1), (77, 10, 1),
-(81, 1, 1), (81, 7, 1)
+-- Nota: Antes se usaban IDs hardcodeados (2, 6, 10, ...), lo que podía fallar
+-- si la tabla `reservas` ya tenía datos o los IDs no coincidían. Para hacerlo
+-- idempotente y evitar errores de clave foránea, insertamos solo cuando la
+-- reserva existe y corresponde a una reserva de sala (id_sala IS NOT NULL).
+INSERT INTO reserva_articulos (reserva_id, articulo_id, cantidad)
+SELECT r.id, x.articulo_id, x.cantidad
+FROM (
+    VALUES
+    -- Algunas salas de julio con equipamiento
+    (2, 1, 1), (2, 5, 2),
+    (6, 4, 1), (6, 9, 1),
+    (10, 2, 1), (10, 10, 1),
+    (13, 1, 1), (13, 6, 2),
+    (17, 12, 1), (17, 5, 1),
+    -- Algunas salas de agosto con equipamiento
+    (22, 1, 1), (22, 7, 1),
+    (26, 11, 2), (26, 10, 1),
+    (30, 4, 1), (30, 9, 2),
+    (35, 2, 1), (35, 6, 1),
+    (39, 1, 1), (39, 8, 1),
+    -- Algunas salas de septiembre con equipamiento
+    (43, 12, 1), (43, 5, 1),
+    (47, 1, 1), (47, 6, 2),
+    (51, 4, 1), (51, 9, 1),
+    (56, 2, 1), (56, 10, 1),
+    (60, 11, 1), (60, 8, 1),
+    -- Algunas salas de octubre con equipamiento
+    (64, 1, 1), (64, 5, 2),
+    (68, 12, 1), (68, 6, 1),
+    (73, 4, 1), (73, 9, 2),
+    (77, 2, 1), (77, 10, 1),
+    (81, 1, 1), (81, 7, 1)
+) AS x(reserva_id, articulo_id, cantidad)
+JOIN reservas r ON r.id = x.reserva_id AND r.id_sala IS NOT NULL
 ON CONFLICT DO NOTHING;

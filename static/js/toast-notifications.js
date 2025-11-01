@@ -78,7 +78,7 @@ function showToast(message, type = 'success') {
 
     // Insertar toast en el contenedor
     toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    
+
     // Activar el toast
     const toastElement = document.getElementById(toastId);
     const bsToast = new bootstrap.Toast(toastElement, {

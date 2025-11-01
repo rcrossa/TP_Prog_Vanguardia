@@ -82,7 +82,7 @@ flake8 app/
 ```
 app/
 ├── models/          # Modelos SQLAlchemy documentados
-├── schemas/         # Esquemas Pydantic documentados  
+├── schemas/         # Esquemas Pydantic documentados
 ├── repositories/    # Capa de acceso a datos
 ├── services/        # Lógica de negocio
 └── api/            # Endpoints REST
@@ -91,7 +91,7 @@ app/
 ## 🎯 Beneficios
 
 - ✅ **Código limpio y consistente**
-- ✅ **Documentación completa** 
+- ✅ **Documentación completa**
 - ✅ **Configuración automatizada**
 - ✅ **Fácil mantenimiento**
 - ✅ **Listo para colaboración**

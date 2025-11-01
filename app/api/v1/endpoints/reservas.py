@@ -54,7 +54,7 @@ def _obtener_asignacion_existente(db, reserva_id, articulo_id):
     result = db.execute(
         text(
             """
-            SELECT cantidad FROM reserva_articulos WHERE 
+            SELECT cantidad FROM reserva_articulos WHERE
             reserva_id = :reserva_id AND articulo_id = :articulo_id
             """
         ),
@@ -71,7 +71,7 @@ def _validar_stock(nueva_cantidad, articulo, total_reservado_otras,
             detail=(
                 f"No hay suficiente cantidad disponible. "
                 f"Ya asignado en esta reserva: {cantidad_ya_asignada}, "
-                f"{'Quieres establecer' if modo == 'reemplazar' else 'Quieres agregar'}: " 
+                f"{'Quieres establecer' if modo == 'reemplazar' else 'Quieres agregar'}: "
                 f"{cantidad}, "
                 f"Total necesario: {nueva_cantidad}, Disponible: {disponible} "
                 f"(Stock total: {articulo.cantidad}, Reservado en otras: {total_reservado_otras})"
@@ -105,7 +105,7 @@ def _insertar_o_actualizar_articulo(db, reserva_id, articulo_id,
                 """
             UPDATE reserva_articulos
             SET cantidad = :nueva_cantidad
-            WHERE reserva_id = :reserva_id 
+            WHERE reserva_id = :reserva_id
             AND articulo_id = :articulo_id
             """
             ),

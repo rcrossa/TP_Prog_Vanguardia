@@ -183,11 +183,11 @@ body.is-admin td.admin-only {
         padding: 0.125rem 0.25rem;
         font-size: 0.75rem;
     }
-    
+
     .table-responsive {
         font-size: 0.875rem;
     }
-    
+
     .badge {
         font-size: 0.65em;
     }
@@ -225,7 +225,7 @@ body.is-admin td.admin-only {
     .search-container {
         background-color: var(--bs-dark);
     }
-    
+
     .card {
         background-color: var(--bs-dark);
         color: var(--bs-light);

@@ -1,6 +1,6 @@
 /**
  * Documentación Module - Gestión de Markmap para documentación del proyecto
- * 
+ *
  * Este módulo maneja toda la funcionalidad del mapa mental de documentación:
  * - Inicialización de Markmap
  * - Controles de zoom y navegación
@@ -13,7 +13,7 @@ class DocumentacionManager {
         this.markmapInstance = null;
         this.isFullscreen = false;
         this.markdownContent = null;
-        
+
         // Configuración por defecto
         this.config = {
             duration: 500,
@@ -23,7 +23,7 @@ class DocumentacionManager {
             initialExpandLevel: 2,
             colors: ['#4285f4', '#34a853', '#fbbc04', '#ea4335', '#9c27b0']
         };
-        
+
         this.init();
     }
 
@@ -33,14 +33,14 @@ class DocumentacionManager {
     init() {
         // Obtener datos del template bridge
         this.loadTemplateData();
-        
+
         // Esperar a que el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.initMarkmap());
         } else {
             this.initMarkmap();
         }
-        
+
         // Escuchar eventos de fullscreen
         this.setupFullscreenEvents();
     }
@@ -51,11 +51,11 @@ class DocumentacionManager {
     loadTemplateData() {
         try {
             this.markdownContent = window.templateBridge.get('markdownContent');
-            
+
             // Merge configuración del template si existe
             const templateConfig = window.templateBridge.get('markmapConfig', {});
             this.config = { ...this.config, ...templateConfig };
-            
+
             console.log('📄 Markdown content loaded for documentation');
         } catch (error) {
             console.error('❌ Error loading template data:', error);
@@ -79,9 +79,9 @@ class DocumentacionManager {
                 setTimeout(() => this.initMarkmap(), 100);
                 return;
             }
-            
+
             const { Markmap, loadCSS, loadJS } = markmap;
-            
+
             // Crear instancia de Markmap con configuración
             this.markmapInstance = Markmap.create('#markmap-container', {
                 duration: this.config.duration,
@@ -94,17 +94,17 @@ class DocumentacionManager {
                 autoFit: this.config.autoFit,
                 initialExpandLevel: this.config.initialExpandLevel
             });
-            
+
             // Transformar el markdown y renderizar
             const { root } = markmap.transform(this.markdownContent);
             this.markmapInstance.setData(root);
             this.markmapInstance.fit();
-            
+
             // Guardar referencia global para compatibilidad
             window.markmapInstance = this.markmapInstance;
-            
+
             console.log('✅ Markmap initialized successfully');
-            
+
         } catch (error) {
             console.error('❌ Error al inicializar Markmap:', error);
             this.showError('Error al cargar el mapa mental');
@@ -122,7 +122,7 @@ class DocumentacionManager {
             console.log('🔍 Zoom in applied');
         }
     }
-    
+
     zoomOut() {
         if (this.markmapInstance) {
             const svg = this.markmapInstance.svg;
@@ -131,7 +131,7 @@ class DocumentacionManager {
             console.log('🔍 Zoom out applied');
         }
     }
-    
+
     resetZoom() {
         if (this.markmapInstance) {
             this.markmapInstance.fit();
@@ -155,7 +155,7 @@ class DocumentacionManager {
     async toggleFullscreen() {
         try {
             const container = document.querySelector('.container-fluid');
-            
+
             if (!this.isFullscreen) {
                 await container.requestFullscreen();
                 console.log('📺 Entering fullscreen mode');

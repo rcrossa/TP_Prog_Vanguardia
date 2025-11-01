@@ -51,7 +51,7 @@ async function loadSalas() {
  */
 function renderSalas(salasToRender) {
     const tbody = document.getElementById('salasTableBody');
-    
+
     if (salasToRender.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -63,7 +63,7 @@ function renderSalas(salasToRender) {
         `;
         return;
     }
-    
+
     tbody.innerHTML = salasToRender.map(sala => `
         <tr>
             <td><span class="badge bg-secondary">${sala.id}</span></td>
@@ -110,7 +110,7 @@ function renderSalas(salasToRender) {
  */
 function updatePageForUserRole(user) {
     isAdmin = user && user.is_admin === true;
-    
+
     if (isAdmin) {
         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
         document.querySelectorAll('.user-only').forEach(el => el.style.display = 'none');
@@ -127,7 +127,7 @@ function openNewSalaModal() {
     document.getElementById('salaModalLabel').textContent = 'Nueva Sala';
     document.getElementById('salaForm').reset();
     document.getElementById('salaId').value = '';
-    
+
     salaModal.show();
 }
 
@@ -138,12 +138,12 @@ async function editSala(id) {
     try {
         const response = await axios.get(`/api/v1/salas/${id}`);
         const sala = response.data;
-        
+
         document.getElementById('salaModalLabel').textContent = 'Editar Sala';
         document.getElementById('salaId').value = sala.id;
         document.getElementById('nombre').value = sala.nombre;
         document.getElementById('capacidad').value = sala.capacidad;
-        
+
         salaModal.show();
     } catch (error) {
         console.error('Error al cargar sala:', error);
@@ -158,15 +158,15 @@ async function saveSala() {
     const id = document.getElementById('salaId').value;
     const nombre = document.getElementById('nombre').value.trim();
     const capacidad = parseInt(document.getElementById('capacidad').value);
-    
+
     if (!nombre || !capacidad || capacidad <= 0) {
         showError('Por favor, complete todos los campos correctamente');
         return;
     }
-    
+
     try {
         const salaData = { nombre, capacidad };
-        
+
         if (id) {
             // Actualizar sala existente
             await axios.put(`/api/v1/salas/${id}`, salaData);
@@ -176,7 +176,7 @@ async function saveSala() {
             await axios.post('/api/v1/salas/', salaData);
             showSuccess('Sala creada exitosamente');
         }
-        
+
         // Limpiar el formulario antes de cerrar el modal
         document.getElementById('salaForm').reset();
         await loadSalas();
@@ -198,7 +198,7 @@ async function deleteSala(id) {
     salaToDelete = id;
     const sala = salas.find(s => s.id === id);
     document.getElementById('salaNameToDelete').textContent = sala ? sala.nombre : 'esta sala';
-    
+
     const confirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
     confirmModal.show();
 }
@@ -245,17 +245,17 @@ async function confirmDelete() {
 function applyFilters() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const capacityFilter = document.getElementById('filterCapacity').value;
-    
+
     let filteredSalas = salas.filter(sala => {
         const matchesSearch = sala.nombre.toLowerCase().includes(searchTerm);
-        const matchesCapacity = !capacityFilter || 
+        const matchesCapacity = !capacityFilter ||
             (capacityFilter === 'small' && sala.capacidad <= 10) ||
             (capacityFilter === 'medium' && sala.capacidad > 10 && sala.capacidad <= 50) ||
             (capacityFilter === 'large' && sala.capacidad > 50);
-        
+
         return matchesSearch && matchesCapacity;
     });
-    
+
     renderSalas(filteredSalas);
 }
 
@@ -268,25 +268,25 @@ document.addEventListener('DOMContentLoaded', function() {
     if (salaModalElement) {
         salaModal = new bootstrap.Modal(salaModalElement);
     }
-    
+
     // Obtener información del usuario y configurar la página
     const user = window.authManager ? window.authManager.getUser() : null;
     updatePageForUserRole(user);
-    
+
     // Cargar salas
     loadSalas();
-    
+
     // Configurar eventos de filtrado
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', applyFilters);
     }
-    
+
     const filterCapacity = document.getElementById('filterCapacity');
     if (filterCapacity) {
         filterCapacity.addEventListener('change', applyFilters);
     }
-    
+
     // Configurar eventos del formulario
     const salaForm = document.getElementById('salaForm');
     if (salaForm) {

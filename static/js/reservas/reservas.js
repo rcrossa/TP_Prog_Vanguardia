@@ -3,10 +3,10 @@
 (function() {
     try {
         const userStr = localStorage.getItem('user');
-        
+
         if (userStr && userStr !== 'undefined' && userStr !== 'null') {
             const user = JSON.parse(userStr);
-            
+
             if (user && user.is_admin === true) {
                 document.body.classList.add('is-admin');
             } else {
@@ -70,16 +70,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.style.display = 'none';
             });
         }
-        
+
         reservaModal = new bootstrap.Modal(document.getElementById('reservaModal'));
         articulosModal = new bootstrap.Modal(document.getElementById('articulosModal'));
-        
+
         // Cargar datos iniciales
         loadReservas();
         loadSalas();
         loadArticulos();
         loadPersonas();
-        
+
         // Event listeners
         document.getElementById('newReservaBtn').addEventListener('click', () => openModal());
         document.getElementById('searchInput').addEventListener('input', filterReservas);
@@ -138,7 +138,7 @@ async function loadPersonas() {
         updatePersonaSelect();
     } catch (error) {
         console.error('Error cargando personas:', error);
-        
+
         // Si el error es 403 (no es admin), usar solo el usuario actual
         if (error.response?.status === 403) {
             // Verificar que window.auth existe
@@ -147,15 +147,15 @@ async function loadPersonas() {
                 updatePersonaSelect();
                 return;
             }
-            
+
             let currentUser = window.auth.getUser();
-            
+
             // Si no hay usuario en localStorage, consultar al servidor
             if (!currentUser || !currentUser.id) {
                 try {
                     const meResponse = await axios.get('/api/v1/personas/me');
                     currentUser = meResponse.data;
-                    
+
                     // Guardar en localStorage para próximas consultas
                     window.auth.setUser(currentUser);
                 } catch (meError) {
@@ -165,7 +165,7 @@ async function loadPersonas() {
                     return;
                 }
             }
-            
+
             if (currentUser && currentUser.id) {
                 personas = [{
                     id: currentUser.id,
@@ -207,14 +207,14 @@ function updatePersonaSelect() {
     if (!select) {
         return;
     }
-    
+
     select.innerHTML = '<option value="">Seleccione una persona...</option>';
-    
+
     if (personas.length === 0) {
         select.innerHTML += '<option value="" disabled>No hay personas disponibles</option>';
         return;
     }
-    
+
     personas.forEach(persona => {
         let nombreCompleto = persona.nombre;
         if (persona.apellido && persona.apellido.trim() !== '') {
@@ -231,7 +231,7 @@ function toggleTipoReserva() {
     const articuloGroup = document.getElementById('articuloGroup');
     const idSala = document.getElementById('idSala');
     const idArticulo = document.getElementById('idArticulo');
-    
+
     if (tipo === 'sala') {
         salaGroup.style.display = 'block';
         articuloGroup.style.display = 'none';
@@ -255,7 +255,7 @@ function toggleTipoReserva() {
 // Renderizar reservas
 function renderReservas(data) {
     const tbody = document.getElementById('reservasTableBody');
-    
+
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -267,7 +267,7 @@ function renderReservas(data) {
         `;
         return;
     }
-    
+
     tbody.innerHTML = data.map(reserva => {
         const esSala = reserva.id_sala !== null && reserva.id_sala !== undefined;
         const tipo = esSala ? 'Sala' : 'Artículo';
@@ -339,12 +339,15 @@ function getNombreRecurso(reserva) {
 // Obtener nombre de persona
 function getNombrePersona(idPersona) {
     const persona = personas.find(p => p.id === idPersona);
-    if (!persona) return `Persona #${idPersona}`;
-    let nombreCompleto = persona.nombre;
-    if (persona.apellido && persona.apellido.trim() !== '') {
-        nombreCompleto += ' ' + persona.apellido;
+    if (persona) {
+        let nombreCompleto = persona.nombre;
+        if (persona.apellido && persona.apellido.trim() !== '') {
+            nombreCompleto += ' ' + persona.apellido;
+        }
+        return nombreCompleto;
     }
-    return nombreCompleto;
+    // Si no está en la lista, mostrar solo el ID sin "Persona #"
+    return `Usuario ID: ${idPersona}`;
 }
 
 // Obtener estado de reserva
@@ -352,7 +355,7 @@ function getEstadoReserva(reserva) {
     const ahora = new Date();
     const inicio = new Date(reserva.fecha_hora_inicio);
     const fin = new Date(reserva.fecha_hora_fin);
-    
+
     if (ahora < inicio) return 'futuro';
     if (ahora > fin) return 'pasado';
     return 'activo';
@@ -388,21 +391,21 @@ function filterReservas() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const tipoFilter = document.getElementById('filterTipo').value;
     const estadoFilter = document.getElementById('filterEstado').value;
-    
+
     let filtered = reservas.filter(reserva => {
         const recurso = getNombreRecurso(reserva).toLowerCase();
         const persona = getNombrePersona(reserva.id_persona).toLowerCase();
         const matchSearch = recurso.includes(searchTerm) || persona.includes(searchTerm);
-        
+
         const tipo = (reserva.id_sala !== null && reserva.id_sala !== undefined) ? 'sala' : 'articulo';
         const matchTipo = !tipoFilter || tipo === tipoFilter;
-        
+
         const estado = getEstadoReserva(reserva);
         const matchEstado = !estadoFilter || estado === estadoFilter;
-        
+
         return matchSearch && matchTipo && matchEstado;
     });
-    
+
     renderReservas(filtered);
 }
 
@@ -419,7 +422,7 @@ function openModal(reserva = null) {
 function viewReserva(id) {
     const reserva = reservas.find(r => r.id === id);
     if (!reserva) return;
-    
+
         // Crear contenido para el modal
         const modalHtml = `
             <div class="modal fade" id="detalleReservaModal" tabindex="-1">
@@ -459,18 +462,18 @@ function viewReserva(id) {
 function editReserva(id) {
     const reserva = reservas.find(r => r.id === id);
     if (!reserva) return;
-    
+
     // Verificar que es una reserva futura
     const estado = getEstadoReserva(reserva);
     if (estado !== 'futuro') {
         showError('Solo se pueden editar reservas futuras');
         return;
     }
-    
+
     // Cargar datos en el formulario
     document.getElementById('reservaId').value = reserva.id;
     document.getElementById('idPersona').value = reserva.id_persona;
-    
+
 
     // Convertir fechas a formato local para el input datetime-local
     function toLocalDatetimeInputValue(date) {
@@ -485,7 +488,7 @@ function editReserva(id) {
     const fechaFin = new Date(reserva.fecha_hora_fin);
     document.getElementById('fechaInicio').value = toLocalDatetimeInputValue(fechaInicio);
     document.getElementById('fechaFin').value = toLocalDatetimeInputValue(fechaFin);
-    
+
     // Configurar tipo de reserva
     if (reserva.id_sala) {
         document.getElementById('tipoReserva').value = 'sala';
@@ -496,7 +499,7 @@ function editReserva(id) {
         toggleTipoReserva();
         document.getElementById('idArticulo').value = reserva.id_articulo;
     }
-    
+
     document.getElementById('modalTitle').textContent = `Editar Reserva #${id}`;
     reservaModal.show();
 }
@@ -508,14 +511,14 @@ async function saveReserva() {
         form.reportValidity();
         return;
     }
-    
+
     const reservaId = document.getElementById('reservaId').value;
     const tipo = document.getElementById('tipoReserva').value;
-    
+
     // Obtener las fechas del formulario
     let fechaInicio = document.getElementById('fechaInicio').value;
     let fechaFin = document.getElementById('fechaFin').value;
-    
+
     // Convertir a formato ISO con segundos si no los tiene
     // El input datetime-local devuelve: "2025-10-17T14:30"
     // Necesitamos: "2025-10-17T14:30:00"
@@ -525,7 +528,7 @@ async function saveReserva() {
     if (fechaFin && fechaFin.length === 16) {
         fechaFin += ':00';
     }
-    
+
     const data = {
         id_persona: parseInt(document.getElementById('idPersona').value),
         fecha_hora_inicio: fechaInicio,
@@ -533,7 +536,7 @@ async function saveReserva() {
         id_sala: tipo === 'sala' ? parseInt(document.getElementById('idSala').value) : null,
         id_articulo: tipo === 'articulo' ? parseInt(document.getElementById('idArticulo').value) : null
     };
-    
+
     try {
         if (reservaId) {
             // Actualizar reserva existente
@@ -542,11 +545,11 @@ async function saveReserva() {
             // Crear nueva reserva
             await axios.post('/api/v1/reservas/', data);
         }
-        
+
         // Si llegamos aquí, la operación fue exitosa
         // Cerrar el modal INMEDIATAMENTE para evitar problemas
         reservaModal.hide();
-        
+
         // Mostrar mensaje de éxito y recargar (con manejo de errores)
         try {
             const message = reservaId ? 'Reserva actualizada exitosamente' : 'Reserva creada exitosamente';
@@ -558,7 +561,7 @@ async function saveReserva() {
         }
     } catch (error) {
         console.error('Error guardando reserva:', error);
-        
+
         // Mostrar mensaje de error más detallado
         let errorMsg = 'Error al guardar la reserva';
         if (error.response?.data?.detail) {
@@ -581,7 +584,7 @@ async function saveReserva() {
 // Eliminar reserva
 async function deleteReserva(id) {
     if (!confirm('¿Está seguro de eliminar esta reserva?')) return;
-    
+
     try {
         await axios.delete(`/api/v1/reservas/${id}`);
         loadReservas();
@@ -622,13 +625,13 @@ function showError(message) {
 function actualizarInfoArticulo() {
     const selectArticulo = document.getElementById('articuloSelect');
     const inputCantidad = document.getElementById('articuloCantidad');
-    
+
     // Simplemente resetear la cantidad a 1
     if (!selectArticulo.value) {
         inputCantidad.value = '1';
         return;
     }
-    
+
     inputCantidad.value = '1';
 }
 
@@ -639,11 +642,11 @@ async function cargarDisponibilidadArticulos(reservaId) {
         showError('No se encontró la reserva');
         return;
     }
-    
+
     const select = document.getElementById('articuloSelect');
     const valorActual = select.value; // Guardar selección actual
     select.innerHTML = '<option value="">Cargando disponibilidad...</option>';
-    
+
     try {
         // Obtener disponibilidad de artículos para el período de la reserva
         // NO pasamos reserva_id para que incluya TODAS las reservas (incluida esta)
@@ -657,16 +660,16 @@ async function cargarDisponibilidadArticulos(reservaId) {
                 t: Date.now()
             }
         });
-        
+
     const articulosDisponibilidad = response.data;
-        
-        
-        
+
+
+
         // Actualizar select con disponibilidad real
         select.innerHTML = '<option value="">Seleccione un artículo...</option>';
-        
+
         // Mostrar artículos con su disponibilidad real para AGREGAR en esta reserva
-        
+
         articulosDisponibilidad.forEach(articulo => {
             const dispAgregar = (typeof articulo.cantidad_disponible_para_agregar === 'number')
                 ? articulo.cantidad_disponible_para_agregar
@@ -680,7 +683,7 @@ async function cargarDisponibilidadArticulos(reservaId) {
             }
             select.appendChild(option);
         });
-        
+
         // Mensaje si no hay artículos disponibles
         if (select.options.length === 1) { // Solo tiene la opción "Seleccione..."
             const option = document.createElement('option');
@@ -688,12 +691,12 @@ async function cargarDisponibilidadArticulos(reservaId) {
             option.textContent = 'No hay artículos disponibles para agregar';
             select.appendChild(option);
         }
-        
+
         // Restaurar selección si todavía existe
         if (valorActual && select.querySelector(`option[value="${valorActual}"]`)) {
             select.value = valorActual;
         }
-        
+
     } catch (error) {
         console.error('Error obteniendo disponibilidad:', error);
         // Fallback: mostrar artículos sin cálculo de disponibilidad
@@ -708,24 +711,24 @@ async function cargarDisponibilidadArticulos(reservaId) {
 async function gestionarArticulos(reservaId) {
     currentReservaId = reservaId;
     document.getElementById('reservaIdArticulos').value = reservaId;
-    
+
     // Cargar disponibilidad inicial
     await cargarDisponibilidadArticulos(reservaId);
-    
+
     // Cargar artículos asignados
     await loadArticulosAsignados(reservaId);
-    
+
     articulosModal.show();
 }
 
 // Cargar artículos asignados a una reserva
 async function loadArticulosAsignados(reservaId) {
     const container = document.getElementById('articulosAsignados');
-    
+
     try {
     const response = await axios.get(`/api/v1/reservas/${reservaId}/articulos`, { params: { t: Date.now() }});
         articulosAsignadosActuales = response.data; // Guardar para referencia
-        
+
         if (articulosAsignadosActuales.length === 0) {
             container.innerHTML = `
                 <div class="text-center text-muted py-3">
@@ -735,7 +738,7 @@ async function loadArticulosAsignados(reservaId) {
             `;
             return;
         }
-        
+
         container.innerHTML = `
             <div class="list-group">
                 ${articulosAsignadosActuales.map(art => `
@@ -766,10 +769,10 @@ async function loadArticulosAsignados(reservaId) {
                 `).join('')}
             </div>
         `;
-        
+
         // Inicializar el estado del formulario de agregar/actualizar
         actualizarInfoArticulo();
-        
+
     } catch (error) {
         console.error('Error cargando artículos asignados:', error);
         container.innerHTML = `
@@ -785,27 +788,27 @@ async function loadArticulosAsignados(reservaId) {
 async function agregarArticuloAReserva() {
     const articuloId = document.getElementById('articuloSelect').value;
     const cantidad = parseInt(document.getElementById('articuloCantidad').value);
-    
+
     if (!articuloId) {
         showError('Debe seleccionar un artículo');
         return;
     }
-    
+
     if (!cantidad || cantidad < 1) {
         showError('La cantidad debe ser mayor a 0');
         return;
     }
-    
+
     try {
         await axios.post(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}?cantidad=${cantidad}`);
         showSuccess('Artículo agregado/actualizado exitosamente');
-        
+
     // Recargar lista de artículos asignados y disponibilidad
     await loadArticulosAsignados(currentReservaId);
     await cargarDisponibilidadArticulos(currentReservaId);
     // Refrescar también la grilla de reservas
     await loadReservas();
-        
+
         // Actualizar el estado del formulario (el select mantiene su valor)
         actualizarInfoArticulo();
     } catch (error) {
@@ -825,24 +828,24 @@ async function modificarCantidadArticulo(articuloId, cambio) {
             showError('Artículo no encontrado');
             return;
         }
-        
+
         const nuevaCantidad = articuloActual.cantidad + cambio;
-        
+
         if (nuevaCantidad < 1) {
             showError('La cantidad mínima es 1. Use el botón de eliminar para quitar el artículo.');
             return;
         }
-        
+
         // Usar el endpoint POST con modo='reemplazar' para establecer la cantidad exacta
         await axios.post(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}?cantidad=${nuevaCantidad}&modo=reemplazar`);
         showSuccess(`Cantidad actualizada a ${nuevaCantidad}`);
-        
+
     // Recargar lista y disponibilidad
     await loadArticulosAsignados(currentReservaId);
     await cargarDisponibilidadArticulos(currentReservaId);
     // Refrescar también la grilla de reservas
     await loadReservas();
-        
+
         // Actualizar el estado del formulario
         actualizarInfoArticulo();
     } catch (error) {
@@ -856,13 +859,13 @@ async function eliminarArticuloDeReserva(articuloId) {
     // Buscar el nombre del artículo para mostrarlo en el modal
     const articuloAsignado = articulosAsignadosActuales.find(item => item.id === articuloId);
     const nombreArticulo = articuloAsignado ? articuloAsignado.nombre : 'este artículo';
-    
+
     // Almacenar el ID del artículo a eliminar
     articuloToDelete = articuloId;
-    
+
     // Actualizar el nombre en el modal
     document.getElementById('articuloNameToDelete').textContent = nombreArticulo;
-    
+
     // Mostrar el modal de confirmación
     const confirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteArticuloModal'));
     confirmModal.show();
@@ -871,46 +874,46 @@ async function eliminarArticuloDeReserva(articuloId) {
 // Función para confirmar la eliminación del artículo
 async function confirmarEliminarArticulo() {
     if (!articuloToDelete) return;
-    
+
     try {
         // Mostrar loading en el botón
         const deleteBtn = document.querySelector('#confirmDeleteArticuloModal .btn-danger');
         const originalText = deleteBtn.innerHTML;
         deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Eliminando...';
         deleteBtn.disabled = true;
-        
+
         await axios.delete(`/api/v1/reservas/${currentReservaId}/articulos/${articuloToDelete}`);
-        
+
         // Cerrar el modal
         const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteArticuloModal'));
         confirmModal.hide();
-        
+
         // Mostrar toast de éxito con animación
         showSuccess('🗑️ Artículo eliminado exitosamente de la reserva');
-        
+
     // Recargar lista y disponibilidad
     await loadArticulosAsignados(currentReservaId);
     await cargarDisponibilidadArticulos(currentReservaId);
     // Refrescar también la grilla de reservas
     await loadReservas();
-        
+
         // Actualizar el estado del formulario
         actualizarInfoArticulo();
-        
+
         // Limpiar variable
         articuloToDelete = null;
-        
+
         // Restaurar botón
         deleteBtn.innerHTML = originalText;
         deleteBtn.disabled = false;
-        
+
     } catch (error) {
         console.error('Error eliminando artículo:', error);
-        
+
         // Mostrar toast de error con detalles
         const errorMessage = error.response?.data?.detail || 'Error al eliminar el artículo';
         showError(`❌ ${errorMessage}`);
-        
+
         // Restaurar botón
         const deleteBtn = document.querySelector('#confirmDeleteArticuloModal .btn-danger');
         deleteBtn.innerHTML = '<i class="fas fa-trash me-1"></i>Eliminar Artículo';
@@ -923,7 +926,7 @@ function showToastLocal(message, type = 'success') {
     // Usar el sistema centralizado de toast-notifications.js
     if (typeof window.showToast === 'function') { window.showToast(message, type); return; }
     // Fallback básico si no está cargado
-    
+
     const toast = document.createElement('div');
     toast.style.cssText = `
         position: fixed; top: 20px; right: 20px; z-index: 9999;

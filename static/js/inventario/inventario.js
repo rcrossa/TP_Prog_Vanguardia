@@ -27,32 +27,32 @@ let reservasModal;
 document.addEventListener('DOMContentLoaded', function() {
     articuloModal = new bootstrap.Modal(document.getElementById('articuloModal'));
     reservasModal = new bootstrap.Modal(document.getElementById('reservasModal'));
-    
+
     // Event listener para botón de nuevo artículo
     const newArticuloBtn = document.getElementById('newArticuloBtn');
     if (newArticuloBtn) {
         newArticuloBtn.addEventListener('click', openNewArticuloModal);
     }
-    
+
     setTimeout(() => {
         const user = window.authManager?.getUser();
         if (!user) {
             window.location.href = '/login';
             return;
         }
-        
+
         // Verificar permisos de admin
         if (!user.is_admin) {
             alert('Acceso denegado. Solo los administradores pueden acceder a esta sección.');
             window.location.href = '/';
             return;
         }
-        
+
         isAdmin = user.is_admin;
         updatePageForAdmin();
         loadArticulos();
     }, 200);
-    
+
     // Event listeners para filtros
     document.getElementById('searchInput').addEventListener('input', filterArticulos);
     document.getElementById('filterCategoria').addEventListener('change', filterArticulos);
@@ -108,17 +108,17 @@ async function loadEstadisticas() {
     try {
         const response = await axios.get('/api/v1/articulos/estadisticas/inventario');
         const stats = response.data;
-        
+
         // Tarjetas de artículos (tipos)
         document.getElementById('total-articles').textContent = stats.total_articulos;
         document.getElementById('available-articles').textContent = stats.articulos_disponibles;
         document.getElementById('reserved-articles').textContent = stats.articulos_no_disponibles;
         document.getElementById('total-quantity').textContent = stats.total_unidades;
-        
+
         // Tarjetas de unidades (cantidad real disponible/reservada)
         document.getElementById('available-units').textContent = stats.unidades_disponibles;
         document.getElementById('reserved-units').textContent = stats.unidades_reservadas;
-        
+
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
         // Si falla, usar el método antiguo como fallback
@@ -132,7 +132,7 @@ function updateStatsLegacy(data) {
     const disponibles = data.filter(a => a.disponible).length;
     const noDisponibles = total - disponibles;
     const cantidadTotal = data.reduce((sum, a) => sum + (a.cantidad || 0), 0);
-    
+
     document.getElementById('total-articles').textContent = total;
     document.getElementById('available-articles').textContent = disponibles;
     document.getElementById('reserved-articles').textContent = noDisponibles;
@@ -149,19 +149,19 @@ function updateCategoriasFilter(data) {
     const categorias = [...new Set(data.map(a => a.categoria).filter(c => c))];
     const select = document.getElementById('filterCategoria');
     const currentValue = select.value;
-    
+
     select.innerHTML = '<option value="">Todas las categorías</option>';
     categorias.forEach(cat => {
         select.innerHTML += `<option value="${cat}">${cat}</option>`;
     });
-    
+
     select.value = currentValue;
 }
 
 // Renderizar artículos
 function renderArticulos(data) {
     const tbody = document.getElementById('articulosTableBody');
-    
+
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -173,13 +173,13 @@ function renderArticulos(data) {
         `;
         return;
     }
-    
+
     tbody.innerHTML = data.map(articulo => {
         const disp = disponibilidadActual[articulo.id] || { disponibles: articulo.cantidad, reservadas: 0 };
         const disponiblesAhora = disp.disponibles;
         const reservadas = disp.reservadas;
         const porcentajeDisponible = articulo.cantidad > 0 ? (disponiblesAhora / articulo.cantidad) * 100 : 0;
-        
+
         // Determinar color según disponibilidad
         let colorDisponible = 'bg-success';
         if (disponiblesAhora === 0) {
@@ -187,7 +187,7 @@ function renderArticulos(data) {
         } else if (porcentajeDisponible < 50) {
             colorDisponible = 'bg-warning';
         }
-        
+
         return `
         <tr>
             <td><span class="badge bg-secondary">#${articulo.id}</span></td>
@@ -227,8 +227,8 @@ function renderArticulos(data) {
                             <i class="fas fa-edit" aria-hidden="true"></i>
                             <span class="visually-hidden">Editar</span>
                         </button>
-                        <button class="btn btn-sm btn-outline-${articulo.disponible ? 'warning' : 'success'} btn-3d flex-fill w-100 py-2" 
-                                onclick="toggleDisponibilidad(${articulo.id})" 
+                        <button class="btn btn-sm btn-outline-${articulo.disponible ? 'warning' : 'success'} btn-3d flex-fill w-100 py-2"
+                                onclick="toggleDisponibilidad(${articulo.id})"
                                 aria-label="${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}" title="${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}">
                             <i class="fas fa-${articulo.disponible ? 'times' : 'check'}" aria-hidden="true"></i>
                             <span class="visually-hidden">${articulo.disponible ? 'Marcar No Disponible' : 'Marcar Disponible'}</span>
@@ -249,19 +249,19 @@ function filterArticulos() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const categoriaFilter = document.getElementById('filterCategoria').value;
     const disponibilidadFilter = document.getElementById('filterDisponibilidad').value;
-    
+
     let filtered = articulos.filter(articulo => {
         const matchSearch = articulo.nombre.toLowerCase().includes(searchTerm) ||
                           (articulo.descripcion && articulo.descripcion.toLowerCase().includes(searchTerm));
-        
+
         const matchCategoria = !categoriaFilter || articulo.categoria === categoriaFilter;
-        
-        const matchDisponibilidad = !disponibilidadFilter || 
+
+        const matchDisponibilidad = !disponibilidadFilter ||
                                    articulo.disponible.toString() === disponibilidadFilter;
-        
+
         return matchSearch && matchCategoria && matchDisponibilidad;
     });
-    
+
     renderArticulos(filtered);
 }
 
@@ -279,7 +279,7 @@ async function editArticulo(id) {
     try {
         const response = await axios.get(`/api/v1/articulos/${id}`);
         const articulo = response.data;
-        
+
         document.getElementById('articuloId').value = articulo.id;
         document.getElementById('articuloNombre').value = articulo.nombre;
         document.getElementById('articuloDescripcion').value = articulo.descripcion || '';
@@ -287,7 +287,7 @@ async function editArticulo(id) {
         document.getElementById('articuloCategoria').value = articulo.categoria || '';
         document.getElementById('articuloDisponible').checked = articulo.disponible;
         document.getElementById('modalTitle').textContent = 'Editar Artículo';
-        
+
         articuloModal.show();
     } catch (error) {
         console.error('Error al cargar artículo:', error);
@@ -302,7 +302,7 @@ async function saveArticulo() {
         form.reportValidity();
         return;
     }
-    
+
     const id = document.getElementById('articuloId').value;
     const cantidadValue = document.getElementById('articuloCantidad').value;
     const descripcionValue = document.getElementById('articuloDescripcion').value.trim();
@@ -323,7 +323,7 @@ async function saveArticulo() {
         categoria: categoriaValue,
         disponible: disponibleValue
     };
-    
+
     try {
         if (id) {
             await axios.put(`/api/v1/articulos/${id}`, data);
@@ -332,7 +332,7 @@ async function saveArticulo() {
             await axios.post('/api/v1/articulos/', data);
             showSuccess('Artículo creado exitosamente');
         }
-        
+
         articuloModal.hide();
         loadArticulos();
     } catch (error) {
@@ -346,12 +346,12 @@ async function toggleDisponibilidad(id) {
     try {
         const articulo = articulos.find(a => a.id === id);
         if (!articulo) return;
-        
+
         await axios.put(`/api/v1/articulos/${id}`, {
             ...articulo,
             disponible: !articulo.disponible
         });
-        
+
         showSuccess('Estado actualizado exitosamente');
         loadArticulos();
     } catch (error) {
@@ -363,7 +363,7 @@ async function toggleDisponibilidad(id) {
 // Eliminar artículo
 async function deleteArticulo(id) {
     if (!confirm('¿Está seguro de eliminar este artículo?')) return;
-    
+
     try {
         await axios.delete(`/api/v1/articulos/${id}`);
         showSuccess('Artículo eliminado exitosamente');
@@ -378,10 +378,10 @@ async function deleteArticulo(id) {
 async function verReservas(articuloId) {
     const articulo = articulos.find(a => a.id === articuloId);
     if (!articulo) return;
-    
+
     document.getElementById('articuloNombre').textContent = articulo.nombre;
     reservasModal.show();
-    
+
     const content = document.getElementById('reservasContent');
     content.innerHTML = `
         <div class="text-center py-4">
@@ -391,7 +391,7 @@ async function verReservas(articuloId) {
             <p class="mt-2 mb-0 text-muted">Cargando reservas...</p>
         </div>
     `;
-    
+
     try {
         const response = await axios.get(`/api/v1/articulos/${articuloId}/reservas`);
         const reservas = response.data;
@@ -546,10 +546,10 @@ function showToast(message, type = 'success') {
         toastContainer.style.zIndex = '9999';
         document.body.appendChild(toastContainer);
     }
-    
+
     // Determinar el tipo de alerta de Bootstrap
     const bgClass = type === 'success' ? 'bg-success' : type === 'danger' ? 'bg-danger' : 'bg-info';
-    
+
     // Crear el toast
     const toastId = 'toast_' + Date.now();
     const toastHTML = `
@@ -562,9 +562,9 @@ function showToast(message, type = 'success') {
             </div>
         </div>
     `;
-    
+
     toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    
+
     // Mostrar el toast
     const toastElement = document.getElementById(toastId);
     const toast = new bootstrap.Toast(toastElement, {
@@ -572,7 +572,7 @@ function showToast(message, type = 'success') {
         delay: 3000 // 3 segundos
     });
     toast.show();
-    
+
     // Remover del DOM después de ocultarse
     toastElement.addEventListener('hidden.bs.toast', function () {
         toastElement.remove();

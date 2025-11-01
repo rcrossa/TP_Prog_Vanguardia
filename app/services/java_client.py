@@ -176,7 +176,7 @@ class JavaServiceClient:
                     return False
                 else:
                     logger.error(
-                        "❌ Error al eliminar artículo %s en Java: Status %s", 
+                        "❌ Error al eliminar artículo %s en Java: Status %s",
                          articulo_id, response.status_code)
                     return False
         except httpx.RequestError as e:

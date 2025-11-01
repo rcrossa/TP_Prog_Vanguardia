@@ -2,17 +2,24 @@
 
 {% block title %}Dashboard - Sistema de Reservas{% endblock %}
 
+{% block extra_head %}
+<link href="/static/css/dashboard.css?v=1.0" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard del Sistema</h1>
+            <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard y Reportes</h1>
             <div class="btn-group">
                 <a href="/docs" class="btn btn-outline-primary" target="_blank">
                     <i class="fas fa-book me-1"></i>API Docs
                 </a>
-                <button class="btn btn-success" onclick="refreshStats()">
+                <button class="btn btn-success" onclick="dashboardManager.loadDashboardData()">
                     <i class="fas fa-sync-alt me-1"></i>Actualizar
+                </button>
+                <button class="btn btn-primary" onclick="exportReports()">
+                    <i class="fas fa-download me-1"></i>Exportar
                 </button>
             </div>
         </div>
@@ -34,10 +41,6 @@
             <h3>Salas Disponibles</h3>
             <div class="metric-value" id="salasDisponibles">-</div>
         </div>
-        <div class="metric-card">
-            <h3>Stock Crítico</h3>
-            <div class="metric-value" id="stockCritico">-</div>
-        </div>
     </div>
 
     <!-- Gráficos principales -->
@@ -52,30 +55,24 @@
         </div>
     </div>
 
-    <!-- Predicciones y alertas -->
+    <!-- Top Usuarios -->
     <div class="insights-grid">
         <div class="insight-card">
-            <h3>Predicciones (7 días)</h3>
-            <div id="prediccionesContainer"></div>
-        </div>
-        <div class="insight-card">
             <h3>Top Usuarios</h3>
-            <div id="topUsuariosContainer"></div>
-        </div>
-        <div class="insight-card">
-            <h3>Alertas</h3>
-            <div id="alertasContainer"></div>
+            <div id="topUsuariosContainer">
+                <p class="text-muted">Cargando...</p>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Gráficos y Información Adicional -->
-<div class="row g-3">
+<div class="row g-3 mt-4">
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-chart-line me-2"></i>Actividad Reciente
+                    <i class="fas fa-chart-line me-2"></i>Actividad Reciente (7 días)
                 </h5>
             </div>
             <div class="card-body">
@@ -87,9 +84,7 @@
     </div>
 
     <div class="col-lg-4">
-        <!-- Bloque de alertas del sistema eliminado -->
-
-        <div class="card border-0 shadow-sm mt-3">
+        <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-rocket me-2"></i>Acciones Rápidas
@@ -109,8 +104,8 @@
                         <a href="/inventario" class="btn btn-outline-info mt-2">
                             <i class="fas fa-box me-1"></i>Gestionar Inventario
                         </a>
-                        <a href="/reportes" class="btn btn-outline-warning mt-2">
-                            <i class="fas fa-chart-pie me-1"></i>Ver Reportes
+                        <a href="/salas" class="btn btn-outline-secondary mt-2">
+                            <i class="fas fa-door-open me-1"></i>Gestionar Salas
                         </a>
                     </div>
                 </div>
@@ -118,9 +113,46 @@
         </div>
     </div>
 </div>
+
+<script>
+function exportReports() {
+    // Preparar datos para exportación
+    const metricas = {
+        reservasHoy: document.getElementById('reservasHoy').textContent,
+        ocupacionPromedio: document.getElementById('ocupacionPromedio').textContent,
+        salasDisponibles: document.getElementById('salasDisponibles').textContent
+    };
+
+    // Crear contenido del reporte
+    const reportContent = `
+REPORTE DEL SISTEMA - ${new Date().toLocaleDateString('es-AR')}
+========================================
+
+MÉTRICAS PRINCIPALES:
+- Reservas Hoy: ${metricas.reservasHoy}
+- Ocupación Promedio: ${metricas.ocupacionPromedio}
+- Salas Disponibles: ${metricas.salasDisponibles}
+
+Generado el: ${new Date().toLocaleString('es-AR')}
+    `.trim();
+
+    // Crear y descargar archivo
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reporte_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Reporte exportado exitosamente', 'success');
+}
+</script>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="/static/js/dashboard/dashboard.js"></script>
+<script src="/static/js/dashboard/dashboard.js?v=2.0"></script>
 {% endblock %}

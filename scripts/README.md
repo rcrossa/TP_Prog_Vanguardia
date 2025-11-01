@@ -175,5 +175,5 @@ Al agregar un nuevo script:
 
 ---
 
-**Última actualización:** 16 de octubre de 2025  
+**Última actualización:** 16 de octubre de 2025
 **Mantenedor:** Equipo de desarrollo

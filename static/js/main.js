@@ -18,7 +18,7 @@ function showToast(message, type = 'info', duration = 5000) {
         toastContainer.style.zIndex = '1055';
         document.body.appendChild(toastContainer);
     }
-    
+
     // Crear toast
     const toastId = 'toast-' + Date.now();
     const iconMap = {
@@ -27,19 +27,19 @@ function showToast(message, type = 'info', duration = 5000) {
         warning: 'fas fa-exclamation-triangle',
         info: 'fas fa-info-circle'
     };
-    
+
     const colorMap = {
         success: 'text-success',
         error: 'text-danger',
         warning: 'text-warning',
         info: 'text-primary'
     };
-    
+
     const toast = document.createElement('div');
     toast.id = toastId;
     toast.className = 'toast align-items-center border-0 fade show';
     toast.setAttribute('role', 'alert');
-    
+
     toast.innerHTML = `
         <div class="d-flex">
             <div class="toast-body d-flex align-items-center">
@@ -49,14 +49,14 @@ function showToast(message, type = 'info', duration = 5000) {
             <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     `;
-    
+
     toastContainer.appendChild(toast);
-    
+
     // Auto-hide
     setTimeout(() => {
         const bsToast = new bootstrap.Toast(toast);
         bsToast.hide();
-        
+
         // Remover del DOM después de la animación
         setTimeout(() => {
             if (toast.parentNode) {
@@ -68,9 +68,9 @@ function showToast(message, type = 'info', duration = 5000) {
 
 // Función para formatear fechas
 function formatDate(dateString) {
-    const options = { 
-        year: 'numeric', 
-        month: 'long', 
+    const options = {
+        year: 'numeric',
+        month: 'long',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
@@ -80,9 +80,9 @@ function formatDate(dateString) {
 
 // Función para formatear fechas cortas
 function formatDateShort(dateString) {
-    const options = { 
-        year: 'numeric', 
-        month: '2-digit', 
+    const options = {
+        year: 'numeric',
+        month: '2-digit',
         day: '2-digit'
     };
     return new Date(dateString).toLocaleDateString('es-ES', options);
@@ -121,7 +121,7 @@ class JavaServiceClient {
             }
         });
     }
-    
+
     async checkHealth() {
         try {
             const response = await this.client.get('/actuator/health');
@@ -130,47 +130,47 @@ class JavaServiceClient {
             return false;
         }
     }
-    
+
     async getArticulos(params = {}) {
         const response = await this.client.get('/api/v1/articulos', { params });
         return response.data;
     }
-    
+
     async getArticulo(id) {
         const response = await this.client.get(`/api/v1/articulos/${id}`);
         return response.data;
     }
-    
+
     async createArticulo(data) {
         const response = await this.client.post('/api/v1/articulos', data);
         return response.data;
     }
-    
+
     async updateArticulo(id, data) {
         const response = await this.client.put(`/api/v1/articulos/${id}`, data);
         return response.data;
     }
-    
+
     async deleteArticulo(id) {
         await this.client.delete(`/api/v1/articulos/${id}`);
     }
-    
+
     async countArticulos(disponible = null) {
         const params = disponible !== null ? { disponible } : {};
         const response = await this.client.get('/api/v1/articulos/count/total', { params });
         return response.data;
     }
-    
+
     async toggleDisponibilidad(id) {
         const response = await this.client.patch(`/api/v1/articulos/${id}/toggle-disponibilidad`);
         return response.data;
     }
-    
+
     async getReportes() {
         const response = await this.client.get('/api/v1/reportes');
         return response.data;
     }
-    
+
     async getPredicciones() {
         const response = await this.client.get('/api/v1/predicciones');
         return response.data;
@@ -202,7 +202,7 @@ function toggleElement(selector) {
 function setLoadingState(selector, isLoading = true) {
     const element = document.querySelector(selector);
     if (!element) return;
-    
+
     if (isLoading) {
         element.innerHTML = `
             <span class="spinner-border spinner-border-sm me-1" role="status"></span>
@@ -225,13 +225,13 @@ function confirmAction(message, callback) {
 document.addEventListener('DOMContentLoaded', function() {
     // Resaltar navegación activa
     highlightActiveNavigation();
-    
+
     // Inicializar tooltips de Bootstrap
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-    
+
     // Inicializar popovers de Bootstrap
     const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
     popoverTriggerList.map(function (popoverTriggerEl) {
@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function highlightActiveNavigation() {
     const currentPath = window.location.pathname;
     const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
-    
+
     navLinks.forEach(link => {
         link.classList.remove('active');
         if (link.getAttribute('href') === currentPath) {

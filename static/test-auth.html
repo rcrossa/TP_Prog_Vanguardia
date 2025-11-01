@@ -8,24 +8,24 @@
 </head>
 <body>
     <h1>Debug Autenticación</h1>
-    
+
     <div>
         <h3>Estado del localStorage:</h3>
         <pre id="localStorage-content"></pre>
     </div>
-    
+
     <div>
         <h3>Test Login Admin:</h3>
         <button onclick="testLoginAdmin()">Login como Admin</button>
         <pre id="login-result"></pre>
     </div>
-    
+
     <div>
         <h3>Test /me endpoint:</h3>
         <button onclick="testMeEndpoint()">Verificar Usuario Actual</button>
         <pre id="me-result"></pre>
     </div>
-    
+
     <div>
         <h3>Console Log:</h3>
         <pre id="console-log"></pre>
@@ -53,17 +53,17 @@
                     email: 'admin@test.com',
                     password: 'admin123'
                 });
-                
+
                 log('Login exitoso!');
                 document.getElementById('login-result').textContent = JSON.stringify(response.data, null, 2);
-                
+
                 // Guardar en localStorage
                 localStorage.setItem('token', response.data.access_token);
                 localStorage.setItem('user', JSON.stringify(response.data.user));
-                
+
                 updateLocalStorageDisplay();
                 log('Datos guardados en localStorage');
-                
+
             } catch (error) {
                 log('Error en login: ' + error.message);
                 document.getElementById('login-result').textContent = 'ERROR: ' + error.message;
@@ -76,17 +76,17 @@
                 if (!token) {
                     throw new Error('No hay token en localStorage');
                 }
-                
+
                 log('Probando endpoint /me con token...');
                 const response = await axios.get('/api/v1/personas/me', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                
+
                 log('/me endpoint exitoso!');
                 document.getElementById('me-result').textContent = JSON.stringify(response.data, null, 2);
-                
+
             } catch (error) {
                 log('Error en /me: ' + error.message);
                 document.getElementById('me-result').textContent = 'ERROR: ' + error.message;

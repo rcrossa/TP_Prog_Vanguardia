@@ -1,6 +1,6 @@
 /**
  * Base Module - Clase base para módulos de templates con funcionalidad común
- * 
+ *
  * Esta clase proporciona funcionalidad compartida que todos los módulos pueden usar:
  * - Verificación de autenticación y permisos
  * - Seguridad pre-render
@@ -17,7 +17,7 @@ class BaseModule {
         this.requiresAuth = options.requiresAuth !== false; // Por defecto requiere auth
         this.requiresAdmin = options.requiresAdmin || false;
         this.autoInit = options.autoInit !== false; // Por defecto auto-inicializa
-        
+
         // Configuración por defecto
         this.config = {
             debug: false,
@@ -25,9 +25,9 @@ class BaseModule {
             refreshInterval: 30000,
             ...options.config
         };
-        
+
         this.log(`🚀 Inicializando módulo ${this.moduleName}`);
-        
+
         if (this.autoInit) {
             this.init();
         }
@@ -41,7 +41,7 @@ class BaseModule {
         if (this.requiresAuth) {
             this.applyPreRenderSecurity();
         }
-        
+
         // Esperar a que el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.initializeModule());
@@ -79,10 +79,10 @@ class BaseModule {
      */
     initializeModule() {
         this.log('📄 DOM listo, inicializando módulo...');
-        
+
         // Cargar configuración del template bridge
         this.loadTemplateConfig();
-        
+
         if (this.requiresAuth) {
             this.checkAuthAndPermissions();
         } else {
@@ -99,10 +99,10 @@ class BaseModule {
             if (window.templateBridge) {
                 const moduleConfig = window.templateBridge.get(`${this.moduleName}Config`, {});
                 this.config = { ...this.config, ...moduleConfig };
-                
+
                 // Cargar datos iniciales si existen
                 this.initialData = window.templateBridge.get('initialData', {});
-                
+
                 this.log('📋 Configuración cargada desde template bridge');
             }
         } catch (error) {
@@ -120,14 +120,14 @@ class BaseModule {
                 setTimeout(checkAuth, 100);
                 return;
             }
-            
+
             // Verificar que el usuario esté autenticado
             if (!window.authManager.isAuthenticated()) {
                 this.log('❌ Usuario no autenticado, redirigiendo...');
                 window.location.href = '/login';
                 return;
             }
-            
+
             // Verificar permisos de admin si se requiere
             if (this.requiresAdmin) {
                 const user = window.authManager.getUser();
@@ -140,11 +140,11 @@ class BaseModule {
                     return;
                 }
             }
-            
+
             this.log('✅ Autenticación y permisos verificados');
             this.onReady();
         };
-        
+
         checkAuth();
     }
 
@@ -155,7 +155,7 @@ class BaseModule {
     onReady() {
         this.log('✅ Módulo listo');
         this.isInitialized = true;
-        
+
         // Llamar al método específico del módulo si existe
         if (typeof this.initSpecific === 'function') {
             this.initSpecific();
@@ -278,12 +278,12 @@ class BaseModule {
         if (this.refreshTimer) {
             clearInterval(this.refreshTimer);
         }
-        
+
         this.refreshTimer = setInterval(() => {
             this.log('🔄 Auto-refresh ejecutándose...');
             refreshFunction.call(this);
         }, this.config.refreshInterval);
-        
+
         this.log(`🔄 Auto-refresh configurado cada ${this.config.refreshInterval/1000}s`);
     }
 
@@ -313,7 +313,7 @@ class BaseModule {
             clearInterval(this.refreshTimer);
             this.refreshTimer = null;
         }
-        
+
         this.isInitialized = false;
         this.log('🧹 Módulo destruido y recursos limpiados');
     }
@@ -338,10 +338,10 @@ class BaseModule {
      */
     formatDate(date, format = 'locale') {
         if (!date) return '';
-        
+
         const d = new Date(date);
         if (isNaN(d.getTime())) return '';
-        
+
         switch (format) {
             case 'locale':
                 return d.toLocaleDateString();

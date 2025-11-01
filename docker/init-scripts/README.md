@@ -33,7 +33,7 @@ Si vas a usar este sistema en un entorno real:
    ```
 
 2. **Crear usuarios mediante la API:**
-   - Usar el endpoint `/api/v1/auth/register` 
+   - Usar el endpoint `/api/v1/auth/register`
    - Cambiar passwords inmediatamente después del primer login
 
 3. **Rotar secrets regularmente:**

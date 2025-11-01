@@ -13,11 +13,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateMenuVisibility() {
-    // No necesitamos manipular elementos individuales aquí
-    // Actualizar el dropdown del usuario para mostrar el rol
     const user = window.authManager?.getUser();
     if (user) {
         updateUserDropdown(user);
+
+        // Mostrar/ocultar elementos admin-only según el rol del usuario
+        const adminOnlyElements = document.querySelectorAll('.admin-only');
+        adminOnlyElements.forEach(element => {
+            if (user.is_admin) {
+                element.style.display = '';  // Mostrar (usar estilo por defecto)
+            } else {
+                element.style.display = 'none';  // Ocultar
+            }
+        });
     }
 }
 

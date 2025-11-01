@@ -193,7 +193,7 @@ function tryZoomBy(factor) {
 /**
  * Resetea y ajusta el mapa al contenedor
  */
-function cfgReset() { 
+function cfgReset() {
     if (cfgMMInstance) {
         cfgMMInstance.fit();
     }
@@ -206,13 +206,13 @@ function cfgToggleFullscreen() {
     const wrapper = document.getElementById('markmap-wrapper');
     const btn = document.getElementById('fullscreenBtn');
     const icon = btn.querySelector('i');
-    
+
     if (wrapper.classList.contains('fullscreen')) {
         exitFullscreen(wrapper, icon, btn);
     } else {
         enterFullscreen(wrapper, icon, btn);
     }
-    
+
     // Reajustar el mapa después de cambiar el tamaño
     setTimeout(function() {
         if (cfgMMInstance) {
@@ -279,40 +279,40 @@ function attemptMarkmapInit() {
  */
 function renderMarkmap() {
     const loadingMsg = document.getElementById('loadingMsg');
-    
+
     try {
         console.log('✅ Markmap disponible, creando visualización...');
-        
+
         const { Transformer, Markmap } = window.markmap;
-        
+
         // Transformar markdown
         const transformer = new Transformer();
         const { root, features } = transformer.transform(cfgReadmeContent);
-        
+
         console.log('📊 Contenido transformado, nodos:', root);
-        
+
         // Obtener el elemento SVG
         const svgEl = document.getElementById('markmap-container');
-        
+
         // Crear Markmap con configuración
         cfgMMInstance = createMarkmapInstance(svgEl);
-        
+
         // Aplicar assets
         const { styles } = transformer.getUsedAssets(features);
         if (styles) {
             cfgMMInstance.setOptions({ styles });
         }
-        
+
         // Renderizar
         cfgMMInstance.setData(root);
         cfgMMInstance.fit();
-        
+
         // Guardar referencia al SVG
         cfgSvg = svgEl;
-        
+
         // Ocultar mensaje de carga
         hideLoadingMessage(loadingMsg);
-        
+
         console.log('✨ Markmap renderizado exitosamente!');
     } catch (e) {
         handleMarkmapError(e, loadingMsg);
@@ -401,14 +401,14 @@ function initEventListeners() {
     if (docsTab) {
         docsTab.addEventListener('shown.bs.tab', handleDocsTabShown);
     }
-    
+
     // Si la pestaña está activa por hash
     if (location.hash === '#docs' && docsTab) {
         const docsTabEl = new bootstrap.Tab(docsTab);
         docsTabEl.show();
         initConfigMarkmap();
     }
-    
+
     // Soporte para ESC en fullscreen
     document.addEventListener('keydown', handleEscapeKey);
 }

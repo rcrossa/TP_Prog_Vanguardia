@@ -1,33 +1,3 @@
-// Dashboard stats loader
-async function refreshStats() {
-    try {
-        // Cargar reservas activas
-        const reservasResp = await axios.get('/api/v1/stats/reservas_activas', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        const reservasStats = reservasResp.data;
-        document.getElementById('reservas-activas').textContent = reservasStats.reservasActivas ?? '...';
-
-        // Cargar unidades disponibles en inventario
-        const inventarioResp = await axios.get('/api/v1/articulos/estadisticas/inventario', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        const inventarioStats = inventarioResp.data;
-        document.getElementById('total-articulos').textContent = inventarioStats.unidades_disponibles ?? '...';
-    } catch (error) {
-        console.error('Error al cargar estadísticas de reservas:', error);
-        document.getElementById('reservas-activas').textContent = '...';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    refreshStats();
-});
-
 // Cargar gráfico de actividad detallada (activas y pasadas)
 async function loadActividadChart() {
     try {
@@ -91,7 +61,7 @@ class DashboardManager {
 
     async init() {
         await this.loadDashboardData();
-        this.initCharts();
+        loadActividadChart(); // Cargar gráfico de actividad
         this.startAutoRefresh();
     }
 
@@ -102,7 +72,7 @@ class DashboardManager {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.updateDashboard(data);
@@ -116,14 +86,26 @@ class DashboardManager {
         this.updateOcupacionChart(data.ocupacion_salas);
         this.updateTendenciaChart(data.tendencia_reservas);
         this.updateTopUsuarios(data.top_usuarios);
-        this.updateMetricas(data);
+        this.updateMetricas(data.metricas);
+    }
+
+    updateMetricas(metricas) {
+        // Actualizar métricas principales
+        const reservasHoyEl = document.getElementById('reservasHoy');
+        if (reservasHoyEl) reservasHoyEl.textContent = metricas.reservas_hoy;
+
+        const ocupacionEl = document.getElementById('ocupacionPromedio');
+        if (ocupacionEl) ocupacionEl.textContent = `${metricas.ocupacion_promedio}%`;
+
+        const salasEl = document.getElementById('salasDisponibles');
+        if (salasEl) salasEl.textContent = metricas.salas_disponibles;
     }
 
     updateOcupacionChart(ocupacionData) {
         const ctx = document.getElementById('ocupacionChart');
         if (!ctx) return;
 
-        if this.charts.ocupacion) {
+        if (this.charts.ocupacion) {
             this.charts.ocupacion.destroy();
         }
 
@@ -134,7 +116,7 @@ class DashboardManager {
                 datasets: [{
                     data: ocupacionData.map(item => item.reservas),
                     backgroundColor: [
-                        '#FF6384', '#36A2EB', '#FFCE56', 
+                        '#FF6384', '#36A2EB', '#FFCE56',
                         '#4BC0C0', '#9966FF', '#FF9F40'
                     ]
                 }]
@@ -167,10 +149,10 @@ class DashboardManager {
         this.charts.tendencia = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: tendenciaData.map(item => item.fecha),
+                labels: tendenciaData.labels,
                 datasets: [{
                     label: 'Reservas por día',
-                    data: tendenciaData.map(item => item.cantidad),
+                    data: tendenciaData.values,
                     borderColor: '#36A2EB',
                     backgroundColor: 'rgba(54, 162, 235, 0.1)',
                     fill: true,
@@ -186,6 +168,24 @@ class DashboardManager {
         });
     }
 
+    updateTopUsuarios(topUsuarios) {
+        const container = document.getElementById('topUsuariosContainer');
+        if (!container) return;
+
+        if (!topUsuarios || topUsuarios.length === 0) {
+            container.innerHTML = '<p class="text-muted">No hay datos disponibles</p>';
+            return;
+        }
+
+        container.innerHTML = topUsuarios.map((usuario, index) => `
+            <div class="top-user-item">
+                <span class="user-rank">#${index + 1}</span>
+                <span class="user-name">${usuario.nombre}</span>
+                <span class="user-count">${usuario.reservas} reservas</span>
+            </div>
+        `).join('');
+    }
+
     async loadPredictions() {
         try {
             const response = await fetch('/api/v1/analytics/ocupacion-prediccion', {
@@ -193,7 +193,7 @@ class DashboardManager {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.updatePrediccionesCard(data.predicciones);

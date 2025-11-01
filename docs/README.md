@@ -1,6 +1,6 @@
 # 📚 Documentación del Proyecto
 
-**Sistema de Reservas con Arquitectura de Microservicios**  
+**Sistema de Reservas con Arquitectura de Microservicios**
 **Última actualización:** 16 de octubre de 2025
 
 ---
@@ -217,6 +217,6 @@ Si necesitas actualizar la documentación:
 
 ---
 
-**Estado de Documentación:** ✅ Actualizada y organizada  
-**Última revisión:** 16 de octubre de 2025  
+**Estado de Documentación:** ✅ Actualizada y organizada
+**Última revisión:** 16 de octubre de 2025
 **Versión:** 2.0 - Con integración HTTP documentada

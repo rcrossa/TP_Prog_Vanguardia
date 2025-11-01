@@ -2,10 +2,10 @@ class AuthManager {
     constructor() {
         // Intentar obtener token de localStorage primero, luego de cookies
         this.token = localStorage.getItem('token') || this.getCookie('token');
-        
+
         this.user = null;
         const userStr = localStorage.getItem('user');
-        
+
         if (userStr) {
             try {
                 this.user = JSON.parse(userStr);
@@ -14,41 +14,41 @@ class AuthManager {
                 localStorage.removeItem('user');
             }
         }
-        
+
         // Si hay token pero no hay usuario, obtenerlo del servidor
         if (this.token && !this.user) {
             this.recoverUserFromServer();
         }
-        
+
         this.setupAxiosInterceptors();
         this.init();
     }
-    
+
     async recoverUserFromServer() {
         try {
             const response = await axios.get('/api/v1/personas/me');
             this.setUser(response.data);
         } catch (error) {
             console.error('No se pudo recuperar usuario del servidor:', error);
-            
+
             // Solo hacer logout si es error 401 (no autenticado)
             if (error.response?.status === 401) {
                 this.logout();
             }
         }
     }
-    
+
     getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
         return null;
     }
-    
+
     setupAxiosInterceptors() {
         // Solo configurar si no se ha hecho antes
         if (axios.defaults._authConfigured) return;
-        
+
         // Request interceptor
         axios.interceptors.request.use((config) => {
             const token = this.getToken();
@@ -57,7 +57,7 @@ class AuthManager {
             }
             return config;
         });
-            
+
         // Interceptor para responses - manejar errores de auth
         axios.interceptors.response.use(
             (response) => response,
@@ -65,12 +65,12 @@ class AuthManager {
                 const status = error.response?.status;
                 const url = error.config?.url;
                 const detail = error.response?.data?.detail;
-                
+
                 // Solo hacer logout en errores de autenticación REALES:
                 // 1. Error 401 (siempre es problema de token)
                 // 2. Error 403 SOLO en endpoints de autenticación (como /me)
                 //    pero NO en endpoints protegidos por permisos (como /personas)
-                
+
                 if (status === 401) {
                     // 401 = No autenticado, token inválido o expirado
                     this.logout();
@@ -82,10 +82,10 @@ class AuthManager {
                     // 403 puede ser:
                     // - "Usuario inactivo" = problema de autenticación → logout
                     // - "No tienes permisos de administrador" = problema de permisos → NO logout
-                    const isAuthProblem = detail?.includes('inactivo') || 
+                    const isAuthProblem = detail?.includes('inactivo') ||
                                          detail?.includes('inválido') ||
                                          url?.includes('/me');
-                    
+
                     if (isAuthProblem) {
                         this.logout();
                         if (window.location.pathname !== '/login') {
@@ -97,14 +97,14 @@ class AuthManager {
                 return Promise.reject(error);
             }
         );
-        
+
         // Marcar como configurado
         axios.defaults._authConfigured = true;
     }
-    
+
     init() {
         const path = window.location.pathname;
-        
+
         if (path === '/login') {
             this.initLoginPage();
         } else {
@@ -112,7 +112,7 @@ class AuthManager {
             this.checkAuthStatus();
         }
     }
-    
+
     initLoginPage() {
         // Si ya está autenticado, verificar que el token sea válido antes de redirigir
         if (this.isAuthenticated()) {
@@ -178,7 +178,7 @@ class AuthManager {
             togglePassword.addEventListener('click', () => this.togglePasswordVisibility());
         }
     }
-    
+
     checkAuthStatus() {
         if (!this.isAuthenticated()) {
             // Evitar loop infinito - solo redirigir si no estamos ya en login
@@ -198,7 +198,7 @@ class AuthManager {
             });
         }
     }
-    
+
     async handleLogin(event) {
         event.preventDefault();
 
@@ -258,25 +258,25 @@ class AuthManager {
             this.setLoading(submitButton, false);
         }
     }
-    
+
     logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         this.token = null;
         this.user = null;
-        
+
         // También eliminar la cookie
         document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        
+
         // Limpiar headers de axios
         delete axios.defaults.headers.common['Authorization'];
     }
-    
+
     updateUI() {
         const userInfo = document.querySelector('.user-info');
         const authButtons = document.querySelector('.auth-buttons');
         const loginSection = document.querySelector('.login-section');
-        
+
         if (this.isAuthenticated()) {
             if (userInfo) {
                 userInfo.style.display = 'block';
@@ -291,7 +291,7 @@ class AuthManager {
             if (loginSection) loginSection.style.display = 'block';
         }
     }
-    
+
     togglePasswordVisibility() {
         const passwordInput = document.getElementById('password');
         const toggleIcon = document.querySelector('.toggle-password i');
@@ -307,7 +307,7 @@ class AuthManager {
             toggleIcon.classList.add('fa-eye');
         }
     }
-    
+
     setLoading(button, loading) {
         if (loading) {
             button.disabled = true;
@@ -317,7 +317,7 @@ class AuthManager {
             button.innerHTML = '<i class="fas fa-sign-in-alt me-1"></i>Iniciar Sesión';
         }
     }
-    
+
     showAlert(alertElement, type, message) {
         if (alertElement) {
             alertElement.className = `alert alert-${type}`;
@@ -325,17 +325,17 @@ class AuthManager {
             alertElement.style.display = 'block';
         }
     }
-    
+
     hideAlert(alertElement) {
         if (alertElement) {
             alertElement.style.display = 'none';
         }
     }
-    
+
     setToken(token) {
         this.token = token;
         localStorage.setItem('token', token);
-        
+
         // También guardar en cookie para las peticiones web normales
         if (token) {
             // Cookie que expira en 24 horas
@@ -347,33 +347,33 @@ class AuthManager {
             document.cookie = `token=${token}; expires=${expirationDate.toUTCString()}; path=/; ${cookieOptions}`;
         }
     }
-    
+
     getToken() {
         return this.token;
     }
-    
+
     setUser(user) {
         this.user = user;
         localStorage.setItem('user', JSON.stringify(user));
-        
+
         // Aplicar o remover clase is-admin inmediatamente
         this.applyAdminClass();
     }
-    
+
     getUser() {
         return this.user;
     }
-    
+
     isAuthenticated() {
         return !!(this.token && this.user);
     }
-    
+
     async getCurrentUser() {
         const response = await axios.get('/api/v1/personas/me');
         this.setUser(response.data);
         return response.data;
     }
-    
+
     // Método para aplicar la clase de admin al body inmediatamente
     applyAdminClass() {
         // Verificación ESTRICTA: solo si is_admin es exactamente true

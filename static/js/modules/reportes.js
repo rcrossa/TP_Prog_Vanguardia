@@ -1,6 +1,6 @@
 /**
  * Reportes Module - Gestión de reportes y analytics del sistema
- * 
+ *
  * Este módulo maneja toda la funcionalidad de la página de reportes:
  * - Verificación de autenticación y permisos de admin
  * - Carga de datos de reportes desde el backend
@@ -13,14 +13,14 @@ class ReportesManager {
         this.isInitialized = false;
         this.reports = [];
         this.charts = {};
-        
+
         // Configuración por defecto
         this.config = {
             autoRefresh: false,
             refreshInterval: 30000, // 30 segundos
             exportFormats: ['PDF', 'Excel', 'CSV']
         };
-        
+
         this.init();
     }
 
@@ -29,10 +29,10 @@ class ReportesManager {
      */
     init() {
         console.log('📊 Inicializando módulo de reportes...');
-        
+
         // Aplicar seguridad pre-render inmediatamente
         this.applyPreRenderSecurity();
-        
+
         // Esperar a que el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.initializeReports());
@@ -84,14 +84,14 @@ class ReportesManager {
                 setTimeout(checkAuth, 100);
                 return;
             }
-            
+
             // Verificar que el usuario esté autenticado
             if (!window.authManager.isAuthenticated()) {
                 console.log('❌ Usuario no autenticado, redirigiendo...');
                 window.location.href = '/login';
                 return;
             }
-            
+
             // Verificar permisos de admin
             const user = window.authManager.getUser();
             if (!user || !user.is_admin) {
@@ -102,12 +102,12 @@ class ReportesManager {
                 }, 2000);
                 return;
             }
-            
+
             console.log('✅ Autenticación y permisos verificados');
             // Si todo está bien, cargar reportes
             this.loadReports();
         };
-        
+
         // Iniciar verificación
         checkAuth();
     }
@@ -118,25 +118,25 @@ class ReportesManager {
     async loadReports() {
         try {
             console.log('📥 Cargando reportes...');
-            
+
             // Obtener configuración desde template bridge
             const templateConfig = window.templateBridge?.get('reportsConfig', {});
             this.config = { ...this.config, ...templateConfig };
-            
+
             // Cargar datos de reportes
             await this.loadReportData();
-            
+
             // Renderizar reportes
             this.renderReports();
-            
+
             // Configurar auto-refresh si está habilitado
             if (this.config.autoRefresh) {
                 this.setupAutoRefresh();
             }
-            
+
             this.isInitialized = true;
             console.log('✅ Reportes cargados correctamente');
-            
+
         } catch (error) {
             console.error('❌ Error cargando reportes:', error);
             this.showError('Error al cargar los reportes. Por favor, intente nuevamente.');
@@ -150,11 +150,11 @@ class ReportesManager {
         try {
             // Placeholder para futuras APIs de reportes
             // Aquí se conectaría con el microservicio Java
-            
+
             // Primero cargar los datos desde las APIs
             const reservationStats = await this.fetchReservationStats();
             const usageStats = await this.fetchUsageStats();
-            
+
             // Ejemplo de estructura de datos
             this.reports = [
                 {
@@ -170,7 +170,7 @@ class ReportesManager {
                     data: usageStats
                 }
             ];
-            
+
         } catch (error) {
             console.error('❌ Error obteniendo datos de reportes:', error);
             throw error;
@@ -183,11 +183,11 @@ class ReportesManager {
     async fetchReservationStats() {
         try {
             console.log('📊 Obteniendo estadísticas de reservas REALES...');
-            
+
             // Obtener reservas reales
             const reservas = await this.apiRequest('/api/v1/reservas/').catch(() => []);
             const reservasArray = Array.isArray(reservas) ? reservas : [];
-            
+
 
             // Calcular reservas de hoy, activas y futuras
             const now = new Date();
@@ -201,11 +201,11 @@ class ReportesManager {
                 if (inicio <= now && (!reserva.fecha_hora_fin || new Date(reserva.fecha_hora_fin) >= now)) reservasActivas++;
                 if (inicio > now) reservasFuturas++;
             });
-            
+
             // Obtener salas más populares (análisis simplificado)
             const salaCount = {};
             const articuloCount = {};
-            
+
             reservasArray.forEach(reserva => {
                 // Contar reservas por tipo
                 if (reserva.sala_id) {
@@ -217,12 +217,12 @@ class ReportesManager {
                     articuloCount[articuloKey] = (articuloCount[articuloKey] || 0) + 1;
                 }
             });
-            
+
             const salasPopulares = Object.entries(salaCount)
                 .sort(([,a], [,b]) => b - a)
                 .slice(0, 3)
                 .map(([nombre]) => nombre);
-            
+
             // Calcular también estadísticas de artículos
             const articulosPopulares = Object.entries(articuloCount)
                 .sort(([,a], [,b]) => b - a)
@@ -237,7 +237,7 @@ class ReportesManager {
                 reservasSalas: Object.keys(salaCount).length,
                 reservasArticulos: Object.keys(articuloCount).length
             });
-            
+
             return {
                 totalReservas: reservasArray.length,
                 reservasHoy,
@@ -294,20 +294,20 @@ class ReportesManager {
      */
     renderReports() {
         console.log('🎨 Renderizando reportes...');
-        
+
         const container = document.querySelector('.card-body');
         if (!container) {
             console.error('❌ Contenedor de reportes no encontrado');
             return;
         }
-        
+
         // Limpiar contenido actual
         container.innerHTML = '';
-        
+
         // Crear interfaz de reportes
         const reportsHTML = this.generateReportsHTML();
         container.innerHTML = reportsHTML;
-        
+
         // Inicializar componentes interactivos
         this.initializeCharts();
         this.bindEventHandlers();
@@ -319,7 +319,7 @@ class ReportesManager {
     generateReportsHTML() {
         const usageData = this.reports.find(r => r.id === 'usage-stats')?.data || {};
         const reservationData = this.reports.find(r => r.id === 'reservas-overview')?.data || {};
-        
+
         return `
             <div class="reports-header mb-4">
                 <div class="row align-items-center">
@@ -337,7 +337,7 @@ class ReportesManager {
                     </div>
                 </div>
             </div>
-            
+
             <div class="row">
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm h-100">
@@ -370,14 +370,14 @@ class ReportesManager {
                                 <h6 class="textContent mb-2">Recursos más reservados:</h6>
                                 <div class="mb-2">
                                     <small class="text-primary">Salas:</small><br>
-                                    ${(reservationData.salasPopulares || ['Sin datos']).map((sala, index) => 
+                                    ${(reservationData.salasPopulares || ['Sin datos']).map((sala, index) =>
                                         `<span class="badge bg-light text-primary border border-primary me-1">${index + 1}. ${sala}</span>`
                                     ).join('')}
                                 </div>
                                 ${reservationData.articulosPopulares && reservationData.articulosPopulares.length > 0 ? `
                                 <div>
                                     <small class="text-info">Artículos:</small><br>
-                                    ${reservationData.articulosPopulares.map((articulo, index) => 
+                                    ${reservationData.articulosPopulares.map((articulo, index) =>
                                         `<span class="badge bg-light text-info border border-info me-1">${index + 1}. ${articulo}</span>`
                                     ).join('')}
                                 </div>
@@ -386,7 +386,7 @@ class ReportesManager {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-success text-white">
@@ -417,12 +417,12 @@ class ReportesManager {
                     </div>
                 </div>
             </div>
-            
+
             <div class="row mt-4">
                 <div class="col-12">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Datos en Tiempo Real:</strong> 
+                        <strong>Datos en Tiempo Real:</strong>
                         Las métricas se actualizan automáticamente desde la base de datos del sistema.
                         ${usageData.error ? `<br><span class="text-warning">⚠️ Algunos datos no están disponibles: ${usageData.error}</span>` : ''}
                     </div>
@@ -454,11 +454,11 @@ class ReportesManager {
         if (this.refreshTimer) {
             clearInterval(this.refreshTimer);
         }
-        
+
         this.refreshTimer = setInterval(() => {
             this.refreshReports();
         }, this.config.refreshInterval);
-        
+
         console.log(`🔄 Auto-refresh configurado cada ${this.config.refreshInterval/1000}s`);
     }
 

@@ -1,9 +1,9 @@
 /**
  * Template Bridge - Utilidad para manejar datos Jinja2 en módulos JavaScript
- * 
+ *
  * Esta clase proporciona una interfaz limpia para acceder a datos que vienen
  * desde el backend Python/Jinja2 hacia los módulos JavaScript frontales.
- * 
+ *
  * Patrón de uso:
  * 1. El template HTML embebe datos en un <script id="template-data" type="application/json">
  * 2. Los módulos JavaScript usan TemplateBridge.getData() para acceder a los datos
