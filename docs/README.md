@@ -1,7 +1,15 @@
 # 📚 Documentación del Proyecto
 
 **Sistema de Reservas con Arquitectura de Microservicios**
-**Última actualización:** 16 de octubre de 2025
+**Última actualización:** 1 de noviembre de 2025
+
+---
+
+## 🆕 **NUEVO**: Sistema de Predicciones Implementado
+
+📖 **Ver documentación completa**: [RESUMEN_PREDICCIONES.md](./RESUMEN_PREDICCIONES.md)
+
+✅ **Sistema 100% funcional** con predicciones de demanda, horarios pico, detección de anomalías y recomendaciones de capacidad.
 
 ---
 
@@ -15,6 +23,37 @@
 | **[INTEGRACION.md](./INTEGRACION.md)** | Guía completa de integración Python ↔ Java | 🧑‍💻 Desarrolladores |
 | **[security.md](./security.md)** | Guía de seguridad y mejores prácticas | 🔐 DevOps/Security |
 | **[formato_codigo.md](./formato_codigo.md)** | Estándares de código y convenciones | 🧑‍💻 Desarrolladores |
+
+### 🔮 **NUEVO**: Documentación de Predicciones
+
+| Documento | Descripción | Para quién |
+|-----------|-------------|------------|
+| **[RESUMEN_PREDICCIONES.md](./RESUMEN_PREDICCIONES.md)** | ⭐ Resumen completo y guía de uso del sistema de predicciones | 👥 Todos |
+| **[prediction_module.md](./prediction_module.md)** | Documentación técnica detallada | 🧑‍💻 Desarrolladores |
+| **[ARQUITECTURA_PREDICCIONES.md](./ARQUITECTURA_PREDICCIONES.md)** | Diagramas y flujos de datos | 🏗️ Arquitectos |
+| **[IMPLEMENTACION_PREDICCIONES.md](./IMPLEMENTACION_PREDICCIONES.md)** | Guía de implementación paso a paso | 🧑‍💻 Desarrolladores |
+
+---
+
+## �🗂️ Índice de Documentación
+
+### 📖 Documentación Principal
+
+| Documento | Descripción | Para quién |
+|-----------|-------------|------------|
+| **[architecture.md](./architecture.md)** | Arquitectura técnica completa del sistema | 🧑‍💻 Desarrolladores |
+| **[INTEGRACION.md](./INTEGRACION.md)** | Guía completa de integración Python ↔ Java | 🧑‍💻 Desarrolladores |
+| **[security.md](./security.md)** | Guía de seguridad y mejores prácticas | 🔐 DevOps/Security |
+| **[formato_codigo.md](./formato_codigo.md)** | Estándares de código y convenciones | 🧑‍💻 Desarrolladores |
+
+### 🔮 **NUEVO**: Documentación de Predicciones
+
+| Documento | Descripción | Para quién |
+|-----------|-------------|------------|
+| **[RESUMEN_PREDICCIONES.md](./RESUMEN_PREDICCIONES.md)** | ⭐ Resumen completo y guía de uso | 👥 Todos |
+| **[prediction_module.md](./prediction_module.md)** | Documentación técnica detallada | 🧑‍💻 Desarrolladores |
+| **[ARQUITECTURA_PREDICCIONES.md](./ARQUITECTURA_PREDICCIONES.md)** | Diagramas y flujos de datos | 🏗️ Arquitectos |
+| **[IMPLEMENTACION_PREDICCIONES.md](./IMPLEMENTACION_PREDICCIONES.md)** | Guía de implementación paso a paso | 🧑‍💻 Desarrolladores |
 
 ### 📊 Estado del Proyecto
 

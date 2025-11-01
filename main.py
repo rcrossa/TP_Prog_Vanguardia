@@ -13,6 +13,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.core.config import settings
 from app.core.database import Base, engine, get_db
@@ -146,6 +147,15 @@ app = FastAPI(
             ),
         },
     ],
+)
+
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, especificar dominios permitidos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Configurar archivos estáticos

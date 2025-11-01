@@ -6,6 +6,7 @@ import pytz
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.analytics_service import AnalyticsService
+from app.prediction.prediction_service import PredictionService
 from app.auth.dependencies import get_current_user
 from app.models.reserva import Reserva
 from app.repositories.sala_repository import SalaRepository
@@ -166,3 +167,120 @@ def export_report(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al exportar reporte: {str(e)}") from e
+
+
+# ========== NUEVOS ENDPOINTS DE PREDICCIÓN ==========
+
+@router.get("/predictions/weekly-demand")
+def get_weekly_demand_predictions(
+    dias: int = Query(7, ge=1, le=30, description="Días adelante para predecir"),
+    db: Session = Depends(get_db),
+    _current_user = Depends(get_current_user)
+):
+    """
+    Predicción avanzada de demanda semanal.
+
+    Utiliza análisis de patrones históricos, tendencias y estacionalidad
+    para predecir la demanda de reservas en los próximos días.
+    """
+    try:
+        prediction_service = PredictionService(db)
+        resultado = prediction_service.predict_weekly_demand(dias)
+        
+        # Transformar nombres de campos para compatibilidad con frontend
+        predicciones_transformadas = []
+        for pred in resultado.get("predicciones", []):
+            predicciones_transformadas.append({
+                "fecha": pred["fecha"],
+                "dia_semana": pred["dia_semana"],
+                "demanda_estimada": pred["prediccion_reservas"],  # Mapear prediccion_reservas -> demanda_estimada
+                "nivel_confianza": pred["confianza"],  # Mapear confianza -> nivel_confianza
+                "nivel_demanda": pred["nivel_demanda"],
+                "recomendacion": pred.get("recomendacion", "")
+            })
+        
+        # Transformar metadata
+        metadata = resultado.get("metadata", {})
+        metadata_transformada = {
+            "total_reservas_historicas": metadata.get("total_reservas_historicas"),
+            "dias_analizados": metadata.get("dias_historicos"),
+            "tendencia_general": metadata.get("tendencia"),
+            "confianza_promedio": sum(p["confianza"] for p in resultado.get("predicciones", [])) / len(resultado.get("predicciones", [])) if resultado.get("predicciones") else 0
+        }
+        
+        return {
+            "predicciones": predicciones_transformadas,
+            "metadata": metadata_transformada
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al generar predicciones de demanda: {str(e)}"
+        ) from e
+
+
+@router.get("/predictions/peak-hours")
+def get_peak_hours_predictions(
+    dias: int = Query(30, ge=7, le=90, description="Días históricos a analizar"),
+    db: Session = Depends(get_db),
+    _current_user = Depends(get_current_user)
+):
+    """
+    Identifica horarios pico de reservas.
+
+    Analiza patrones históricos para determinar qué horas del día
+    tienen mayor demanda por cada día de la semana.
+    """
+    try:
+        prediction_service = PredictionService(db)
+        return prediction_service.predict_peak_hours(dias)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al analizar horarios pico: {str(e)}"
+        ) from e
+
+
+@router.get("/predictions/anomalies")
+def detect_demand_anomalies(
+    dias: int = Query(30, ge=7, le=90, description="Días a analizar"),
+    db: Session = Depends(get_db),
+    _current_user = Depends(get_current_user)
+):
+    """
+    Detecta anomalías en la demanda.
+
+    Identifica días con ocupación inusualmente alta o baja
+    usando análisis estadístico.
+    """
+    try:
+        prediction_service = PredictionService(db)
+        return prediction_service.detect_anomalies(dias)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al detectar anomalías: {str(e)}"
+        ) from e
+
+
+@router.get("/predictions/capacity-recommendations")
+def get_capacity_recommendations(
+    dias: int = Query(7, ge=1, le=30, description="Días adelante para analizar"),
+    db: Session = Depends(get_db),
+    _current_user = Depends(get_current_user)
+):
+    """
+    Recomendaciones de capacidad.
+
+    Basado en predicciones de demanda, sugiere cuántas salas
+    deberían estar disponibles cada día.
+    """
+    try:
+        prediction_service = PredictionService(db)
+        return prediction_service.recommend_capacity(dias)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al generar recomendaciones: {str(e)}"
+        ) from e
+

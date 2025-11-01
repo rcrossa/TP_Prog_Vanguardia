@@ -127,8 +127,8 @@ graph TB
 | 📅 **Sistema Reservas** | Creación y gestión de reservas | ✅ Implementado |
 | 🔐 **Autenticación** | Login, JWT, roles (admin/usuario) | ✅ Implementado |
 | 🎨 **Frontend Web** | Templates HTML + JavaScript | ✅ Implementado |
-| 🤖 **Predicción ML** | Análisis y predicción de demanda con scikit-learn | ⏳ Pendiente |
-| � **Analytics** | Métricas, estadísticas y patrones de uso | ⏳ Pendiente |
+| 🤖 **Predicción ML** | Análisis y predicción de demanda con patrones históricos | ✅ **NUEVO: Implementado** |
+| 📈 **Analytics** | Métricas, estadísticas y patrones de uso | ✅ **NUEVO: Implementado** |
 | 📊 **Reportes Avanzados** | Generación de informes complejos (PDF/Excel) | ⏳ Pendiente |
 
 ### ☕ Java Service (Port 8080)
