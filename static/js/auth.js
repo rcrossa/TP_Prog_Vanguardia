@@ -123,9 +123,12 @@ class AuthManager {
                 .catch((error) => {
                     this.logout();
                     // No redirigir, quedarse en login
+                    // No hacer return aquí para permitir que se configuren los event listeners
                 });
-            return;
+            // No retornar aquí, permitir que continúe la configuración del formulario
+            // para el caso en que el token sea inválido
         }
+        
         const loginForm = document.getElementById('loginForm');
         const togglePassword = document.querySelector('.toggle-password');
         const emailInput = document.getElementById('email');
