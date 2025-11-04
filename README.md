@@ -23,12 +23,22 @@ Sistema moderno de gestión de reservas implementado con **arquitectura de micro
 
 ### 📊 Estado Actual del Proyecto
 
-**Última actualización:** Octubre 2025
-**Progreso General:** 🟢 **~75% Completado**
+**Última actualización:** Noviembre 2025  
+**Progreso General:** 🟢 **~80% Completado**
 
 #### ✅ Componentes Funcionales
 
-// ...existing code...
+| Componente | Estado | Descripción |
+|------------|--------|-------------|
+| 🐍 **Python Service** | ✅ Completo | FastAPI con Auth, Reservas, Predicciones ML, Analytics |
+| ☕ **Java Service** | ✅ Completo | Spring Boot con ABM Salas (8 endpoints) + Artículos/Inventario (8 endpoints) |
+| 🔗 **Integración HTTP** | ✅ Activa | Comunicación bidireccional Python ↔ Java (salas + artículos) |
+| 🗄️ **PostgreSQL** | ✅ Funcional | Base de datos compartida con 5 tablas |
+| 🎨 **Frontend Web** | ✅ Completo | Templates HTML + JS (Login, Salas, Inventario, Reservas, Personas, Reportes) |
+| 🤖 **Predicciones ML** | ✅ **NUEVO** | Sistema completo de predicciones con scikit-learn |
+| 📈 **Analytics** | ✅ **NUEVO** | Dashboard con métricas en tiempo real, heatmaps, KPIs |
+| 🐳 **Docker** | ✅ Funcional | Modo db-only y full-stack disponibles |
+| 📚 **Documentación** | ✅ Completa | Swagger + Markdown detallado |
 
 ---
 
