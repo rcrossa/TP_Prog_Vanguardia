@@ -18,9 +18,20 @@
                 <button class="btn btn-success" onclick="dashboardManager.loadDashboardData()">
                     <i class="fas fa-sync-alt me-1"></i>Actualizar
                 </button>
-                <button class="btn btn-primary" onclick="exportReports()">
+                <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-download me-1"></i>Exportar
                 </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="exportReports('json')">
+                        <i class="fas fa-code me-2"></i>JSON
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportReports('csv')">
+                        <i class="fas fa-file-csv me-2"></i>CSV
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportReports('excel')">
+                        <i class="fas fa-file-excel me-2"></i>Excel
+                    </a></li>
+                </ul>
             </div>
         </div>
     </div>
@@ -146,39 +157,78 @@
 </div>
 
 <script>
-function exportReports() {
-    // Preparar datos para exportación
-    const metricas = {
-        reservasHoy: document.getElementById('reservasHoy').textContent,
-        ocupacionPromedio: document.getElementById('ocupacionPromedio').textContent,
-        salasDisponibles: document.getElementById('salasDisponibles').textContent
-    };
+async function exportReports(format = 'json') {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showToast('Debes iniciar sesión para exportar reportes', 'error');
+            return;
+        }
 
-    // Crear contenido del reporte
-    const reportContent = `
-REPORTE DEL SISTEMA - ${new Date().toLocaleDateString('es-AR')}
-========================================
+        // Mostrar loading
+        showToast('Generando reporte...', 'info');
 
-MÉTRICAS PRINCIPALES:
-- Reservas Hoy: ${metricas.reservasHoy}
-- Ocupación Promedio: ${metricas.ocupacionPromedio}
-- Salas Disponibles: ${metricas.salasDisponibles}
+        // Realizar petición al backend
+        const response = await fetch(`/api/v1/analytics/export-report?export_format=${format}&days=30`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': format === 'json' ? 'application/json' : 
+                         format === 'csv' ? 'text/csv' : 
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            }
+        });
 
-Generado el: ${new Date().toLocaleString('es-AR')}
-    `.trim();
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Error al exportar reporte');
+        }
 
-    // Crear y descargar archivo
-    const blob = new Blob([reportContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte_${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+        if (format === 'json') {
+            // Para JSON, mostrar en una ventana nueva o descargar
+            const data = await response.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `reporte_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } else {
+            // Para CSV y Excel, descargar directamente
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Obtener nombre de archivo del header Content-Disposition si está disponible
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = `reporte_${new Date().toISOString().split('T')[0]}`;
+            
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1].replace(/['"]/g, '');
+                }
+            } else {
+                filename += format === 'csv' ? '.csv' : '.xlsx';
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
 
-    showToast('Reporte exportado exitosamente', 'success');
+        showToast(`Reporte ${format.toUpperCase()} exportado exitosamente`, 'success');
+
+    } catch (error) {
+        console.error('Error al exportar reporte:', error);
+        showToast(error.message || 'Error al exportar reporte', 'error');
+    }
 }
 </script>
 {% endblock %}
