@@ -79,7 +79,7 @@ cd docker
 ```mermaid
 graph TB
     subgraph Frontend["🌐 FRONTEND WEB"]
-        UI[React/Vue/Angular<br/>Templates HTML + JavaScript]
+        UI[Templates HTML + JavaScript<br/>Salas, Inventario, Reservas, Personas]
     end
 
     subgraph Python["🐍 PYTHON SERVICE<br/>FastAPI - Port 8000"]
@@ -88,29 +88,31 @@ graph TB
         P3[🔐 Autenticación JWT]
         P4[🤖 Predicción ML]
         P5[📈 Analytics]
-        P6[📊 Reportes Avanzados]
+        P6[📊 Reportes]
+        P7[🔗 Java Client]
     end
 
     subgraph Java["☕ JAVA SERVICE<br/>Spring Boot - Port 8080"]
-        J1[🏢 ABM Salas]
-        J2[� ABM Artículos]
+        J1[🏢 ABM Salas<br/>8 endpoints]
+        J2[📦 ABM Artículos/Inventario<br/>8 endpoints]
+        J3[🔗 Python Client]
     end
 
     subgraph Database["🗄️ PostgreSQL<br/>Port 5432"]
-        DB[(Base de Datos)]
+        DB[(Base de Datos Compartida)]
         T1[Personas]
         T2[Salas]
-        T3[Articulos]
+        T3[Artículos]
         T4[Reservas]
-        T5[Analytics]
+        T5[Reservas_Artículos]
     end
 
     UI --> Python
     UI --> Java
     Python --> DB
     Java --> DB
-    Python -.->|Llamadas API| Java
-    Java -.->|Validación Auth| Python
+    Python -.->|Valida Salas/Artículos| Java
+    Java -.->|Valida JWT| Python
 
     style Frontend fill:#e1f5ff
     style Python fill:#d4edda
@@ -177,7 +179,8 @@ Este proyecto cuenta con documentación completa organizada por módulos:
 | Documento | Descripción | Enlace |
 |-----------|-------------|--------|
 | 🚀 **Inicio Rápido** | Instalación y configuración multi-plataforma | [🚀 Inicio Rápido](#-inicio-rápido) (en este README) |
-| 🐳 **Docker** | Guía completa de uso con contenedores | [`docker/README.md`](./docker/README.md) |
+| � **Configuración de Entorno** | Variables de entorno y settings explicados | [`docs/configuracion_entorno.md`](./docs/configuracion_entorno.md) |
+| �🐳 **Docker** | Guía completa de uso con contenedores | [`docker/README.md`](./docker/README.md) |
 | ☕ **Java Service** | API y documentación del microservicio Java | [`java-service/README.md`](./java-service/README.md) |
 | 🏗️ **Arquitectura** | Diseño y patrones del sistema | [`docs/architecture.md`](./docs/architecture.md) |
 | 🔐 **Seguridad** | Mejores prácticas y configuración | [`docs/security.md`](./docs/security.md) |
@@ -192,9 +195,10 @@ Este proyecto cuenta con documentación completa organizada por módulos:
 
 #### Para Desarrolladores
 1. Clonar repo y seguir la guía [🚀 Inicio Rápido](#-inicio-rápido)
-2. Configurar entorno con [`docker/README.md`](./docker/README.md)
-3. Entender arquitectura en [`docs/architecture.md`](./docs/architecture.md)
-4. Seguir formato de código en [`docs/formato_codigo.md`](./docs/formato_codigo.md)
+2. Configurar entorno con [`docs/configuracion_entorno.md`](./docs/configuracion_entorno.md)
+3. Configurar Docker con [`docker/README.md`](./docker/README.md)
+4. Entender arquitectura en [`docs/architecture.md`](./docs/architecture.md)
+5. Seguir formato de código en [`docs/formato_codigo.md`](./docs/formato_codigo.md)
 
 #### Para Evaluadores/Profesores
 1. Ver **Estado Actual del Proyecto** (sección anterior de este README)
@@ -219,32 +223,41 @@ Este proyecto cuenta con documentación completa organizada por módulos:
 #### 🏛️ Administración de Salas
 
 #### 📅 Sistema de Reservas
-    - ✅ Visualización de detalles de reserva mediante modal Bootstrap (mejora UX)
-    - ✅ Lógica de stock de artículos considera solo reservas futuras (no bloquea por reservas pasadas)
+- ✅ Creación y gestión de reservas de salas
+- ✅ Integración con Java Service para validación de salas
+- ✅ Integración con Java Service para validación de artículos/inventario
+- ✅ Validación de disponibilidad en tiempo real
+- ✅ Prevención de conflictos horarios
+- ✅ Visualización de detalles mediante modal Bootstrap
+- ✅ Lógica de stock de artículos considera solo reservas futuras
+
+### ✅ Módulos de Análisis y Predicción Implementados
+
+#### 🤖 Predicción ML
+- ✅ **Sistema completo de predicciones** (ver [`docs/RESUMEN_PREDICCIONES.md`](./docs/RESUMEN_PREDICCIONES.md))
+- ✅ Análisis de patrones históricos con scikit-learn
+- ✅ Predicción de demanda futura (7-30 días)
+- ✅ Identificación de horarios pico
+- ✅ Detección de anomalías en reservas
+- ✅ Recomendaciones de capacidad
+- ✅ Modelos de regresión para pronósticos
+
+#### 📈 Analytics
+- ✅ **Dashboard de métricas en tiempo real**
+- ✅ Análisis de tendencias con pandas
+- ✅ Heatmap de reservas por día/hora
+- ✅ KPIs del sistema (tasa de ocupación, utilización)
+- ✅ Análisis de comportamiento de usuarios
+- ✅ Estadísticas de salas y artículos más utilizados
+- ✅ Endpoints REST para consulta de métricas
 
 ### ⏳ Pendientes en Python Service
 
-#### 🤖 Predicción ML
-- ⏳ Análisis de patrones con scikit-learn
-- ⏳ Predicción de demanda futura
-- ⏳ Optimización de recursos
-- ⏳ Identificación de horarios pico
-- ⏳ Modelos de clasificación y regresión
-
-#### 📈 Analytics
-- ⏳ Dashboard de métricas en tiempo real
-- ⏳ Tendencias de uso con pandas
-- ⏳ Heatmap de reservas
-- ⏳ KPIs del sistema
-- ⏳ Análisis de comportamiento de usuarios
-
 #### 📊 Reportes Avanzados
-- ⏳ Reportes por período
-- ⏳ Recursos más utilizados
-- ⏳ Tasa de ocupación
-- ⏳ Exportación a PDF (reportlab)
-- ⏳ Exportación a Excel (openpyxl)
-- ⏳ Gráficos y visualizaciones
+- ⏳ Exportación a PDF (reportlab) - Estructura lista
+- ⏳ Exportación a Excel (openpyxl) - Estructura lista
+- ⏳ Reportes personalizables por período
+- ⏳ Gráficos integrados en reportes
 
 ### ✅ Implementadas en Java Service
 
@@ -369,8 +382,10 @@ El servicio Java **llama a Python** para:
 ### Python → Java (✅ IMPLEMENTADO)
 El servicio Python **llama a Java** para:
 - ✅ **Validar salas disponibles** al crear reservas
-- ✅ **Consultar información de salas** en tiempo real
-- ✅ **Verificar existencia de recursos** antes de reservar
+- ✅ **Validar artículos/inventario disponible** al crear reservas
+- ✅ **Consultar información de salas y artículos** en tiempo real
+- ✅ **Verificar stock de artículos** antes de reservar
+- ✅ **Verificar existencia de recursos** (salas y artículos) antes de operar
 
 
 ### 🔗 Endpoints de Demostración
@@ -561,11 +576,13 @@ El directorio `postman/` contiene colecciones completas para testing:
    - ⏹️ Circuit breakers (Resilience4j) - Opcional
    - ⏹️ Service mesh (Istio) - Fuera de alcance
 
-3. **Módulos Avanzados:** ⏹️ (Fuera de alcance académico)
-   - ⏹️ Predicción ML con scikit-learn
-   - ⏳ Analytics y dashboards con pandas
-   - ⏳ Reportes PDF/Excel (reportlab/openpyxl)
-   - ⏳ Visualizaciones con matplotlib/plotly
+3. **Módulos Avanzados:** ✅ **Analytics y Predicciones Implementados**
+   - ✅ **Predicción ML con scikit-learn** - Sistema completo de predicciones
+   - ✅ **Analytics y dashboards con pandas** - Métricas en tiempo real
+   - ✅ **Heatmaps y visualizaciones** - Patrones de uso y tendencias
+   - ✅ **API REST de predicciones** - Endpoints funcionales
+   - ⏳ Reportes PDF/Excel (reportlab/openpyxl) - Estructura lista
+   - ⏳ Visualizaciones interactivas con matplotlib/plotly - Pendiente
 
 4. **Docker Compose Full Stack:** ⏳
    - ⏳ Modo full con Python + Java + PostgreSQL

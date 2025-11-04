@@ -1,22 +1,38 @@
-"""auth"""
-from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
-# Constantes para valores repetidos
-
-MIN_PASSWORD_LENGTH = 6
-TOKEN_EXPIRES_IN = 1800
-# Constantes para ejemplos
-EXAMPLE_EMAIL = "juan@ejemplo.com"
-EXAMPLE_USER_EMAIL = "usuario@ejemplo.com"
-EXAMPLE_NOMBRE = "Juan Pérez"
-EXAMPLE_PASSWORD = "micontraseña123"
 """
 Esquemas Pydantic para autenticación y autorización.
 
 Este módulo define los esquemas para login, registro, tokens
 y respuestas de autenticación.
+
+Constantes configurables:
+    MIN_PASSWORD_LENGTH: Longitud mínima de contraseña (default: 6)
+    TOKEN_EXPIRES_IN: Tiempo de expiración del token JWT en segundos (default: 1800 = 30 minutos)
+
+Variables de entorno opcionales para ejemplos en documentación:
+    EXAMPLE_EMAIL: Email de ejemplo para registro (default: "juan@ejemplo.com")
+    EXAMPLE_USER_EMAIL: Email de ejemplo para login (default: "usuario@ejemplo.com")
+    EXAMPLE_NOMBRE: Nombre de ejemplo (default: "Juan Pérez")
+    EXAMPLE_PASSWORD: Contraseña de ejemplo (default: "micontraseña123")
+
+Nota: Las variables de entorno EXAMPLE_* solo afectan los ejemplos mostrados
+en la documentación de la API (Swagger/OpenAPI). NO afectan la lógica de
+autenticación ni crean usuarios automáticamente.
 """
+import os
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+# Constantes para validación y configuración
+MIN_PASSWORD_LENGTH = 6  # Longitud mínima de contraseña
+TOKEN_EXPIRES_IN = 1800  # Expiración del token JWT en segundos (30 minutos)
+
+# Variables de entorno para personalizar ejemplos en la documentación de la API
+# Estas NO crean usuarios ni afectan la autenticación, solo son para Swagger/OpenAPI
+EXAMPLE_EMAIL = os.getenv("EXAMPLE_EMAIL", "juan@ejemplo.com")
+EXAMPLE_USER_EMAIL = os.getenv("EXAMPLE_USER_EMAIL", "usuario@ejemplo.com")
+EXAMPLE_NOMBRE = os.getenv("EXAMPLE_NOMBRE", "Juan Pérez")
+EXAMPLE_PASSWORD = os.getenv("EXAMPLE_PASSWORD", "micontraseña123")
 
 class UserLogin(BaseModel):
     """Esquema para login de usuario."""

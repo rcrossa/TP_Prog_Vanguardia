@@ -20,6 +20,7 @@
 | Documento | Descripción | Para quién |
 |-----------|-------------|------------|
 | **[architecture.md](./architecture.md)** | Arquitectura técnica completa del sistema | 🧑‍💻 Desarrolladores |
+| **[configuracion_entorno.md](./configuracion_entorno.md)** | 🆕 Variables de entorno y configuración detallada | 🧑‍💻 Desarrolladores |
 | **[INTEGRACION.md](./INTEGRACION.md)** | Guía completa de integración Python ↔ Java | 🧑‍💻 Desarrolladores |
 | **[security.md](./security.md)** | Guía de seguridad y mejores prácticas | 🔐 DevOps/Security |
 | **[formato_codigo.md](./formato_codigo.md)** | Estándares de código y convenciones | 🧑‍💻 Desarrolladores |
@@ -34,26 +35,6 @@
 | **[IMPLEMENTACION_PREDICCIONES.md](./IMPLEMENTACION_PREDICCIONES.md)** | Guía de implementación paso a paso | 🧑‍💻 Desarrolladores |
 
 ---
-
-## �🗂️ Índice de Documentación
-
-### 📖 Documentación Principal
-
-| Documento | Descripción | Para quién |
-|-----------|-------------|------------|
-| **[architecture.md](./architecture.md)** | Arquitectura técnica completa del sistema | 🧑‍💻 Desarrolladores |
-| **[INTEGRACION.md](./INTEGRACION.md)** | Guía completa de integración Python ↔ Java | 🧑‍💻 Desarrolladores |
-| **[security.md](./security.md)** | Guía de seguridad y mejores prácticas | 🔐 DevOps/Security |
-| **[formato_codigo.md](./formato_codigo.md)** | Estándares de código y convenciones | 🧑‍💻 Desarrolladores |
-
-### 🔮 **NUEVO**: Documentación de Predicciones
-
-| Documento | Descripción | Para quién |
-|-----------|-------------|------------|
-| **[RESUMEN_PREDICCIONES.md](./RESUMEN_PREDICCIONES.md)** | ⭐ Resumen completo y guía de uso | 👥 Todos |
-| **[prediction_module.md](./prediction_module.md)** | Documentación técnica detallada | 🧑‍💻 Desarrolladores |
-| **[ARQUITECTURA_PREDICCIONES.md](./ARQUITECTURA_PREDICCIONES.md)** | Diagramas y flujos de datos | 🏗️ Arquitectos |
-| **[IMPLEMENTACION_PREDICCIONES.md](./IMPLEMENTACION_PREDICCIONES.md)** | Guía de implementación paso a paso | 🧑‍💻 Desarrolladores |
 
 ### 📊 Estado del Proyecto
 
@@ -97,7 +78,7 @@ Los siguientes documentos están en **`docs/internal/`** (carpeta local, no en G
 
 ## 📊 Estado Actual del Proyecto
 
-### ✅ Componentes Funcionales (75% completado)
+### ✅ Componentes Funcionales (~80% completado)
 
 | Componente | Estado | Progreso |
 |------------|--------|----------|
@@ -109,29 +90,35 @@ Los siguientes documentos están en **`docs/internal/`** (carpeta local, no en G
 | 🐳 **Docker** | ✅ Funcional | 100% |
 | 📚 **Swagger/Docs** | ✅ Funcional | 100% |
 | 🔐 **Autenticación JWT** | ✅ Funcional | 100% |
+| 🤖 **Predicciones ML** | ✅ **NUEVO: Funcional** | 100% |
+| 📈 **Analytics** | ✅ **NUEVO: Funcional** | 100% |
 
 ### 🎯 Funcionalidades Core Implementadas
 
 #### Python Service (Port 8000)
 - ✅ ABM Usuarios con roles (admin/usuario)
 - ✅ Autenticación JWT completa
-- ✅ Sistema de Reservas **con integración Java**
-- ✅ Frontend web completo y responsive
+- ✅ Sistema de Reservas **con integración Java** (salas y artículos)
+- ✅ Frontend web completo y responsive (Salas, Inventario, Reservas, Personas)
+- ✅ **Sistema de Predicciones ML** (demanda, horarios pico, anomalías, capacidad)
+- ✅ **Dashboard de Analytics** (métricas en tiempo real, heatmaps, KPIs)
 - ✅ API REST documentada (Swagger)
-- ✅ Cliente HTTP para Java Service
+- ✅ Cliente HTTP para Java Service (salas y artículos)
 
 #### Java Service (Port 8080)
 - ✅ ABM Salas (8 endpoints REST)
-- ✅ ABM Artículos (8 endpoints REST)
+- ✅ ABM Artículos/Inventario (8 endpoints REST)
+- ✅ Gestión de stock en tiempo real (considera solo reservas futuras)
 - ✅ Validación JWT **con integración Python**
 - ✅ API REST documentada (Swagger)
 - ✅ Cliente HTTP para Python Service
 
 #### Integración Python ↔ Java
 - ✅ **Python valida salas con Java** al crear reservas
-- ✅ **Java valida JWT con Python** al crear recursos
+- ✅ **Python valida artículos/stock con Java** al crear reservas
+- ✅ **Java valida JWT con Python** al crear/modificar recursos
 - ✅ Fallback automático si un servicio no responde
-- ✅ 5 endpoints de demostración
+- ✅ Endpoints de demostración de integración
 - ✅ Script de testing automatizado
 
 ### 🎓 Funcionalidades NO Implementadas (No Requeridas)
@@ -150,20 +137,23 @@ Estas funcionalidades aparecen como "pendientes" en algunos documentos antiguos 
 ## 🏗️ Arquitectura Resumida
 
 ```
-┌──────────────────────┐
-│   Frontend Web       │
-│   (Templates + JS)   │
-└──────────┬───────────┘
-           │ HTTP/REST
-           ▼
+┌──────────────────────────────────┐
+│      Frontend Web                │
+│  (Templates + JS + Bootstrap)    │
+│  Salas | Inventario | Reservas   │
+└──────────────┬───────────────────┘
+               │ HTTP/REST
+               ▼
 ┌──────────────────────┐ 🔗 HTTP ┌──────────────────────┐
 │   PYTHON SERVICE     │◄───────►│   JAVA SERVICE       │
 │   FastAPI : 8000     │         │   Spring Boot : 8080 │
 ├──────────────────────┤         ├──────────────────────┤
-│ • Auth JWT           │         │ • ABM Salas          │
-│ • ABM Usuarios       │─valida─→│ • ABM Artículos      │
-│ • Reservas           │  salas  │ • Valida JWT         │
-│ • Frontend Web       │         │ • Swagger            │
+│ • Auth JWT           │         │ • ABM Salas (8 ep)   │
+│ • ABM Usuarios       │─valida─→│ • ABM Artículos (8)  │
+│ • Reservas           │ salas & │ • Stock en tiempo    │
+│ • Predicciones ML    │ artíc.  │   real               │
+│ • Analytics          │         │ • Valida JWT         │
+│ • Frontend Web       │◄─JWT────│ • Swagger            │
 └──────────┬───────────┘         └──────────┬───────────┘
            │                                 │
            │      PostgreSQL Compartida      │
@@ -172,15 +162,21 @@ Estas funcionalidades aparecen como "pendientes" en algunos documentos antiguos 
                 ┌───────────────┐
                 │  PostgreSQL   │
                 │  Port 5432    │
+                ├───────────────┤
+                │ • personas    │
+                │ • salas       │
+                │ • articulos   │
+                │ • reservas    │
                 └───────────────┘
 ```
 
 **Flujo de Integración Activo:**
 1. Usuario crea reserva en frontend → POST a Python
-2. Python valida sala con Java → GET a Java
-3. Java responde con datos de sala
-4. Python crea reserva en DB
-5. ✅ Reserva creada con validación cross-service
+2. Python valida sala/artículo con Java → GET a Java
+3. Java responde con datos de sala y stock disponible
+4. Python verifica disponibilidad horaria
+5. Python crea reserva en DB
+6. ✅ Reserva creada con validación cross-service
 
 ---
 
