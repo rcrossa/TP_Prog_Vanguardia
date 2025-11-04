@@ -2,7 +2,7 @@
 
 from collections import Counter
 from datetime import datetime, timedelta
-import pytz
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends
 from app.core.database import get_db
@@ -146,8 +146,7 @@ def stats_uso(
 @router.get("/reservas_activas", tags=["stats"])
 def reservas_activas_endpoint(db: Session = Depends(get_db)):
     """Devuelve el número de reservas activas (para dashboard)."""
-    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
-    ahora_local = datetime.now(local_tz)
+    ahora_local = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
     reservas = db.query(Reserva).all()
     reservas_activas = []
     for r in reservas:
@@ -156,6 +155,6 @@ def reservas_activas_endpoint(db: Session = Depends(get_db)):
             if fin >= ahora_local.replace(tzinfo=None):
                 reservas_activas.append(r)
         else:
-            if fin.astimezone(local_tz) >= ahora_local:
+            if fin.astimezone(ZoneInfo("America/Argentina/Buenos_Aires")) >= ahora_local:
                 reservas_activas.append(r)
     return {"reservasActivas": len(reservas_activas)}

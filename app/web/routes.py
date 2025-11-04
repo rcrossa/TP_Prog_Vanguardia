@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 
 # Third-party
-import pytz
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -41,8 +41,7 @@ async def api_reservas_activas(request: Request, db: Session = Depends(get_db)):
     if not current_user:
         return JSONResponse(status_code=401, content={"error": "No autorizado"})
 
-    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
-    ahora_local = datetime.now(local_tz)
+    ahora_local = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
     reservas = ReservaRepository.get_all(db)
     reservas_activas = []
     for r in reservas:
@@ -51,7 +50,7 @@ async def api_reservas_activas(request: Request, db: Session = Depends(get_db)):
             if fin >= ahora_local.replace(tzinfo=None):
                 reservas_activas.append(r)
         else:
-            if fin.astimezone(local_tz) >= ahora_local:
+            if fin.astimezone(ZoneInfo("America/Argentina/Buenos_Aires")) >= ahora_local:
                 reservas_activas.append(r)
     return {"reservasActivas": len(reservas_activas)}
 
@@ -102,7 +101,8 @@ def get_user_from_request(request: Request, db: Session):
             return None
 
         return user
-    except Exception:
+    except (ValueError, KeyError, AttributeError):
+        # Errores al procesar el token o acceder a datos del usuario
         return None
 
 
@@ -148,8 +148,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         articulos_no_disponibles = total_articulos - articulos_disponibles
 
         # Reservas activas: fecha_hora_fin >= ahora (local time)
-        local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
-        ahora_local = datetime.now(local_tz)
+        ahora_local = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
         reservas_activas = []
         for r in reservas:
             fin = r.fecha_hora_fin
@@ -158,7 +157,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
                 if fin >= ahora_local.replace(tzinfo=None):
                     reservas_activas.append(r)
             else:
-                if fin.astimezone(local_tz) >= ahora_local:
+                if fin.astimezone(ZoneInfo("America/Argentina/Buenos_Aires")) >= ahora_local:
                     reservas_activas.append(r)
 
         stats = {
@@ -176,8 +175,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         return templates.TemplateResponse(
             "dashboard.html", {"request": request, "stats": stats, "user": current_user}
         )
-    except Exception as e:
-        # En caso de error, devolver un dashboard básico
+    except (ValueError, KeyError, AttributeError, TypeError) as e:
+        # En caso de error al procesar datos, devolver un dashboard básico
+        print(f"Error en dashboard: {e}")
         return templates.TemplateResponse(
             "dashboard.html",
             {
@@ -213,7 +213,8 @@ async def personas_page(request: Request, db: Session = Depends(get_db)):
 
     try:
         personas = PersonaService.get_personas(db, limit=50)
-    except Exception as e:
+    except (ValueError, RuntimeError):
+        # Error al obtener personas de la base de datos
         personas = []
 
     return templates.TemplateResponse(
@@ -305,7 +306,7 @@ async def configuracion_page(request: Request, db: Session = Depends(get_db)):
     try:
         with open(readme_path, "r", encoding="utf-8") as f:
             readme_content = f.read()
-    except Exception as e:
+    except (FileNotFoundError, IOError) as e:
         print(f"Error leyendo README: {e}")
 
     # Obtener estadísticas del sistema
@@ -351,7 +352,7 @@ async def documentacion_page(request: Request, db: Session = Depends(get_db)):
     try:
         with open(readme_path, "r", encoding="utf-8") as f:
             readme_content = f.read()
-    except Exception as e:
+    except (FileNotFoundError, IOError) as e:
         print(f"Error leyendo README: {e}")
         readme_content = "# Error\nNo se pudo cargar la documentación."
 

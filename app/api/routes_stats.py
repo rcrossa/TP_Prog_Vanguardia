@@ -1,7 +1,11 @@
+"""API routes para estadísticas y analíticas del sistema de reservas.
+"""
 from datetime import datetime, timedelta
-import pytz
+from zoneinfo import ZoneInfo
+from collections import Counter
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.repositories.reserva_repository import ReservaRepository
@@ -11,6 +15,11 @@ from app.repositories.persona_repository import PersonaRepository
 from app.auth.jwt_handler import extract_email_from_token
 from app.models.reserva import Reserva
 
+
+# Constante para mensajes de error
+NO_AUTORIZADO_MSG = "No autorizado"
+# Constante para zona horaria
+TZ_ARGENTINA = "America/Argentina/Buenos_Aires"
 router = APIRouter()
 
 def get_authenticated_user(request: Request, db: Session):
@@ -44,10 +53,9 @@ async def api_reservas_activas(request: Request, db: Session = Depends(get_db)):
     """DEPRECATED: Usar /api/v1/stats/reservas_activas en su lugar."""
     user = get_authenticated_user(request, db)
     if not user:
-        return JSONResponse(status_code=401, content={"error": "No autorizado"})
+        return JSONResponse(status_code=401, content={"error": NO_AUTORIZADO_MSG})
 
-    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
-    ahora_local = datetime.now(local_tz)
+    ahora_local = datetime.now(ZoneInfo(TZ_ARGENTINA))
     reservas = ReservaRepository.get_all(db)
     reservas_activas = []
     for r in reservas:
@@ -56,7 +64,7 @@ async def api_reservas_activas(request: Request, db: Session = Depends(get_db)):
             if fin >= ahora_local.replace(tzinfo=None):
                 reservas_activas.append(r)
         else:
-            if fin.astimezone(local_tz) >= ahora_local:
+            if fin.astimezone(ZoneInfo(TZ_ARGENTINA)) >= ahora_local:
                 reservas_activas.append(r)
     return {"reservasActivas": len(reservas_activas)}
 
@@ -66,10 +74,9 @@ async def get_reservas_activas(request: Request, db: Session = Depends(get_db)):
     """Obtiene el número de reservas activas (futuras o en curso)."""
     user = get_authenticated_user(request, db)
     if not user:
-        return JSONResponse(status_code=401, content={"error": "No autorizado"})
+        return JSONResponse(status_code=401, content={"error": NO_AUTORIZADO_MSG})
 
-    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
-    ahora_local = datetime.now(local_tz)
+    ahora_local = datetime.now(ZoneInfo(TZ_ARGENTINA))
     reservas = ReservaRepository.get_all(db)
 
     reservas_activas = []
@@ -79,7 +86,7 @@ async def get_reservas_activas(request: Request, db: Session = Depends(get_db)):
             if fin >= ahora_local.replace(tzinfo=None):
                 reservas_activas.append(r)
         else:
-            if fin.astimezone(local_tz) >= ahora_local:
+            if fin.astimezone(ZoneInfo(TZ_ARGENTINA)) >= ahora_local:
                 reservas_activas.append(r)
 
     return {"reservasActivas": len(reservas_activas)}
@@ -90,10 +97,9 @@ async def get_actividad_detallada(request: Request, db: Session = Depends(get_db
     """Obtiene reservas activas y pasadas por día (últimos 7 días)."""
     user = get_authenticated_user(request, db)
     if not user:
-        return JSONResponse(status_code=401, content={"error": "No autorizado"})
+        return JSONResponse(status_code=401, content={"error": NO_AUTORIZADO_MSG})
 
-    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
-    ahora_local = datetime.now(local_tz)
+    ahora_local = datetime.now(ZoneInfo(TZ_ARGENTINA))
 
     # Últimos 7 días
     dias_labels = []
@@ -114,7 +120,9 @@ async def get_actividad_detallada(request: Request, db: Session = Depends(get_db
             Reserva.fecha_hora_inicio <= dia_fin.replace(tzinfo=None)
         ).all()
 
-        activas = sum(1 for r in reservas_dia if r.fecha_hora_fin.replace(tzinfo=None) >= ahora_local.replace(tzinfo=None))
+        activas = sum(1 for r in reservas_dia
+                      if r.fecha_hora_fin.replace(
+                          tzinfo=None) >= ahora_local.replace(tzinfo=None))
         pasadas = len(reservas_dia) - activas
 
         activas_data.append(activas)
@@ -132,10 +140,9 @@ async def get_dashboard_metrics(request: Request, days: int = 30, db: Session = 
     """Obtiene métricas consolidadas para el dashboard."""
     user = get_authenticated_user(request, db)
     if not user:
-        return JSONResponse(status_code=401, content={"error": "No autorizado"})
+        return JSONResponse(status_code=401, content={"error": NO_AUTORIZADO_MSG})
 
-    local_tz = pytz.timezone("America/Argentina/Buenos_Aires")
-    ahora_local = datetime.now(local_tz)
+    ahora_local = datetime.now(ZoneInfo(TZ_ARGENTINA))
     fecha_inicio = ahora_local - timedelta(days=days)
 
     # Reservas en el período
@@ -175,14 +182,14 @@ async def get_dashboard_metrics(request: Request, days: int = 30, db: Session = 
 
         count = sum(
             1 for r in reservas
-            if dia_inicio.replace(tzinfo=None) <= r.fecha_hora_inicio <= dia_fin.replace(tzinfo=None)
+            if dia_inicio.replace(tzinfo=None) <= r.fecha_hora_inicio <= dia_fin.replace(
+                tzinfo=None)
         )
 
         tendencia_labels.append(dia.strftime("%d/%m"))
         tendencia_values.append(count)
 
     # 3. Top usuarios (más reservas)
-    from collections import Counter
     persona_counts = Counter(r.id_persona for r in reservas if r.id_persona)
     top_usuarios = []
 
@@ -212,7 +219,8 @@ async def get_dashboard_metrics(request: Request, days: int = 30, db: Session = 
             for r in reservas
         )
         horas_disponibles = len(salas) * 24 * days
-        ocupacion_promedio = (total_horas_reservadas / horas_disponibles * 100) if horas_disponibles > 0 else 0
+        ocupacion_promedio = (
+            total_horas_reservadas / horas_disponibles * 100) if horas_disponibles > 0 else 0
     else:
         ocupacion_promedio = 0
 

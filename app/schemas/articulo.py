@@ -8,6 +8,11 @@ para las operaciones CRUD del modelo Articulo.
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
+# Constantes para categorías
+CATEGORIA_INFORMATICA = "Informática"
+CATEGORIA_ELECTRONICA = "Electrónica"
+CATEGORIA_MOBILIARIO = "Mobiliario"
+
 
 class ArticuloBase(BaseModel):
     """Esquema base para artículos con campos comunes."""
@@ -37,7 +42,7 @@ class ArticuloBase(BaseModel):
         None,
         max_length=50,
         description="Categoría del artículo",
-        examples=["Informática", "Electrónica", "Mobiliario"],
+        examples=[CATEGORIA_INFORMATICA, CATEGORIA_ELECTRONICA, CATEGORIA_MOBILIARIO],
     )
     disponible: bool = Field(
         True,
@@ -60,7 +65,7 @@ class ArticuloCreate(ArticuloBase):
                 "nombre": "MacBook Pro 16 pulgadas",
                 "descripcion": "Laptop de alta gama para desarrollo",
                 "cantidad": 3,
-                "categoria": "Informática",
+                "categoria": CATEGORIA_INFORMATICA,
                 "disponible": True,
             }
         }
@@ -98,7 +103,7 @@ class ArticuloUpdate(BaseModel):
         None,
         max_length=50,
         description="Nueva categoría",
-        examples=["Informática", "Electrónica", "Mobiliario"],
+        examples=[CATEGORIA_INFORMATICA, CATEGORIA_ELECTRONICA, CATEGORIA_MOBILIARIO],
     )
     disponible: Optional[bool] = Field(
         None, description="Nuevo estado de disponibilidad", examples=[True, False]
@@ -110,7 +115,7 @@ class ArticuloUpdate(BaseModel):
                 "nombre": "iPad Pro 12.9 pulgadas",
                 "descripcion": "Tablet profesional para diseño gráfico",
                 "cantidad": 2,
-                "categoria": "Informática",
+                "categoria": CATEGORIA_INFORMATICA,
                 "disponible": False
             }
         }
