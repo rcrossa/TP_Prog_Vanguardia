@@ -16,3 +16,6 @@ httpx==0.25.2
 jinja2==3.1.2
 aiofiles==23.2.1
 pysonar
+pandas==2.1.3
+openpyxl==3.1.2
+xlsxwriter==3.1.9

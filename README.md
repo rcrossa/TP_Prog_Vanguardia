@@ -89,22 +89,22 @@ cd docker
 ```mermaid
 graph TB
     subgraph Frontend["🌐 FRONTEND WEB"]
-        UI[Templates HTML + JavaScript<br/>Salas, Inventario, Reservas, Personas]
+        UI[Templates HTML + JavaScript<br/>Dashboard, Salas, Inventario, Reservas, Personas, Reportes]
     end
 
     subgraph Python["🐍 PYTHON SERVICE<br/>FastAPI - Port 8000"]
         P1[👤 ABM Usuarios]
         P2[📅 Sistema Reservas]
         P3[🔐 Autenticación JWT]
-        P4[🤖 Predicción ML]
-        P5[📈 Analytics]
-        P6[📊 Reportes]
+        P4[🤖 Predicción ML ✅<br/>scikit-learn]
+        P5[📈 Analytics ✅<br/>pandas/numpy]
+        P6[📊 Reportes<br/>PDF/Excel]
         P7[🔗 Java Client]
     end
 
     subgraph Java["☕ JAVA SERVICE<br/>Spring Boot - Port 8080"]
-        J1[🏢 ABM Salas<br/>8 endpoints]
-        J2[📦 ABM Artículos/Inventario<br/>8 endpoints]
+        J1[🏢 ABM Salas<br/>8 endpoints ✅]
+        J2[📦 ABM Artículos/Inventario<br/>8 endpoints ✅]
         J3[🔗 Python Client]
     end
 
@@ -123,6 +123,8 @@ graph TB
     Java --> DB
     Python -.->|Valida Salas/Artículos| Java
     Java -.->|Valida JWT| Python
+    P4 -.->|Analiza datos históricos| DB
+    P5 -.->|Genera métricas| DB
 
     style Frontend fill:#e1f5ff
     style Python fill:#d4edda
@@ -189,16 +191,16 @@ Este proyecto cuenta con documentación completa organizada por módulos:
 | Documento | Descripción | Enlace |
 |-----------|-------------|--------|
 | 🚀 **Inicio Rápido** | Instalación y configuración multi-plataforma | [🚀 Inicio Rápido](#-inicio-rápido) (en este README) |
-| � **Configuración de Entorno** | Variables de entorno y settings explicados | [`docs/configuracion_entorno.md`](./docs/configuracion_entorno.md) |
-| �🐳 **Docker** | Guía completa de uso con contenedores | [`docker/README.md`](./docker/README.md) |
+| ⚙️ **Configuración de Entorno** | Variables de entorno y settings explicados | [`docs/configuracion_entorno.md`](./docs/configuracion_entorno.md) |
+| 🐳 **Docker** | Guía completa de uso con contenedores | [`docker/README.md`](./docker/README.md) |
 | ☕ **Java Service** | API y documentación del microservicio Java | [`java-service/README.md`](./java-service/README.md) |
 | 🏗️ **Arquitectura** | Diseño y patrones del sistema | [`docs/architecture.md`](./docs/architecture.md) |
-| 🔐 **Seguridad** | Mejores prácticas y configuración | [`docs/security.md`](./docs/security.md) |
-| 📝 **Cambios Recientes** | Detalle de últimas implementaciones | [`docs/CAMBIOS_RECIENTES.md`](./docs/CAMBIOS_RECIENTES.md) |
-| ✅ **Checklist General** | Verificación completa del proyecto | [`docs/CHECKLIST_GENERAL.md`](./docs/CHECKLIST_GENERAL.md) |
+| 🤖 **Predicciones ML** | Módulo de predicciones y análisis | [`docs/RESUMEN_PREDICCIONES.md`](./docs/RESUMEN_PREDICCIONES.md) |
+| � **Referencia API** | Documentación detallada de endpoints | [`docs/api_reference.md`](./docs/api_reference.md) |
+| ❓ **FAQ** | Preguntas frecuentes | [`docs/faq.md`](./docs/faq.md) |
+| 🔧 **Troubleshooting** | Solución de problemas comunes | [`docs/troubleshooting.md`](./docs/troubleshooting.md) |
 | 💾 **Base de Datos** | Scripts SQL y configuración | [`docker/init-scripts/README.md`](./docker/init-scripts/README.md) |
 | 📮 **Postman** | Colecciones para testing de API | [`postman/README.md`](./postman/README.md) |
-| 🧪 **Testing** | Guías de pruebas y calidad | [`tests/README.md`](./tests/README.md) |
 | 📜 **Scripts** | Herramientas y utilidades del proyecto | [`scripts/README.md`](./scripts/README.md) |
 
 ### 🎯 Guías por Perfil
@@ -212,10 +214,10 @@ Este proyecto cuenta con documentación completa organizada por módulos:
 
 #### Para Evaluadores/Profesores
 1. Ver **Estado Actual del Proyecto** (sección anterior de este README)
-2. Ver cambios recientes en [`docs/CAMBIOS_RECIENTES.md`](./docs/CAMBIOS_RECIENTES.md)
-3. Ejecutar con [`docker/README.md`](./docker/README.md) - Sección "Guía para Evaluadores"
-4. Probar APIs con colecciones en [`postman/README.md`](./postman/README.md)
-5. Revisar arquitectura en [`docs/architecture.md`](./docs/architecture.md)
+2. Ejecutar con [`docker/README.md`](./docker/README.md) - Sección "Guía para Evaluadores"
+3. Probar APIs con colecciones en [`postman/README.md`](./postman/README.md)
+4. Revisar arquitectura en [`docs/architecture.md`](./docs/architecture.md)
+5. Consultar FAQ en [`docs/faq.md`](./docs/faq.md)
 
 #### Para Usuarios Finales
 1. Acceso al sistema: `http://localhost:8000`
@@ -506,8 +508,12 @@ El directorio `postman/` contiene colecciones completas para testing:
 ## 📚 Documentación
 
 - **`docs/architecture.md`** - Arquitectura completa de microservicios
-- **`docs/security.md`** - Configuración de seguridad
+- **`docs/configuracion_entorno.md`** - Configuración de variables de entorno
 - **`docs/formato_codigo.md`** - Estándares de código
+- **`docs/RESUMEN_PREDICCIONES.md`** - Sistema de predicciones ML
+- **`docs/api_reference.md`** - Referencia completa de API
+- **`docs/faq.md`** - Preguntas frecuentes
+- **`docs/troubleshooting.md`** - Solución de problemas
 - **API Docs Python** - http://localhost:8000/docs (Swagger UI)
 - **API Docs Java** - http://localhost:8080/swagger-ui.html (cuando esté implementado)
 
@@ -711,14 +717,19 @@ TP_Prog_Vanguardia/
 │       └── test/                   # 🧪 Tests Java
 │
 ├── docs/                           # 📚 Documentación técnica
-│   ├── README.md                   # � Índice de documentación
-│   ├── CAMBIOS_RECIENTES.md        # 📝 Detalle de últimas implementaciones
-│   ├── CHECKLIST_GENERAL.md        # ✅ Verificación completa del proyecto
-│   ├── RESUMEN_EJECUTIVO.md        # 📋 Resumen ejecutivo de tareas
-│   ├── COMMIT_MESSAGE.md           # 💬 Mensajes de commit sugeridos
+│   ├── README.md                   # 📑 Índice de documentación
 │   ├── architecture.md             # 🏛️ Arquitectura del sistema
-│   ├── security.md                 # 🔐 Guía de seguridad
+│   ├── configuracion_entorno.md    # ⚙️ Configuración de variables
 │   ├── formato_codigo.md           # 📝 Estándares de código
+│   ├── api_reference.md            # 📋 Referencia completa de API
+│   ├── faq.md                      # ❓ Preguntas frecuentes
+│   ├── troubleshooting.md          # � Solución de problemas
+│   ├── docker_guide.md             # 🐳 Guía detallada de Docker
+│   ├── prediction_module.md        # 🤖 Módulo de predicciones
+│   ├── RESUMEN_PREDICCIONES.md     # � Resumen de predicciones ML
+│   ├── ARQUITECTURA_PREDICCIONES.md # 🏗️ Arquitectura de predicciones
+│   ├── IMPLEMENTACION_PREDICCIONES.md # 💻 Implementación ML
+│   ├── EXPORTACION_REPORTES.md     # � Sistema de reportes
 │   └── internal/                   # 🔒 Documentos internos (no en git)
 │
 ├── scripts/                        # 🛠️ Scripts útiles
@@ -750,14 +761,14 @@ TP_Prog_Vanguardia/
 - 🏗️ [`docs/architecture.md`](./docs/architecture.md) - Entender el diseño
 - 📝 [`docs/formato_codigo.md`](./docs/formato_codigo.md) - Estándares
 - ☕ [`java-service/README.md`](./java-service/README.md) - API Java
-- � [`scripts/README.md`](./scripts/README.md) - Scripts y utilidades
+- 📜 [`scripts/README.md`](./scripts/README.md) - Scripts y utilidades
 
 **Para evaluar:**
 - 📊 **Estado Actual del Proyecto** (ver sección en este README)
-- 📝 [`docs/CAMBIOS_RECIENTES.md`](./docs/CAMBIOS_RECIENTES.md) - Últimas implementaciones
-- ✅ [`docs/CHECKLIST_GENERAL.md`](./docs/CHECKLIST_GENERAL.md) - Verificación completa
-- 🔐 [`docs/security.md`](./docs/security.md) - Seguridad
+- � [`docs/api_reference.md`](./docs/api_reference.md) - Referencia de APIs
+- 🏗️ [`docs/architecture.md`](./docs/architecture.md) - Arquitectura del sistema
 - 📮 [`postman/README.md`](./postman/README.md) - Testing
+- ❓ [`docs/faq.md`](./docs/faq.md) - Preguntas frecuentes
 
 **Para entender la DB:**
 - 💾 [`docker/init-scripts/README.md`](./docker/init-scripts/README.md) - Scripts SQL

@@ -31,6 +31,11 @@ let currentReservaId = null;
 let articulosAsignadosActuales = []; // Para saber qué artículos ya están asignados
 let articuloToDelete = null; // Para almacenar el artículo a eliminar
 
+// Variables para paginación
+let currentPage = 1;
+let itemsPerPage = 25;
+let filteredReservas = []; // Reservas después de aplicar filtros
+
 // Función para esperar a que auth esté disponible
 function waitForAuth(callback, maxAttempts = 100) {
     let attempts = 0;
@@ -86,6 +91,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('filterTipo').addEventListener('change', filterReservas);
         document.getElementById('filterEstado').addEventListener('change', filterReservas);
         document.getElementById('tipoReserva').addEventListener('change', toggleTipoReserva);
+        document.getElementById('itemsPerPage').addEventListener('change', function() {
+            itemsPerPage = parseInt(this.value);
+            currentPage = 1; // Reset a la primera página
+            renderReservas(filteredReservas);
+        });
     });
 });
 
@@ -94,10 +104,12 @@ async function loadReservas() {
     try {
         const response = await axios.get('/api/v1/reservas/');
         reservas = response.data;
+        filteredReservas = reservas; // Inicializar reservas filtradas
         // El backend ya maneja los permisos:
         // - Admin ve todas las reservas
         // - Usuario normal solo ve sus propias reservas
-        renderReservas(reservas);
+        currentPage = 1; // Reset a la primera página
+        renderReservas(filteredReservas);
     } catch (error) {
         console.error('Error cargando reservas:', error);
         showError('Error al cargar las reservas');
@@ -248,11 +260,27 @@ function toggleTipoReserva() {
     }
 }
 
-// Renderizar reservas
+// Renderizar reservas con paginación
 function renderReservas(data) {
     const tbody = document.getElementById('reservasTableBody');
+    
+    // Calcular paginación
+    const totalItems = data.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
 
-    if (data.length === 0) {
+    // Actualizar info de paginación
+    const paginationInfo = document.getElementById('paginationInfo');
+    if (totalItems === 0) {
+        paginationInfo.textContent = 'No hay reservas para mostrar';
+    } else {
+        const showing = paginatedData.length;
+        paginationInfo.textContent = `Mostrando ${startIndex + 1}-${startIndex + showing} de ${totalItems} reservas`;
+    }
+
+    if (paginatedData.length === 0 && totalItems === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="text-center py-4">
@@ -261,10 +289,11 @@ function renderReservas(data) {
                 </td>
             </tr>
         `;
+        renderPaginationControls(totalPages);
         return;
     }
 
-    tbody.innerHTML = data.map(reserva => {
+    tbody.innerHTML = paginatedData.map(reserva => {
         const esSala = reserva.id_sala !== null && reserva.id_sala !== undefined;
         const tipo = esSala ? 'Sala' : 'Artículo';
         const recurso = getNombreRecurso(reserva);
@@ -318,6 +347,96 @@ function renderReservas(data) {
             </tr>
         `;
     }).join('');
+    
+    // Renderizar controles de paginación
+    renderPaginationControls(totalPages);
+}
+
+// Renderizar controles de paginación
+function renderPaginationControls(totalPages) {
+    const paginationControls = document.getElementById('paginationControls');
+    
+    if (totalPages <= 1) {
+        paginationControls.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Botón anterior
+    html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    `;
+    
+    // Números de página
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Ajustar si estamos cerca del final
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // Primera página si no está visible
+    if (startPage > 1) {
+        html += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="changePage(1); return false;">1</a>
+            </li>
+        `;
+        if (startPage > 2) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    
+    // Páginas visibles
+    for (let i = startPage; i <= endPage; i++) {
+        html += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+            </li>
+        `;
+    }
+    
+    // Última página si no está visible
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        html += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="changePage(${totalPages}); return false;">${totalPages}</a>
+            </li>
+        `;
+    }
+    
+    // Botón siguiente
+    html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;" aria-label="Siguiente">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    `;
+    
+    paginationControls.innerHTML = html;
+}
+
+// Cambiar página
+function changePage(page) {
+    const totalPages = Math.ceil(filteredReservas.length / itemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    
+    currentPage = page;
+    renderReservas(filteredReservas);
+    
+    // Scroll al inicio de la tabla
+    document.querySelector('.table-responsive').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Obtener nombre del recurso
@@ -402,7 +521,9 @@ function filterReservas() {
         return matchSearch && matchTipo && matchEstado;
     });
 
-    renderReservas(filtered);
+    filteredReservas = filtered;
+    currentPage = 1; // Reset a la primera página al filtrar
+    renderReservas(filteredReservas);
 }
 
 // Abrir modal

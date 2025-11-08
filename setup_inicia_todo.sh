@@ -4,6 +4,29 @@ set -e
 
 echo "\n🚀 Configurando Plataforma de Gestión de Reservas (Mac/Linux)"
 
+# Configurar Java 21 para Maven (necesario para compilar el servicio Java)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS: Buscar Java 21 automáticamente
+    JAVA_21_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || echo "")
+    if [ -n "$JAVA_21_HOME" ]; then
+        export JAVA_HOME="$JAVA_21_HOME"
+        echo "✅ Java 21 configurado: $JAVA_HOME"
+    else
+        echo "⚠️  Java 21 no encontrado. El servicio Java puede fallar al compilar."
+        echo "   Instala Java 21 desde: https://aws.amazon.com/corretto/"
+    fi
+else
+    # Linux: Intentar encontrar Java 21
+    if command -v java &>/dev/null; then
+        JAVA_VERSION=$(java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}' | cut -d'.' -f1)
+        if [ "$JAVA_VERSION" == "21" ]; then
+            echo "✅ Java 21 detectado"
+        else
+            echo "⚠️  Java $JAVA_VERSION detectado. Se recomienda Java 21 para este proyecto."
+        fi
+    fi
+fi
+
 # Validar dependencias mínimas
 for cmd in docker docker-compose python3 pip3; do
     if ! command -v $cmd &>/dev/null; then
@@ -130,11 +153,18 @@ PYTHON_EOF
     cat > "$JAVA_SCRIPT" << 'JAVA_EOF'
 #!/bin/bash
 cd "WORKSPACE_PLACEHOLDER/java-service"
+
 echo "☕ Iniciando servicio Java en http://localhost:8080"
 echo "   Documentación: http://localhost:8080/swagger-ui.html"
 echo "   Para detener: Ctrl+C"
 echo ""
-mvn spring-boot:run
+
+# Usar mvn21 si existe (wrapper para Java 21), sino mvn normal
+if [ -x "./mvn21" ]; then
+    ./mvn21 spring-boot:run
+else
+    mvn spring-boot:run
+fi
 JAVA_EOF
     
     # Reemplazar placeholder con la ruta real
