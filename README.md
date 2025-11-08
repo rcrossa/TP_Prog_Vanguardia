@@ -1,6 +1,6 @@
 # 🏢 Sistema de Reservas - Arquitectura Microservicios
 
-> 🚀 **¿Primera vez?** Ve a la sección **[🚀 Inicio Rápido](#-inicio-rápido)** más abajo para poner el proyecto en marcha.
+> Sistema moderno de gestión de reservas con arquitectura de microservicios, combinando **Python (FastAPI)** y **Java (Spring Boot)**.
 
 ## 📚 Información Académica
 
@@ -8,821 +8,249 @@
 - **Carrera:** Licenciatura en Tecnologías Informáticas
 - **Ciclo Lectivo:** 2025
 
-## 📖 Descripción
-
-Sistema moderno de gestión de reservas implementado con **arquitectura de microservicios**, combinando **Python (FastAPI)** para operaciones CRUD y autenticación, con **Java (Spring Boot)** para gestión de recursos físicos e inventario.
-
-### 📑 Navegación Rápida
-
-| Para... | Ve a... |
-|---------|---------|
-| 🚀 **Ejecutar el proyecto** | [🚀 Inicio Rápido](#-inicio-rápido) (en este README) |
-| 📖 **Entender la arquitectura** | [docs/architecture.md](./docs/architecture.md) |
-|  **Configurar Docker** | [docker/README.md](./docker/README.md) |
-| ☕ **Java Service (API)** | [java-service/README.md](./java-service/README.md) |
-
-### 📊 Estado Actual del Proyecto
-
-**Última actualización:** Noviembre 2025  
-**Progreso General:** 🟢 **~80% Completado**
-
-#### ✅ Componentes Funcionales
-
-| Componente | Estado | Descripción |
-|------------|--------|-------------|
-| 🐍 **Python Service** | ✅ Completo | FastAPI con Auth, Reservas, Predicciones ML, Analytics |
-| ☕ **Java Service** | ✅ Completo | Spring Boot con ABM Salas (8 endpoints) + Artículos/Inventario (8 endpoints) |
-| 🔗 **Integración HTTP** | ✅ Activa | Comunicación bidireccional Python ↔ Java (salas + artículos) |
-| 🗄️ **PostgreSQL** | ✅ Funcional | Base de datos compartida con 5 tablas |
-| 🎨 **Frontend Web** | ✅ Completo | Templates HTML + JS (Login, Salas, Inventario, Reservas, Personas, Reportes) |
-| 🤖 **Predicciones ML** | ✅ **NUEVO** | Sistema completo de predicciones con scikit-learn |
-| 📈 **Analytics** | ✅ **NUEVO** | Dashboard con métricas en tiempo real, heatmaps, KPIs |
-| 🐳 **Docker** | ✅ Funcional | Modo db-only y full-stack disponibles |
-| 📚 **Documentación** | ✅ Completa | Swagger + Markdown detallado |
-
 ---
 
-// ...existing code...
-DATABASE_URL=postgresql://[user]:[password]@localhost:5432/reservas
-```
-
-> 💡 **Tip:** Revisa `docker/.env.example` para las credenciales de desarrollo locales
-
-#### ❌ "Module not found" (Python)
-
-**Problema:** Dependencias no instaladas.
-
-**Solución:**
-```bash
-pip install -r requirements.txt
-
-# Si falla, actualizar pip:
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
----
-
-### 🛑 Detener el Sistema
-
-**Detener servicios Python/Java:**
-- Presiona `Ctrl + C` en cada terminal
-
-**Detener Docker:**
-
-**🪟 Windows:**
-```powershell
-cd docker
-docker-compose -f docker-compose.db-only.yml down
-```
-
-**🍎 macOS / 🐧 Linux:**
-```bash
-cd docker
-./stop-all.sh
-```
-
----
-
-## 🏗️ Arquitectura del Sistema
-
-```mermaid
-graph TB
-    subgraph Frontend["🌐 FRONTEND WEB"]
-        UI[Templates HTML + JavaScript<br/>Dashboard, Salas, Inventario, Reservas, Personas, Reportes]
-    end
-
-    subgraph Python["🐍 PYTHON SERVICE<br/>FastAPI - Port 8000"]
-        P1[👤 ABM Usuarios]
-        P2[📅 Sistema Reservas]
-        P3[🔐 Autenticación JWT]
-        P4[🤖 Predicción ML ✅<br/>scikit-learn]
-        P5[📈 Analytics ✅<br/>pandas/numpy]
-        P6[📊 Reportes<br/>PDF/Excel]
-        P7[🔗 Java Client]
-    end
-
-    subgraph Java["☕ JAVA SERVICE<br/>Spring Boot - Port 8080"]
-        J1[🏢 ABM Salas<br/>8 endpoints ✅]
-        J2[📦 ABM Artículos/Inventario<br/>8 endpoints ✅]
-        J3[🔗 Python Client]
-    end
-
-    subgraph Database["🗄️ PostgreSQL<br/>Port 5432"]
-        DB[(Base de Datos Compartida)]
-        T1[Personas]
-        T2[Salas]
-        T3[Artículos]
-        T4[Reservas]
-        T5[Reservas_Artículos]
-    end
-
-    UI --> Python
-    UI --> Java
-    Python --> DB
-    Java --> DB
-    Python -.->|Valida Salas/Artículos| Java
-    Java -.->|Valida JWT| Python
-    P4 -.->|Analiza datos históricos| DB
-    P5 -.->|Genera métricas| DB
-
-    style Frontend fill:#e1f5ff
-    style Python fill:#d4edda
-    style Java fill:#fff3cd
-    style Database fill:#f8d7da
-```
-
-## 📋 Distribución de Responsabilidades
-
-### 🐍 Python Service (Port 8000)
-| Módulo | Funcionalidad | Estado |
-|--------|---------------|--------|
-| 👤 **ABM Usuarios** | Gestión completa de personas + Auth JWT | ✅ Implementado |
-| 📅 **Sistema Reservas** | Creación y gestión de reservas | ✅ Implementado |
-| 🔐 **Autenticación** | Login, JWT, roles (admin/usuario) | ✅ Implementado |
-| 🎨 **Frontend Web** | Templates HTML + JavaScript | ✅ Implementado |
-| 🤖 **Predicción ML** | Análisis y predicción de demanda con patrones históricos | ✅ **NUEVO: Implementado** |
-| 📈 **Analytics** | Métricas, estadísticas y patrones de uso | ✅ **NUEVO: Implementado** |
-| 📊 **Reportes Avanzados** | Generación de informes complejos (PDF/Excel) | ⏳ Pendiente |
-
-### ☕ Java Service (Port 8080)
-| Módulo | Funcionalidad | Estado |
-|--------|---------------|--------|
-| 🏢 **ABM Salas** | CRUD completo de espacios reservables | ✅ Implementado |
-| 📦 **ABM Artículos** | CRUD completo de recursos/inventario | ✅ Implementado |
-| 📚 **API REST** | Endpoints REST con validación | ✅ Implementado |
-| 📖 **Swagger/OpenAPI** | Documentación interactiva de API | ✅ Implementado |
-| 🐳 **Dockerización** | Dockerfile y compilación JAR | ✅ Implementado |
-| 🧪 **Testing** | Tests unitarios e integración | ⏳ Pendiente |
-
-### ️ Tecnologías Utilizadas
-
-#### Python Stack
-- **Backend:** FastAPI
-- **ORM:** SQLAlchemy 2.0 con Mapped types
-- **Validación:** Pydantic v2
-- **Auth:** JWT (JSON Web Tokens)
-- **Templates:** Jinja2
-- **Data Science:** pandas, numpy, scikit-learn
-- **Visualización:** matplotlib, plotly
-- **Reportes:** reportlab (PDF), openpyxl (Excel)
-
-#### Java Stack (✅ Implementado)
-- **Backend:** Spring Boot 3.3.0 con Java 17
-- **ORM:** Spring Data JPA + Hibernate
-- **Base de Datos:** PostgreSQL Driver
-- **Build:** Maven 3.6+
-- **Documentación:** SpringDoc OpenAPI (Swagger)
-- **Lombok:** Reducción de boilerplate
-- **Validación:** Spring Boot Validation
-- **Testing:** JUnit 5 (estructura lista, tests pendientes)
-
-#### Infraestructura
-- **Base de Datos:** PostgreSQL 15
-- **Containerización:** Docker & Docker Compose
-- **Testing:** Postman Collections
-
-## 📚 Documentación del Proyecto
-
-Este proyecto cuenta con documentación completa organizada por módulos:
-
-### 📖 Guías Principales
-
-| Documento | Descripción | Enlace |
-|-----------|-------------|--------|
-| 🚀 **Inicio Rápido** | Instalación y configuración multi-plataforma | [🚀 Inicio Rápido](#-inicio-rápido) (en este README) |
-| ⚙️ **Configuración de Entorno** | Variables de entorno y settings explicados | [`docs/configuracion_entorno.md`](./docs/configuracion_entorno.md) |
-| 🐳 **Docker** | Guía completa de uso con contenedores | [`docker/README.md`](./docker/README.md) |
-| ☕ **Java Service** | API y documentación del microservicio Java | [`java-service/README.md`](./java-service/README.md) |
-| 🏗️ **Arquitectura** | Diseño y patrones del sistema | [`docs/architecture.md`](./docs/architecture.md) |
-| 🤖 **Predicciones ML** | Módulo de predicciones y análisis | [`docs/RESUMEN_PREDICCIONES.md`](./docs/RESUMEN_PREDICCIONES.md) |
-| � **Referencia API** | Documentación detallada de endpoints | [`docs/api_reference.md`](./docs/api_reference.md) |
-| ❓ **FAQ** | Preguntas frecuentes | [`docs/faq.md`](./docs/faq.md) |
-| 🔧 **Troubleshooting** | Solución de problemas comunes | [`docs/troubleshooting.md`](./docs/troubleshooting.md) |
-| 💾 **Base de Datos** | Scripts SQL y configuración | [`docker/init-scripts/README.md`](./docker/init-scripts/README.md) |
-| 📮 **Postman** | Colecciones para testing de API | [`postman/README.md`](./postman/README.md) |
-| 📜 **Scripts** | Herramientas y utilidades del proyecto | [`scripts/README.md`](./scripts/README.md) |
-
-### 🎯 Guías por Perfil
-
-#### Para Desarrolladores
-1. Clonar repo y seguir la guía [🚀 Inicio Rápido](#-inicio-rápido)
-2. Configurar entorno con [`docs/configuracion_entorno.md`](./docs/configuracion_entorno.md)
-3. Configurar Docker con [`docker/README.md`](./docker/README.md)
-4. Entender arquitectura en [`docs/architecture.md`](./docs/architecture.md)
-5. Seguir formato de código en [`docs/formato_codigo.md`](./docs/formato_codigo.md)
-
-#### Para Evaluadores/Profesores
-1. Ver **Estado Actual del Proyecto** (sección anterior de este README)
-2. Ejecutar con [`docker/README.md`](./docker/README.md) - Sección "Guía para Evaluadores"
-3. Probar APIs con colecciones en [`postman/README.md`](./postman/README.md)
-4. Revisar arquitectura en [`docs/architecture.md`](./docs/architecture.md)
-5. Consultar FAQ en [`docs/faq.md`](./docs/faq.md)
-
-#### Para Usuarios Finales
-1. Acceso al sistema: `http://localhost:8000`
-2. Credenciales de prueba (ver [`docker/init-scripts/README.md`](./docker/init-scripts/README.md))
-3. Manual de uso (próximamente)
-
----
-
-## ⚡ Funcionalidades
-
-### ✅ Implementadas en Python Service
-
-#### 👥 Gestión de Personas (Usuarios)
-
-#### 🏛️ Administración de Salas
-
-#### 📅 Sistema de Reservas
-- ✅ Creación y gestión de reservas de salas
-- ✅ Integración con Java Service para validación de salas
-- ✅ Integración con Java Service para validación de artículos/inventario
-- ✅ Validación de disponibilidad en tiempo real
-- ✅ Prevención de conflictos horarios
-- ✅ Visualización de detalles mediante modal Bootstrap
-- ✅ Lógica de stock de artículos considera solo reservas futuras
-
-### ✅ Módulos de Análisis y Predicción Implementados
-
-#### 🤖 Predicción ML
-- ✅ **Sistema completo de predicciones** (ver [`docs/RESUMEN_PREDICCIONES.md`](./docs/RESUMEN_PREDICCIONES.md))
-- ✅ Análisis de patrones históricos con scikit-learn
-- ✅ Predicción de demanda futura (7-30 días)
-- ✅ Identificación de horarios pico
-- ✅ Detección de anomalías en reservas
-- ✅ Recomendaciones de capacidad
-- ✅ Modelos de regresión para pronósticos
-
-#### 📈 Analytics
-- ✅ **Dashboard de métricas en tiempo real**
-- ✅ Análisis de tendencias con pandas
-- ✅ Heatmap de reservas por día/hora
-- ✅ KPIs del sistema (tasa de ocupación, utilización)
-- ✅ Análisis de comportamiento de usuarios
-- ✅ Estadísticas de salas y artículos más utilizados
-- ✅ Endpoints REST para consulta de métricas
-
-### ⏳ Pendientes en Python Service
-
-#### 📊 Reportes Avanzados
-- ⏳ Exportación a PDF (reportlab) - Estructura lista
-- ⏳ Exportación a Excel (openpyxl) - Estructura lista
-- ⏳ Reportes personalizables por período
-- ⏳ Gráficos integrados en reportes
-
-### ✅ Implementadas en Java Service
-
-#### 🏢 ABM de Salas
-- ✅ CRUD completo de salas (GET, POST, PUT, DELETE)
-- ✅ Búsqueda por nombre y capacidad
-- ✅ Filtrado por disponibilidad
-- ✅ Validación de datos con DTOs
-- ✅ Repositorio JPA con Spring Data
-- ✅ Control de disponibilidad
-
-#### 📦 ABM de Artículos
-- ✅ CRUD completo de artículos (GET, POST, PUT, DELETE)
-- ✅ Búsqueda por nombre
-- ✅ Filtrado por categoría
-- ✅ Filtrado por disponibilidad
-- ✅ Control de stock/cantidad
-- ✅ Validación de datos con DTOs
-- ✅ Gestión de inventario
-
-#### 🔧 Infraestructura Java
-- ✅ Spring Boot 3.3.0 con Java 17
-- ✅ Spring Data JPA + PostgreSQL
-- ✅ Lombok para reducción de código
-- ✅ Configuración CORS para integración
-- ✅ Swagger/OpenAPI para documentación
-- ✅ Manejo centralizado de excepciones
-- ✅ JAR compilado y listo (53.6 MB)
-- ✅ Dockerfile para containerización
-
-### ⏳ Pendientes en Java Service
-
-#### 🧪 Testing
-- ⏳ Tests unitarios con JUnit 5
-- ⏳ Tests de integración
-- ⏳ Tests de repositorio
-- ⏳ Tests de controladores
-
-#### 🔗 Integración
-- ⏳ Comunicación activa con Python service
-- ⏳ Validación de tokens JWT desde Python
-- ⏳ Sincronización de datos de reservas
-
-## 🗃️ Modelo de Datos
-
-El sistema maneja cuatro entidades principales:
-
-- **👥 Personas** - Usuarios del sistema con nombre y email único
-- **🏛️ Salas** - Espacios físicos con capacidad definida
-- **📦 Artículos** - Equipamiento reservable con estado de disponibilidad
-- **📅 Reservas** - Vinculación de personas con salas/artículos en fechas específicas
-
-### Relaciones
-- Una **reserva** pertenece a una **persona** (obligatorio)
-- Una **reserva** puede ser de una **sala** O un **artículo** (exclusivo)
-- Las **reservas** incluyen fecha/hora de inicio y fin
-
-## � Instalación y Uso
+## 🚀 Inicio Rápido
 
 ### Requisitos Previos
 - Python 3.11+
 - Docker y Docker Compose
 - Git
 
-### Instalación Rápida
+### Instalación
+
 ```bash
-# 1. Clonar repositorio
+# 1. Clonar el repositorio
 git clone <repo-url>
 cd TP_Prog_Vanguardia
 
-# 2. Ejecutar setup interactivo
+# 2. Ejecutar setup automático
 ./setup.sh
-# El script te preguntará si usar valores por defecto o configurar credenciales personalizadas
 
 # 3. Acceder a la aplicación
-# API: http://localhost:8000
-# Docs: http://localhost:8000/docs
-# PgAdmin: http://localhost:8080
+# Frontend: http://localhost:8000
+# API Docs Python: http://localhost:8000/docs
+# API Docs Java: http://localhost:8080/swagger-ui.html
 ```
 
-### 🔐 Opciones de Configuración
-
-El script `setup.sh` para mac te ofrece dos opciones:
-
-**Opción 1: Configuración por defecto (recomendada)**
-- Usa valores seguros predefinidos para desarrollo
-- No requiere edición manual
-- Perfecto para comenzar rápidamente
-
-**Opción 2: Credenciales personalizadas**
-- Te permite editar `.env` y `docker/.env`
-- Para usuarios que quieren credenciales específicas
-- El script espera a que termines de editarlos
-
-> 💡 **Al final del setup:** Se muestran las credenciales que están siendo utilizadas
-
-### Configuración Manual
-```bash
-# Base de datos con Docker
-cd docker && docker-compose up -d
-
-# Entorno Python
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-pip install -r requirements.txt
-
-# Ejecutar aplicación
-python main.py
-```
-
-## 🔄 Comunicación entre Servicios
-
-> ✅ **Estado:** **INTEGRACIÓN ACTIVA Y FUNCIONAL**
-
-### Java → Python (✅ IMPLEMENTADO)
-El servicio Java **llama a Python** para:
-- ✅ **Validar tokens de autenticación JWT** al crear salas/artículos
-- ✅ **Verificar permisos de usuarios** autenticados
-- ✅ **Obtener información de usuarios** para auditoría
-
-
-### Python → Java (✅ IMPLEMENTADO)
-El servicio Python **llama a Java** para:
-- ✅ **Validar salas disponibles** al crear reservas
-- ✅ **Validar artículos/inventario disponible** al crear reservas
-- ✅ **Consultar información de salas y artículos** en tiempo real
-- ✅ **Verificar stock de artículos** antes de reservar
-- ✅ **Verificar existencia de recursos** (salas y artículos) antes de operar
-
-
-### 🔗 Endpoints de Demostración
-
-**Prueba la integración funcionando:**
-```bash
-# Ver endpoints de integración activos
-GET http://localhost:8000/api/v1/integration/demo
-GET http://localhost:8000/api/v1/integration/salas
-GET http://localhost:8000/api/v1/integration/test-java-call
-```
-
-> 🧪 **Script de testing:** Ejecuta `./scripts/test_integration.sh` para verificar que la integración funciona correctamente.
+> 💡 **Más detalles:** Consulta la [Guía de Configuración](./docs/configuracion_entorno.md) y [Docker Guide](./docs/docker_guide.md)
 
 ---
 
-## 📡 APIs Disponibles
+## 📊 Estado del Proyecto
 
-### Python Service (Port 8000)
+**Última actualización:** Noviembre 2025  
+**Progreso:** 🟢 **~80% Completado**
 
-#### Autenticación
-- `POST /api/v1/personas/login` - Login con JWT
-- `POST /api/v1/personas/web-login` - Login web con cookies
-- `GET /api/v1/personas/me` - Usuario actual
+| Componente | Estado | Descripción |
+|------------|--------|-------------|
+| 🐍 **Python Service** | ✅ Completo | FastAPI con Auth, Reservas, Predicciones ML, Analytics |
+| ☕ **Java Service** | ✅ Completo | Spring Boot con ABM Salas + Artículos/Inventario |
+| 🔗 **Integración HTTP** | ✅ Activa | Comunicación bidireccional Python ↔ Java |
+| 🗄️ **PostgreSQL** | ✅ Funcional | Base de datos compartida (5 tablas) |
+| 🎨 **Frontend Web** | ✅ Completo | Templates HTML + JavaScript |
+| 🤖 **ML/Analytics** | ✅ Completo | Predicciones con scikit-learn + Dashboards |
+| 🐳 **Docker** | ✅ Funcional | Containerización lista |
 
-#### Personas
-- `GET /api/v1/personas` - Listar usuarios
-- `POST /api/v1/personas` - Crear usuario
-- `GET /api/v1/personas/{id}` - Obtener usuario
-- `PUT /api/v1/personas/{id}` - Actualizar
-- `DELETE /api/v1/personas/{id}` - Eliminar
+---
 
-#### Salas
-- `GET /api/v1/salas` - Listar salas
-- `POST /api/v1/salas` - Crear sala
-- `GET /api/v1/salas/{id}` - Obtener sala
-- `PUT /api/v1/salas/{id}` - Actualizar
-- `DELETE /api/v1/salas/{id}` - Eliminar
+## 🏗️ Arquitectura
 
-#### Reservas
-- `GET /api/v1/reservas` - Listar reservas
-- `POST /api/v1/reservas` - Crear reserva
-- `GET /api/v1/reservas/{id}` - Obtener reserva
-- `PUT /api/v1/reservas/{id}` - Actualizar
-- `DELETE /api/v1/reservas/{id}` - Eliminar
+```mermaid
+graph TB
+    subgraph Frontend["🌐 FRONTEND WEB"]
+        UI[Dashboard, Salas, Inventario, Reservas]
+    end
 
-### Java Service (Port 8080) - ✅ Implementado
+    subgraph Python["🐍 PYTHON SERVICE - Port 8000"]
+        P1[👤 Usuarios & Auth JWT]
+        P2[📅 Reservas]
+        P3[🤖 ML & Analytics]
+    end
 
-#### Salas
-- ✅ `GET /api/salas` - Listar todas las salas
-- ✅ `GET /api/salas/{id}` - Obtener sala por ID
-- ✅ `GET /api/salas/disponibles` - Salas disponibles
-- ✅ `GET /api/salas/search?nombre=X` - Buscar por nombre
-- ✅ `GET /api/salas/capacidad/{min}` - Por capacidad mínima
-- ✅ `POST /api/salas` - Crear sala
-- ✅ `PUT /api/salas/{id}` - Actualizar sala
-- ✅ `DELETE /api/salas/{id}` - Eliminar sala
+    subgraph Java["☕ JAVA SERVICE - Port 8080"]
+        J1[🏢 ABM Salas]
+        J2[📦 ABM Artículos]
+    end
 
-#### Artículos
-- ✅ `GET /api/articulos` - Listar todos los artículos
-- ✅ `GET /api/articulos/{id}` - Obtener artículo por ID
-- ✅ `GET /api/articulos/disponibles` - Artículos disponibles
-- ✅ `GET /api/articulos/categoria/{cat}` - Por categoría
-- ✅ `GET /api/articulos/search?nombre=X` - Buscar por nombre
-- ✅ `POST /api/articulos` - Crear artículo
-- ✅ `PUT /api/articulos/{id}` - Actualizar artículo
-- ✅ `DELETE /api/articulos/{id}` - Eliminar artículo
+    subgraph Database["🗄️ PostgreSQL - Port 5432"]
+        DB[(Base de Datos)]
+    end
 
-#### Documentación
-- ✅ `GET /swagger-ui.html` - Swagger UI interactivo
-- ✅ `GET /api-docs` - OpenAPI JSON
-
-### Python Service (Port 8000) - Analytics/ML - ⏳ Propuesto
-
-#### Reportes (Pendiente)
-- ⏳ `GET /api/v1/reportes/reservas-por-periodo`
-- ⏳ `GET /api/v1/reportes/recursos-mas-usados`
-- ⏳ `GET /api/v1/reportes/utilizacion-salas`
-- ⏳ `GET /api/v1/reportes/export/pdf`
-- ⏳ `GET /api/v1/reportes/export/excel`
-
-#### Predicción ML (Pendiente)
-- ⏳ `GET /api/v1/prediction/demand/{resourceId}`
-- ⏳ `GET /api/v1/prediction/peak-hours`
-- ⏳ `GET /api/v1/prediction/optimal-allocation`
-- ⏳ `POST /api/v1/prediction/train-model`
-
-#### Analytics (Pendiente)
-- ⏳ `GET /api/v1/analytics/usage-patterns`
-- ⏳ `GET /api/v1/analytics/trends`
-- ⏳ `GET /api/v1/analytics/dashboard`
-- ⏳ `GET /api/v1/analytics/heatmap`
-
-## 🧪 Testing
-
-### Postman Collections
-El directorio `postman/` contiene colecciones completas para testing:
-- Testing de todos los endpoints
-- Casos de uso avanzados
-- Validación de errores
-
-### Verificación de Calidad
-```bash
-# Script de verificación automática
-./scripts/check_code_quality.sh
+    UI --> Python
+    UI --> Java
+    Python --> DB
+    Java --> DB
+    Python -.->|Valida Recursos| Java
+    Java -.->|Valida Auth| Python
 ```
+
+> 📖 **Más detalles:** [Documentación de Arquitectura](./docs/architecture.md)
+
+---
+
+## 🛠️ Stack Tecnológico
+
+### Python Service
+- **Backend:** FastAPI
+- **ORM:** SQLAlchemy 2.0
+- **Auth:** JWT
+- **ML:** scikit-learn, pandas, numpy
+
+### Java Service
+- **Backend:** Spring Boot 3.3.0 + Java 17
+- **ORM:** Spring Data JPA
+- **Docs:** SpringDoc OpenAPI (Swagger)
+
+### Infraestructura
+- **Base de Datos:** PostgreSQL 15
+- **Containerización:** Docker & Docker Compose
+
+---
 
 ## 📚 Documentación
 
-- **`docs/architecture.md`** - Arquitectura completa de microservicios
-- **`docs/configuracion_entorno.md`** - Configuración de variables de entorno
-- **`docs/formato_codigo.md`** - Estándares de código
-- **`docs/RESUMEN_PREDICCIONES.md`** - Sistema de predicciones ML
-- **`docs/api_reference.md`** - Referencia completa de API
-- **`docs/faq.md`** - Preguntas frecuentes
-- **`docs/troubleshooting.md`** - Solución de problemas
-- **API Docs Python** - http://localhost:8000/docs (Swagger UI)
-- **API Docs Java** - http://localhost:8080/swagger-ui.html (cuando esté implementado)
+### 📖 Guías Principales
+
+| Documento | Descripción |
+|-----------|-------------|
+| [🏗️ Arquitectura](./docs/architecture.md) | Diseño completo del sistema |
+| [⚙️ Configuración](./docs/configuracion_entorno.md) | Variables de entorno |
+| [🐳 Docker](./docker/README.md) | Guía de contenedores |
+| [☕ Java Service](./java-service/README.md) | API Java Spring Boot |
+| [📋 API Reference](./docs/api_reference.md) | Referencia de endpoints |
+| [❓ FAQ](./docs/faq.md) | Preguntas frecuentes |
+| [🔧 Troubleshooting](./docs/troubleshooting.md) | Solución de problemas |
+
+### 🎯 Por Tipo de Usuario
+
+**Desarrolladores:**
+1. [Configuración de Entorno](./docs/configuracion_entorno.md)
+2. [Arquitectura del Sistema](./docs/architecture.md)
+3. [Estándares de Código](./docs/formato_codigo.md)
+
+**Evaluadores/Profesores:**
+1. [Estado del Proyecto](#-estado-del-proyecto) (esta sección)
+2. [Guía Docker](./docker/README.md)
+3. [Testing con Postman](./postman/README.md)
+
+---
+
+## 📡 APIs Principales
+
+### Python Service (Port 8000)
+- **Auth:** `POST /api/v1/personas/login`
+- **Usuarios:** `GET|POST|PUT|DELETE /api/v1/personas`
+- **Reservas:** `GET|POST|PUT|DELETE /api/v1/reservas`
+- **Analytics:** `GET /api/stats/*`
+- **Docs:** http://localhost:8000/docs
+
+### Java Service (Port 8080)
+- **Salas:** `GET|POST|PUT|DELETE /api/salas`
+- **Artículos:** `GET|POST|PUT|DELETE /api/articulos`
+- **Docs:** http://localhost:8080/swagger-ui.html
+
+> 📋 **Referencia completa:** [API Reference](./docs/api_reference.md)
+
+---
+
+## 🧪 Testing
+
+### Colecciones Postman
+```bash
+# Importar colección desde:
+postman/Sistema_Completo_API_Collection.postman_collection.json
+```
+
+### Scripts de Verificación
+```bash
+# Verificar integración entre servicios
+./scripts/test_integration.sh
+
+# Verificar calidad de código
+./scripts/check_code_quality.sh
+```
+
+> 📮 **Más información:** [Postman README](./postman/README.md)
+
+---
+
+## 🐳 Docker
+
+### Modo Database-Only (Recomendado)
+```bash
+cd docker
+./start-db-only.sh
+
+# Ejecutar servicios manualmente:
+# Terminal 1: Python service
+python main.py
+
+# Terminal 2: Java service
+cd java-service && ./run.sh
+```
+
+### Detener Servicios
+```bash
+cd docker
+./stop-all.sh
+```
+
+> 🐳 **Guía completa:** [Docker README](./docker/README.md)
+
+---
+
+## 📂 Estructura del Proyecto
+
+```
+TP_Prog_Vanguardia/
+├── app/                    # 🐍 Código Python (FastAPI)
+├── java-service/           # ☕ Código Java (Spring Boot)
+├── docs/                   # 📚 Documentación técnica
+├── docker/                 # 🐳 Configuración Docker
+├── templates/              # 🎨 Frontend HTML
+├── static/                 # 📁 CSS/JS
+├── scripts/                # 🛠️ Scripts útiles
+├── postman/                # 📮 Colecciones de API
+├── tests/                  # 🧪 Tests
+└── README.md              # 📄 Este archivo
+```
+
+> 🗂️ **Detalles completos:** Ver sección "Estructura del Repositorio" en [Architecture](./docs/architecture.md)
+
+---
 
 ## 🔒 Seguridad
 
 - ✅ Variables de entorno para credenciales
-- ✅ Sin hardcoding de passwords
 - ✅ JWT con cookies HTTP-only
-- ✅ Control de acceso basado en roles
-- ✅ Validación de entrada con Pydantic
-- ✅ CORS configurado correctamente
-
-## 🗺️ Roadmap del Proyecto
-
-### ✅ Fase 1: Python Service - Base COMPLETADA
-- [x] Configuración de FastAPI
-- [x] Modelos SQLAlchemy 2.0
-- [x] ABM de Usuarios (Personas)
-- [x] ABM de Salas (temporalmente, se migrará a Java)
-- [x] Sistema de Reservas
-- [x] Autenticación JWT + Cookies
-- [x] Frontend Web con templates
-- [x] Control de roles (admin/usuario)
-
-### ✅ Fase 2: Java Service - COMPLETADA
-- [x] Setup de Spring Boot 3.3.0 + Java 17
-- [x] Configuración de PostgreSQL con JPA
-- [x] Implementar ABM de Salas (8 endpoints)
-- [x] Implementar ABM de Artículos (8 endpoints)
-- [x] APIs REST con validación de DTOs
-- [x] Swagger/OpenAPI para documentación
-- [x] Dockerfile y compilación JAR
-- [x] Configuración CORS
-- [ ] Tests unitarios (JUnit 5)
-- [ ] Validación de tokens con Python service
-- [ ] Integración activa Python ↔ Java
-
-### ⏳ Fase 3: Analytics y ML en Python - PENDIENTE
-- [ ] Módulo de Analytics con pandas
-- [ ] Dashboard de métricas en tiempo real
-- [ ] Análisis de patrones históricos
-- [ ] Modelos de predicción (scikit-learn)
-- [ ] Algoritmos de optimización de recursos
-- [ ] Identificación de horarios pico
-
-### ⏳ Fase 4: Reportes Avanzados en Python - PENDIENTE
-- [ ] Sistema de reportes avanzados
-- [ ] Generación de PDF (reportlab)
-- [ ] Exportación a Excel (openpyxl)
-- [ ] Gráficos y visualizaciones
-- [ ] Reportes programados
-
-### ✅ Fase 5: Integración y Despliegue - COMPLETADA
-- [x] Comunicación Python ↔ Java (HTTP clients) ✅
-- [x] Validación JWT cross-service ✅
-- [x] Docker Compose modo db-only funcional ✅
-- [x] Testing de integración automatizado (script `test_integration.sh`) ✅
-- [x] Documentación de APIs (Swagger Java ✅, Swagger Python ✅)
-- [ ] Docker Compose modo full (Python + Java + PostgreSQL) - ⏹️ Preparado, no requerido
-
-- [ ] Deployment en producción - ⏹️ Fuera de alcance académico
-
-## 🚀 Próximos Pasos (Opcional - Post-Entrega)
-
-> ℹ️ **Nota:** Los requisitos académicos principales están cumplidos. Lo siguiente es opcional para extensión futura.
-
-1. **Testing Formal:** ⏹️ (Opcional)
-   - ⏹️ Tests unitarios con JUnit 5 / pytest
-   - ⏹️ Tests de integración formales
-   - ⏹️ Tests de repositorios JPA
-   - ⏹️ Cobertura de código
-
-2. **Mejoras de Integración:** ✅ (Funcionalidades core completadas)
-   - ✅ Llamadas HTTP entre servicios - **FUNCIONANDO**
-   - ✅ Validación JWT cross-service - **FUNCIONANDO**
-   - ⏹️ Circuit breakers (Resilience4j) - Opcional
-   - ⏹️ Service mesh (Istio) - Fuera de alcance
-
-3. **Módulos Avanzados:** ✅ **Analytics y Predicciones Implementados**
-   - ✅ **Predicción ML con scikit-learn** - Sistema completo de predicciones
-   - ✅ **Analytics y dashboards con pandas** - Métricas en tiempo real
-   - ✅ **Heatmaps y visualizaciones** - Patrones de uso y tendencias
-   - ✅ **API REST de predicciones** - Endpoints funcionales
-   - ⏳ Reportes PDF/Excel (reportlab/openpyxl) - Estructura lista
-   - ⏳ Visualizaciones interactivas con matplotlib/plotly - Pendiente
-
-4. **Docker Compose Full Stack:** ⏳
-   - ⏳ Modo full con Python + Java + PostgreSQL
-   - ⏳ Networking entre contenedores
-   - ⏳ Variables de entorno unificadas
-   - ⏳ Health checks y dependencias
-
-5. **Deployment:** ⏳
-   - ⏳ CI/CD Pipeline
-   - ⏳ Configuración de producción
-   - ⏳ Monitoreo y logs centralizados
+- ✅ Control de acceso por roles
+- ✅ Validación de entrada (Pydantic)
+- ✅ CORS configurado
 
 ---
-
-## 📂 Estructura del Repositorio
-
-```
-TP_Prog_Vanguardia/
-├── README.md                       # 📄 Este archivo - Documentación completa con guía de inicio
-├── LICENSE                         # ⚖️ Licencia del proyecto
-├── consigna.md                     # 📋 Consigna original del trabajo
-├── requirements.txt                # 📦 Dependencias Python
-├── pyproject.toml                  # 🔧 Configuración de proyecto Python
-├── main.py                         # 🐍 Punto de entrada de la aplicación
-├── Dockerfile                      # 🐳 Configuración de contenedor Python
-├── setup.sh                        # ⚡ Script de instalación automatizada
-│
-├── app/                            # 🏗️ Código fuente principal
-│   ├── __init__.py
-│   ├── api/                        # 📡 Endpoints de la API
-│   │   └── v1/
-│   │       ├── endpoints/          # 🔌 Controladores REST
-│   │       │   ├── personas.py     # 👥 API de usuarios
-│   │       │   ├── salas.py        # 🏛️ API de salas
-│   │       │   ├── articulos.py    # 📦 API de artículos
-│   │       │   ├── reservas.py     # 📅 API de reservas
-│   │       │   └── auth.py         # 🔐 Autenticación
-│   │       └── router.py           # 🗺️ Enrutador principal
-│   ├── auth/                       # 🔒 Sistema de autenticación
-│   │   ├── jwt_handler.py          # 🎫 Manejo de tokens JWT
-│   │   └── dependencies.py         # 🔑 Dependencias de auth
-│   ├── core/                       # ⚙️ Configuración central
-│   │   ├── config.py               # 📋 Variables de entorno
-│   │   └── database.py             # 💾 Conexión a DB
-│   ├── models/                     # 🗃️ Modelos de base de datos
-│   │   ├── persona.py              # 👤 Modelo de usuarios
-│   │   ├── sala.py                 # 🏛️ Modelo de salas
-│   │   ├── articulo.py             # 📦 Modelo de artículos
-│   │   └── reserva.py              # 📅 Modelo de reservas
-│   ├── schemas/                    # 📝 Esquemas Pydantic
-│   │   ├── persona.py              # Validación de usuarios
-│   │   ├── sala.py                 # Validación de salas
-│   │   ├── articulo.py             # Validación de artículos
-│   │   ├── reserva.py              # Validación de reservas
-│   │   └── auth.py                 # Validación de auth
-│   ├── repositories/               # 📚 Capa de acceso a datos
-│   │   ├── persona_repository.py
-│   │   ├── sala_repository.py
-│   │   ├── articulo_repository.py
-│   │   └── reserva_repository.py
-│   ├── services/                   # 🔧 Lógica de negocio
-│   │   ├── persona_service.py
-│   │   ├── sala_service.py
-│   │   ├── articulo_service.py
-│   │   ├── reserva_service.py
-│   │   └── auth_service.py
-│   ├── web/                        # 🌐 Frontend web
-│   │   └── routes.py               # Rutas de páginas HTML
-│   └── prediction/                 # 🤖 Módulo ML (pendiente)
-│
-├── templates/                      # 🎨 Plantillas HTML
-│   ├── base.html                   # Plantilla base
-│   ├── login.html                  # Página de login
-│   ├── dashboard.html              # Dashboard principal
-│   ├── personas.html               # Gestión de usuarios
-│   ├── salas.html                  # Gestión de salas
-│   ├── inventario.html             # Gestión de artículos
-│   └── reservas.html               # Gestión de reservas
-│
-├── static/                         # 📁 Archivos estáticos
-│   ├── css/
-│   │   └── style.css               # Estilos personalizados
-│   └── js/
-│       ├── auth.js                 # Gestión de autenticación
-│       └── main.js                 # JavaScript principal
-│
-├── docker/                         # 🐳 Configuración Docker
-│   ├── README.md                   # 📘 Guía completa de Docker
-│   ├── .env.example                # 🔧 Plantilla de variables de entorno
-│   ├── docker-compose.db-only.yml  # Solo base de datos
-│   ├── docker-compose.full.yml     # Stack completo
-│   ├── start-db-only.sh            # Script para modo DB-only
-│   ├── start-full.sh               # Script para modo full
-│   ├── stop-all.sh                 # Detener contenedores
-│   └── init-scripts/
-│       ├── README.md               # 🔒 Documentación de seguridad SQL
-│       └── 01-init.sql             # Script de inicialización DB
-│
-├── java-service/                   # ☕ Microservicio Java
-│   ├── README.md                   # 📗 Documentación Java service
-│   ├── Dockerfile                  # 🐳 Imagen Docker Java
-│   ├── pom.xml                     # 📦 Dependencias Maven
-│   └── src/
-│       ├── main/
-│       │   ├── java/com/reservas/
-│       │   │   ├── ReservasApplication.java
-│       │   │   ├── controller/     # 🎮 Controladores REST
-│       │   │   ├── service/        # 🔧 Servicios de negocio
-│       │   │   ├── repository/     # 📚 Repositorios JPA
-│       │   │   ├── model/          # 🗃️ Entidades JPA
-│       │   │   ├── dto/            # 📄 Data Transfer Objects
-│       │   │   ├── config/         # ⚙️ Configuraciones
-│       │   │   └── exception/      # ⚠️ Manejo de excepciones
-│       │   └── resources/
-│       │       └── application.properties
-│       └── test/                   # 🧪 Tests Java
-│
-├── docs/                           # 📚 Documentación técnica
-│   ├── README.md                   # 📑 Índice de documentación
-│   ├── architecture.md             # 🏛️ Arquitectura del sistema
-│   ├── configuracion_entorno.md    # ⚙️ Configuración de variables
-│   ├── formato_codigo.md           # 📝 Estándares de código
-│   ├── api_reference.md            # 📋 Referencia completa de API
-│   ├── faq.md                      # ❓ Preguntas frecuentes
-│   ├── troubleshooting.md          # � Solución de problemas
-│   ├── docker_guide.md             # 🐳 Guía detallada de Docker
-│   ├── prediction_module.md        # 🤖 Módulo de predicciones
-│   ├── RESUMEN_PREDICCIONES.md     # � Resumen de predicciones ML
-│   ├── ARQUITECTURA_PREDICCIONES.md # 🏗️ Arquitectura de predicciones
-│   ├── IMPLEMENTACION_PREDICCIONES.md # 💻 Implementación ML
-│   ├── EXPORTACION_REPORTES.md     # � Sistema de reportes
-│   └── internal/                   # 🔒 Documentos internos (no en git)
-│
-├── scripts/                        # 🛠️ Scripts útiles
-│   ├── README.md                   # 📖 Documentación de scripts
-│   ├── check_code_quality.sh       # ✅ Verificación de calidad
-│   ├── init_db.py                  # 💾 Inicializar base de datos
-│   ├── create_admin.py             # 👤 Crear admin (SOLO desarrollo)
-│   └── create_admin_secure.py      # 🔐 Crear admin (modo seguro)
-│
-├── postman/                        # 📮 Colecciones Postman
-│   ├── README.md                   # Guía de uso
-│   └── Sistema_Completo_API_Collection.postman_collection.json
-│
-├── tests/                          # 🧪 Tests automatizados
-│   ├── unit/                       # Tests unitarios
-│   └── integration/                # Tests de integración
-│
-└── migrations/                     # 📊 Migraciones de DB
-    └── README.md
-```
-
-### 🔍 Navegación Rápida
-
-**Para empezar:**
-- 🚀 [Inicio Rápido](#-inicio-rápido) - Guía multi-plataforma (Windows/Mac/Linux)
-- 🐳 [`docker/README.md`](./docker/README.md) - Usar con Docker
-
-**Para desarrollar:**
-- 🏗️ [`docs/architecture.md`](./docs/architecture.md) - Entender el diseño
-- 📝 [`docs/formato_codigo.md`](./docs/formato_codigo.md) - Estándares
-- ☕ [`java-service/README.md`](./java-service/README.md) - API Java
-- 📜 [`scripts/README.md`](./scripts/README.md) - Scripts y utilidades
-
-**Para evaluar:**
-- 📊 **Estado Actual del Proyecto** (ver sección en este README)
-- � [`docs/api_reference.md`](./docs/api_reference.md) - Referencia de APIs
-- 🏗️ [`docs/architecture.md`](./docs/architecture.md) - Arquitectura del sistema
-- 📮 [`postman/README.md`](./postman/README.md) - Testing
-- ❓ [`docs/faq.md`](./docs/faq.md) - Preguntas frecuentes
-
-**Para entender la DB:**
-- 💾 [`docker/init-scripts/README.md`](./docker/init-scripts/README.md) - Scripts SQL
-- 📋 Schema ERD (ver [`docs/architecture.md`](./docs/architecture.md))
-
----
-
-## 📈 Resumen de Lo Implementado vs Pendiente
-
-### ✅ Implementado y Funcional
-- ✅ **Python Service completo** - FastAPI + Auth JWT + CRUD + Frontend Web
-- ✅ **Java Service completo** - Spring Boot + ABM Salas + ABM Artículos + Swagger
-- ✅ **Integración HTTP Python ↔ Java** - ✅ **ACTIVA**
-  - Python valida salas con Java al crear reservas
-  - Java valida JWT con Python al crear recursos
-  - Endpoints de demostración funcionando
-  - Script de testing automatizado (`test_integration.sh`)
-- ✅ **Base de datos PostgreSQL** - Schema completo, datos de prueba, Docker
-- ✅ **Docker infrastructure** - Modo db-only funcional, Dockerfiles listos
-- ✅ **Documentación** - READMEs completos, Swagger APIs, guías de seguridad
-- ✅ **Scripts de setup** - Instalación automatizada, configuración segura
-- ✅ **Frontend web** - Login, dashboard, gestión de personas/salas/reservas
-
-### ⏹️ No Requerido (Infraestructura Preparada)
-- ⏹️ **Testing Formal** - Tests unitarios e integración (estructura creada, no requerido académicamente)
-- ⏹️ **Docker Compose Full** - Orquestación completa (db-only funcional, full-stack preparado)
-- ⏹️ **Módulos ML** - Predicción con scikit-learn (infraestructura lista, fuera de alcance)
-- ⏹️ **Analytics Avanzado** - Dashboards y métricas con pandas (infraestructura lista, no requerido)
-- ⏹️ **Reportes PDF/Excel** - reportlab/openpyxl (no forma parte de requisitos)
-- ⏹️ **CI/CD** - Pipeline de integración continua (proyecto académico)
-- ⏹️ **Deployment Producción** - Configuración cloud (fuera de alcance)
-
-### 🎯 Funcionalidades Core Completadas
-1. ✅ **Arquitectura Microservicios** - Python + Java funcionando independientemente
-2. ✅ **Integración Bidireccional** - Comunicación HTTP activa entre servicios
-3. ✅ **ABM Completo** - Usuarios, Salas, Artículos, Reservas
-4. ✅ **Autenticación JWT** - Login, roles, validación cross-service
-5. ✅ **Base de Datos Compartida** - PostgreSQL con datos de prueba
-6. ✅ **Frontend Funcional** - Interfaz web completa y responsive
-7. ✅ **Docker** - Containerización y orquestación básica
-8. ✅ **Documentación Completa** - Guías técnicas y de usuario
 
 ## 🤝 Equipo de Desarrollo
 
-Proyecto desarrollado como parte del trabajo práctico de **Programación de Vanguardia**
-
-- **Institución:** Universidad De la Ciudad
-- **Carrera:** Licenciatura en Tecnologías Informáticas
-- **Ciclo Lectivo:** 2025
-
-## 📄 Licencia
-
-Este proyecto es de uso académico para la asignatura Programación de Vanguardia.
+**Universidad De la Ciudad**  
+Licenciatura en Tecnologías Informáticas - 2025
 
 ---
 
-📧 **Contacto:** Para consultas sobre el proyecto, contactar al equipo de desarrollo.
+## 📄 Licencia
+
+Proyecto académico para la asignatura Programación de Vanguardia.
+
+---
+
+## 🔗 Enlaces Útiles
+
+- [📚 Índice de Documentación](./docs/README.md)
+- [🐳 Docker Setup](./docker/README.md)
+- [☕ Java Service API](./java-service/README.md)
+- [🛠️ Scripts Útiles](./scripts/README.md)
+- [📮 Testing Postman](./postman/README.md)
+
+---
+
+**¿Necesitas ayuda?** Consulta el [FAQ](./docs/faq.md) o [Troubleshooting](./docs/troubleshooting.md)
