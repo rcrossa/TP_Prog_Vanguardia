@@ -40,7 +40,7 @@ fi
 
 cd docker
 echo "\n🐳 Levantando servicios con $stack_file ..."
-docker-compose -f $stack_file up -d
+docker-compose -f $stack_file up -d --build
 
 # Esperar a que la base de datos esté lista
 echo "⏳ Esperando a que PostgreSQL esté listo..."

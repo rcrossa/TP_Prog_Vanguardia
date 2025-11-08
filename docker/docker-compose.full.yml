@@ -19,7 +19,7 @@ services:
   # PostgreSQL Database
   # -----------------------------------------------------------------------
   postgres:
-    container_name: reservas_db
+    container_name: reservas_db_full
     image: postgres:15-alpine
     restart: unless-stopped
 
@@ -42,11 +42,11 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
 
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_full:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
 
     networks:
-      - reservas_network
+      - reservas_network_full
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-reservas_db}"]
@@ -58,7 +58,7 @@ services:
   # Servicio Python (FastAPI)
   # -----------------------------------------------------------------------
   python-service:
-    container_name: reservas_python
+    container_name: reservas_python_full
     build:
       context: ..
       dockerfile: Dockerfile
@@ -80,6 +80,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
 
+      # Java Service Integration
+      - JAVA_SERVICE_URL=http://java-service:8080
+
       # Security
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production-min-32-chars}
       - JWT_SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production-min-32-chars}
@@ -93,14 +96,12 @@ services:
     ports:
       - "${PYTHON_SERVICE_PORT:-8000}:8000"
 
-    volumes:
-      - ../app:/app/app
-      - ../templates:/app/templates
-      - ../static:/app/static
-      - ../main.py:/app/main.py
+    # NOTA: En modo full NO montamos volúmenes para evitar conflictos
+    # El código se copia durante el build de la imagen
+    # Para desarrollo con hot-reload, usa docker-compose.db-only.yml
 
     networks:
-      - reservas_network
+      - reservas_network_full
 
     depends_on:
       postgres:
@@ -110,7 +111,7 @@ services:
   # Servicio Java (Spring Boot)
   # -----------------------------------------------------------------------
   java-service:
-    container_name: reservas_java
+    container_name: reservas_java_full
     build:
       context: ../java-service
       dockerfile: Dockerfile
@@ -144,7 +145,7 @@ services:
       - "${JAVA_SERVICE_PORT:-8080}:8080"
 
     networks:
-      - reservas_network
+      - reservas_network_full
 
     depends_on:
       postgres:
@@ -154,7 +155,7 @@ services:
   # pgAdmin - Interfaz Web para PostgreSQL
   # -----------------------------------------------------------------------
   pgadmin:
-    container_name: reservas_pgadmin
+    container_name: reservas_pgadmin_full
     image: dpage/pgadmin4:latest
     restart: unless-stopped
 
@@ -176,10 +177,10 @@ services:
       - "${PGADMIN_PORT:-5050}:80"
 
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - pgadmin_data_full:/var/lib/pgadmin
 
     networks:
-      - reservas_network
+      - reservas_network_full
 
     depends_on:
       postgres:
@@ -189,11 +190,11 @@ services:
 # Redes y Volúmenes
 # =========================================================================
 networks:
-  reservas_network:
+  reservas_network_full:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data_full:
     driver: local
-  pgadmin_data:
+  pgadmin_data_full:
     driver: local

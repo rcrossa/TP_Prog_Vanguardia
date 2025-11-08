@@ -9,14 +9,11 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from app.services.java_client import JavaServiceClient
-
-# Constante para la URL del Java Service
-JAVA_SERVICE_URL = "http://localhost:8080"
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
 
 @router.get("/integration/health")
 async def check_java_service_health():
@@ -31,13 +28,13 @@ async def check_java_service_health():
         return {
             "status": "healthy",
             "message": "✅ Java Service está disponible y respondiendo",
-            "java_service_url": JAVA_SERVICE_URL,
+            "java_service_url": settings.java_service_url,
         }
     else:
         return {
             "status": "unhealthy",
             "message": "❌ Java Service NO está disponible",
-            "java_service_url": JAVA_SERVICE_URL,
+            "java_service_url": settings.java_service_url,
         }
 
 
@@ -145,9 +142,9 @@ async def integration_demo():
         "title": "🔗 Demostración de Integración Python ↔ Java",
         "description": "Este endpoint muestra cómo Python se comunica con Java via HTTP",
         "java_service": {
-            "url": JAVA_SERVICE_URL,
+            "url": settings.java_service_url,
             "status": "✅ Disponible" if java_healthy else "❌ No disponible",
-            "swagger": f"{JAVA_SERVICE_URL}/swagger-ui.html",
+            "swagger": f"{settings.java_service_url}/swagger-ui.html",
         },
         "examples": {
             "health_check": "/api/v1/integration/health",

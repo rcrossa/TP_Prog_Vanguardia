@@ -54,7 +54,7 @@ class JavaServiceClient:
     # Proporciona métodos asíncronos para operaciones CRUD y validaciones.
     # """
     TIMEOUT = 5.0
-    JAVA_SERVICE_URL = getattr(settings, "JAVA_SERVICE_URL", "http://localhost:8080")
+    JAVA_SERVICE_URL = settings.java_service_url
 
     # Métodos de Artículos
     @staticmethod
