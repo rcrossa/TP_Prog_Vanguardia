@@ -21,9 +21,7 @@
 |-----------|-------------|------------|
 | **[architecture.md](./architecture.md)** | Arquitectura técnica completa del sistema | 🧑‍💻 Desarrolladores |
 | **[configuracion_entorno.md](./configuracion_entorno.md)** | 🆕 Variables de entorno y configuración detallada | 🧑‍💻 Desarrolladores |
-| **[INTEGRACION.md](./INTEGRACION.md)** | Guía completa de integración Python ↔ Java | 🧑‍💻 Desarrolladores |
 | **[testing.md](./testing.md)** | 🧪 **NUEVO**: Documentación de tests unitarios y SonarQube | 🧑‍💻 Desarrolladores |
-| **[security.md](./security.md)** | Guía de seguridad y mejores prácticas | 🔐 DevOps/Security |
 | **[formato_codigo.md](./formato_codigo.md)** | Estándares de código y convenciones | 🧑‍💻 Desarrolladores |
 
 ### 🔮 **NUEVO**: Documentación de Predicciones
@@ -41,38 +39,21 @@
 
 | Documento | Descripción | Ubicación |
 |-----------|-------------|-----------|
-| **[README.md - Estado Actual](../README.md#-estado-actual-del-proyecto)** | Estado general y progreso del proyecto | 📄 README principal |
-| **[CAMBIOS_RECIENTES.md](./CAMBIOS_RECIENTES.md)** | Últimas implementaciones y correcciones | 📚 /docs |
-
-### 📁 Documentación Interna (No Versionada)
-
-Los siguientes documentos están en **`docs/internal/`** (carpeta local, no en GitHub):
-- Borradores y análisis de trabajo
-- Historial detallado de cambios
-- Documentos de proceso interno
-- Ver **[internal/README.md](./internal/README.md)** para más detalles
-
-> 💡 Estos archivos sirven como **banco de memoria** pero no se suben a GitHub para mantener el repositorio limpio.
-
+| **[README.md - Estado Actual](../README.md#-estado-actual-del-proyecto)** | Estado general y progreso del proyecto | 📄 README principal 
 ---
 
 ## 🎯 Guía Rápida por Perfil
 
 ### 👨‍💻 Si eres Desarrollador
 1. Lee **[architecture.md](./architecture.md)** para entender la arquitectura
-2. Consulta **[INTEGRACION.md](./INTEGRACION.md)** para trabajar con la integración
 3. Sigue **[formato_codigo.md](./formato_codigo.md)** para mantener estándares
-4. Revisa **[security.md](./security.md)** antes de hacer cambios
 
 ### 🎓 Si eres Evaluador/Profesor
 1. Lee la sección **[Estado Actual del Proyecto](../README.md#-estado-actual-del-proyecto)** en el README principal
 2. Revisa **[architecture.md](./architecture.md)** para arquitectura técnica completa
-3. Consulta **[INTEGRACION.md](./INTEGRACION.md)** para entender la integración Python ↔ Java
-4. Prueba las funcionalidades con la **[guía de integración](./INTEGRACION.md)**
 
 ### 🚀 Si eres Usuario/Tester
 1. Ve al **[README principal](../README.md)** para instrucciones de instalación
-2. Usa **[INTEGRACION.md](./INTEGRACION.md)** para probar funcionalidades
 3. Consulta **[architecture.md](./architecture.md)** para entender el sistema
 
 ---
@@ -91,8 +72,8 @@ Los siguientes documentos están en **`docs/internal/`** (carpeta local, no en G
 | 🐳 **Docker** | ✅ Funcional | 100% |
 | 📚 **Swagger/Docs** | ✅ Funcional | 100% |
 | 🔐 **Autenticación JWT** | ✅ Funcional | 100% |
-| 🤖 **Predicciones ML** | ✅ **NUEVO: Funcional** | 100% |
-| 📈 **Analytics** | ✅ **NUEVO: Funcional** | 100% |
+| 🤖 **Predicciones** | ✅ Funcional  | 100% |
+| 📈 **Analytics** | ✅ Funcional  | 100% |
 
 ### 🎯 Funcionalidades Core Implementadas
 
@@ -177,7 +158,7 @@ Estas funcionalidades aparecen como "pendientes" en algunos documentos antiguos 
 3. Java responde con datos de sala y stock disponible
 4. Python verifica disponibilidad horaria
 5. Python crea reserva en DB
-6. ✅ Reserva creada con validación cross-service
+6. Reserva creada con validación cross-service
 
 ---
 
@@ -185,8 +166,6 @@ Estas funcionalidades aparecen como "pendientes" en algunos documentos antiguos 
 
 ### Documentación Técnica
 - [Arquitectura Completa](./architecture.md)
-- [Integración Python-Java](./INTEGRACION.md)
-- [Seguridad](./security.md)
 - [Estándares de Código](./formato_codigo.md)
 
 ### APIs y Servicios
@@ -200,15 +179,6 @@ Estas funcionalidades aparecen como "pendientes" en algunos documentos antiguos 
 - [Java Service README](../java-service/README.md)
 - [Postman Collection](../postman/README.md)
 
----
-
-## 🧹 Archivos Temporales
-
-Los siguientes archivos pueden ser ignorados o eliminados:
-
-- `architecture.md.backup` - Backup del architecture.md anterior
-- `architecture.md.bak` - Backup duplicado
-- `architecture.md.new` - Archivo temporal de edición
 
 ---
 
@@ -218,18 +188,11 @@ Los siguientes archivos pueden ser ignorados o eliminados:
 1. Lee el **[README principal](../README.md)**
 2. Configura el entorno con **[Docker README](../docker/README.md)**
 3. Revisa la **[arquitectura](./architecture.md)**
-4. Prueba la **[integración](./INTEGRACION.md)**
 
-### Para entender cambios recientes:
-1. **[RESUMEN_EJECUTIVO.md](./RESUMEN_EJECUTIVO.md)** - Qué se hizo
-2. **[CAMBIOS_RECIENTES.md](./CAMBIOS_RECIENTES.md)** - Archivos modificados
-3. **[README - Estado Actual](../README.md#-estado-actual-del-proyecto)** - Estado general del proyecto
 
 ### Para desarrollar:
 1. **[formato_codigo.md](./formato_codigo.md)** - Estándares
-2. **[security.md](./security.md)** - Buenas prácticas
-3. **[architecture.md](./architecture.md)** - Arquitectura
-4. **[INTEGRACION.md](./INTEGRACION.md)** - Cómo usar la integración
+2. **[architecture.md](./architecture.md)** - Arquitectura
 
 ---
 
@@ -239,20 +202,13 @@ Si necesitas actualizar la documentación:
 
 1. **Para cambios arquitectónicos:** Actualiza `architecture.md`
 2. **Para nuevas funcionalidades:** Actualiza la sección "Estado Actual" en el README principal
-3. **Para seguridad:** Actualiza `security.md`
-4. **Para integración:** Actualiza `INTEGRACION.md`
 
 ---
 
 ## 📧 Soporte
 
 - **Dudas de arquitectura:** Ver [architecture.md](./architecture.md)
-- **Problemas de integración:** Ver [INTEGRACION.md](./INTEGRACION.md)
-- **Issues de seguridad:** Ver [security.md](./security.md)
 - **Instalación:** Ver [README principal](../README.md)
 
 ---
 
-**Estado de Documentación:** ✅ Actualizada y organizada
-**Última revisión:** 16 de octubre de 2025
-**Versión:** 2.0 - Con integración HTTP documentada
