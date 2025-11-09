@@ -52,7 +52,7 @@ async def get_salas():
 
 
 
-@router.get("/{sala_id}", response_model=Sala)
+
 @router.get("/{sala_id}", response_model=Sala)
 async def get_sala(sala_id: int):
     """Obtener una sala específica por ID desde el microservicio Java."""

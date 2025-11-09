@@ -22,6 +22,7 @@
 | **[architecture.md](./architecture.md)** | Arquitectura técnica completa del sistema | 🧑‍💻 Desarrolladores |
 | **[configuracion_entorno.md](./configuracion_entorno.md)** | 🆕 Variables de entorno y configuración detallada | 🧑‍💻 Desarrolladores |
 | **[INTEGRACION.md](./INTEGRACION.md)** | Guía completa de integración Python ↔ Java | 🧑‍💻 Desarrolladores |
+| **[testing.md](./testing.md)** | 🧪 **NUEVO**: Documentación de tests unitarios y SonarQube | 🧑‍💻 Desarrolladores |
 | **[security.md](./security.md)** | Guía de seguridad y mejores prácticas | 🔐 DevOps/Security |
 | **[formato_codigo.md](./formato_codigo.md)** | Estándares de código y convenciones | 🧑‍💻 Desarrolladores |
 

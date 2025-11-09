@@ -44,12 +44,12 @@ cd TP_Prog_Vanguardia
 
 | Componente | Estado | Descripción |
 |------------|--------|-------------|
-| 🐍 **Python Service** | ✅ Completo | FastAPI con Auth, Reservas, Predicciones ML, Analytics |
+| 🐍 **Python Service** | ✅ Completo | FastAPI con Auth, Reservas, Predicciones, Analytics |
 | ☕ **Java Service** | ✅ Completo | Spring Boot con ABM Salas + Artículos/Inventario |
 | 🔗 **Integración HTTP** | ✅ Activa | Comunicación bidireccional Python ↔ Java |
 | 🗄️ **PostgreSQL** | ✅ Funcional | Base de datos compartida (5 tablas) |
 | 🎨 **Frontend Web** | ✅ Completo | Templates HTML + JavaScript |
-| 🤖 **ML/Analytics** | ✅ Completo | Predicciones con scikit-learn + Dashboards |
+| 🤖 **ML/Analytics** | ✅ Completo | Predicciones con análisis de patrones + Dashboards |
 | 🐳 **Docker** | ✅ Funcional | Containerización lista |
 
 ---
@@ -95,7 +95,7 @@ graph TB
 - **Backend:** FastAPI
 - **ORM:** SQLAlchemy 2.0
 - **Auth:** JWT
-- **ML:** scikit-learn, pandas, numpy
+- **Analytics:** pandas, numpy (análisis de patrones)
 
 ### Java Service
 - **Backend:** Spring Boot 3.3.0 + Java 17
@@ -220,6 +220,34 @@ TP_Prog_Vanguardia/
 
 ---
 
+## 🧪 Tests
+
+El proyecto incluye **24 tests unitarios** que cubren los componentes principales del microservicio Python.
+
+### Ejecutar Tests
+
+```bash
+# Todos los tests
+pytest tests/unit/ -v
+
+# Con cobertura
+pytest tests/unit/ --cov=app --cov-report=term
+
+# Tests específicos
+pytest tests/unit/test_models.py -v
+```
+
+### Integración con SonarQube
+
+```bash
+# Análisis de calidad con SonarQube local
+sonar-scanner -Dsonar.token=$SONAR_TOKEN
+```
+
+> 🧪 **Documentación completa:** [Testing Guide](./docs/testing.md)
+
+---
+
 ## 🔒 Seguridad
 
 - ✅ Variables de entorno para credenciales
@@ -233,7 +261,7 @@ TP_Prog_Vanguardia/
 ## 🤝 Equipo de Desarrollo
 
 **Universidad De la Ciudad**  
-Licenciatura en Tecnologías Informáticas - 2025
+Licenciatura en Tecnologías Digitales - 2025
 
 ---
 
