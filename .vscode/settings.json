@@ -1,0 +1,8 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "sonarlint.connectedMode.project": {
+        "connectionId": "http-localhost-9000",
+        "projectKey": "tp_prog_vanguardia"
+    },
+    "java.configuration.updateBuildConfiguration": "interactive"
+}
