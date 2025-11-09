@@ -5,7 +5,7 @@
 ## 📚 Información Académica
 
 - **Asignatura:** Programación de Vanguardia
-- **Carrera:** Licenciatura en Tecnologías Informáticas
+- **Carrera:** Licenciatura en Tecnologías Digitales
 - **Ciclo Lectivo:** 2025
 
 ---
@@ -139,18 +139,72 @@ graph TB
 ## 📡 APIs Principales
 
 ### Python Service (Port 8000)
-- **Auth:** `POST /api/v1/personas/login`
-- **Usuarios:** `GET|POST|PUT|DELETE /api/v1/personas`
-- **Reservas:** `GET|POST|PUT|DELETE /api/v1/reservas`
-- **Analytics:** `GET /api/stats/*`
-- **Docs:** http://localhost:8000/docs
+
+#### 🔐 Autenticación
+- `POST /api/v1/auth/register` - Registrar usuario
+- `POST /api/v1/auth/login` - Iniciar sesión (JWT)
+- `GET /api/v1/auth/me` - Perfil del usuario autenticado
+- `POST /api/v1/auth/logout` - Cerrar sesión
+
+#### 👥 Usuarios (Personas)
+- `GET|POST|PUT|DELETE /api/v1/personas` - CRUD completo
+- `GET /api/v1/personas/{id}` - Obtener por ID
+- `GET /api/v1/personas/email/{email}` - Buscar por email
+
+#### 🏢 Salas
+- `GET|POST|PUT|DELETE /api/v1/salas` - CRUD completo
+- `GET /api/v1/salas/{id}` - Obtener por ID
+- `GET /api/v1/salas/count/total` - Contar total
+
+#### 📦 Artículos
+- `GET|POST|PUT|DELETE /api/v1/articulos` - CRUD completo
+- `GET /api/v1/articulos/disponibles` - Artículos disponibles
+- `GET /api/v1/articulos/estadisticas/inventario` - Estadísticas de inventario
+- `PATCH /api/v1/articulos/{id}/toggle-disponibilidad` - Cambiar disponibilidad
+
+#### 📅 Reservas
+- `GET|POST|PUT|DELETE /api/v1/reservas` - CRUD completo
+- `GET /api/v1/reservas/persona/{id}` - Reservas por persona
+- `GET /api/v1/reservas/sala/{id}` - Reservas por sala
+- `POST /api/v1/reservas/{id}/articulos/{articulo_id}` - Agregar artículo
+
+#### 📊 Analytics & Predicciones
+- `GET /api/v1/analytics/dashboard-metrics` - Métricas del dashboard
+- `GET /api/v1/analytics/predictions/weekly-demand` - Demanda semanal (patrones)
+- `GET /api/v1/analytics/predictions/peak-hours` - Horarios pico
+- `GET /api/v1/analytics/export-report` - Exportar reportes PDF/Excel
+- `GET /api/v1/stats/reservas` - Estadísticas de reservas
+- `GET /api/v1/stats/uso` - Estadísticas de uso
+
+#### 🔗 Integración Java
+- `GET /api/v1/integration/health` - Estado del servicio Java
+- `GET /api/v1/integration/salas-desde-java` - Sincronizar salas
+
+**📖 Docs:** http://localhost:8000/docs
+
+---
 
 ### Java Service (Port 8080)
-- **Salas:** `GET|POST|PUT|DELETE /api/salas`
-- **Artículos:** `GET|POST|PUT|DELETE /api/articulos`
-- **Docs:** http://localhost:8080/swagger-ui.html
 
-> 📋 **Referencia completa:** [API Reference](./docs/api_reference.md)
+#### 🏢 Salas
+- `GET|POST|PUT|DELETE /api/salas` - CRUD completo
+- `GET /api/salas/{id}` - Obtener por ID
+- `GET /api/salas/disponibles` - Salas disponibles
+- `GET /api/salas/search?nombre={nombre}` - Buscar por nombre
+- `GET /api/salas/capacidad/{min}` - Filtrar por capacidad
+
+#### 📦 Artículos (Inventario)
+- `GET|POST|PUT|DELETE /api/articulos` - CRUD completo
+- `GET /api/articulos/{id}` - Obtener por ID
+- `GET /api/articulos/disponibles` - Artículos disponibles
+- `GET /api/articulos/categoria/{categoria}` - Filtrar por categoría
+- `GET /api/articulos/search?nombre={nombre}` - Buscar por nombre
+
+**📖 Docs:** http://localhost:8080/swagger-ui.html
+
+---
+
+> 📋 **Referencia completa de 94 endpoints:** [API Reference](./docs/api_reference.md)
 
 ---
 
@@ -280,5 +334,3 @@ Proyecto académico para la asignatura Programación de Vanguardia.
 - [📮 Testing Postman](./postman/README.md)
 
 ---
-
-**¿Necesitas ayuda?** Consulta el [FAQ](./docs/faq.md) o [Troubleshooting](./docs/troubleshooting.md)
