@@ -56,7 +56,7 @@ wget-log
 *~
 *.swp
 *.swo
-.vscode/settings.json
+# .vscode/settings.json
 
 # =====================================================================
 # PYTHON
@@ -223,7 +223,7 @@ cython_debug/
 .idea/
 
 # VS Code
-.vscode/
+# .vscode/
 *.code-workspace
 
 # macOS
@@ -278,3 +278,4 @@ alembic.ini
 .env.development
 .env.test
 .env.production
+

@@ -1,0 +1,16 @@
+# Maven configuration for Java 21
+# This file ensures Maven always uses Java 21 for this project
+
+# For macOS/Linux
+if [ -x /usr/libexec/java_home ]; then
+    # macOS: Use java_home to find Java 21
+    export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null)
+    if [ -z "$JAVA_HOME" ]; then
+        echo "⚠️  Warning: Java 21 not found. Install from https://aws.amazon.com/corretto/"
+    fi
+fi
+
+# Verify Java version
+if [ -n "$JAVA_HOME" ]; then
+    echo "Using Java from: $JAVA_HOME"
+fi

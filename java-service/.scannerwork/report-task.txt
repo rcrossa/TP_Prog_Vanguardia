@@ -1,0 +1,6 @@
+projectKey=tp_prog_vanguardia_java
+serverUrl=http://localhost:9000
+serverVersion=25.8.0.112029
+dashboardUrl=http://localhost:9000/dashboard?id=tp_prog_vanguardia_java
+ceTaskId=aac4db88-f8b6-4629-b625-891bb69a8fba
+ceTaskUrl=http://localhost:9000/api/ce/task?id=aac4db88-f8b6-4629-b625-891bb69a8fba
