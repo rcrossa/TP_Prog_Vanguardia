@@ -7,6 +7,7 @@
 - **Asignatura:** Programación de Vanguardia
 - **Carrera:** Licenciatura en Tecnologías Digitales
 - **Ciclo Lectivo:** 2025
+- **Consigna:** Este proyecto fue desarrollado siguiendo los requerimientos especificados en [`consigna.md`](./consigna.md)
 
 ---
 
