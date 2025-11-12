@@ -121,18 +121,22 @@ class ReservaService:
                     SELECT 1 as cantidad_usada
                     FROM reservas r
                     WHERE r.id_articulo = :articulo_id
-                    AND r.fecha_hora_fin >= NOW()
+                    AND r.fecha_hora_fin >= :fecha_inicio
+                    AND r.fecha_hora_inicio <= :fecha_fin
                     UNION ALL
                     SELECT ra.cantidad as cantidad_usada
                     FROM reserva_articulos ra
                     JOIN reservas r ON ra.reserva_id = r.id
                     WHERE ra.articulo_id = :articulo_id
-                    AND r.fecha_hora_fin >= NOW()
+                    AND r.fecha_hora_fin >= :fecha_inicio
+                    AND r.fecha_hora_inicio <= :fecha_fin
                 ) as reservas_activas
                 """
             ),
             {
                 "articulo_id": reserva_data.id_articulo,
+                "fecha_inicio": reserva_data.fecha_hora_inicio,
+                "fecha_fin": reserva_data.fecha_hora_fin,
             },
         )
         total_reservado = result.scalar() or 0

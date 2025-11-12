@@ -104,6 +104,22 @@ async function loadReservas() {
     try {
         const response = await axios.get('/api/v1/reservas/');
         reservas = response.data;
+        
+        // DEBUG: Log para verificar las fechas de las reservas
+        console.log(`Total reservas cargadas: ${reservas.length}`);
+        const reservasFuturas = reservas.filter(r => {
+            const estado = getEstadoReserva(r);
+            return estado === 'futuro';
+        });
+        console.log(`Reservas futuras: ${reservasFuturas.length}`);
+        if (reservasFuturas.length > 0) {
+            console.log('Primeras 5 reservas futuras:', reservasFuturas.slice(0, 5).map(r => ({
+                id: r.id,
+                inicio: r.fecha_hora_inicio,
+                estado: getEstadoReserva(r)
+            })));
+        }
+        
         filteredReservas = reservas; // Inicializar reservas filtradas
         // El backend ya maneja los permisos:
         // - Admin ve todas las reservas
@@ -468,8 +484,22 @@ function getNombrePersona(idPersona) {
 // Obtener estado de reserva
 function getEstadoReserva(reserva) {
     const ahora = new Date();
-    const inicio = new Date(reserva.fecha_hora_inicio);
-    const fin = new Date(reserva.fecha_hora_fin);
+    
+    // Las fechas vienen del backend sin zona horaria (naive datetime)
+    // JavaScript las interpreta correctamente como fechas locales si no tienen 'Z'
+    // Pero debemos asegurarnos de parsearlas correctamente
+    const inicioStr = reserva.fecha_hora_inicio;
+    const finStr = reserva.fecha_hora_fin;
+    
+    // Si la fecha tiene 'Z' o '+', usar Date directamente
+    // Si no, es una fecha "naive" y debemos tratarla como local
+    const inicio = inicioStr.includes('Z') || inicioStr.includes('+') 
+        ? new Date(inicioStr) 
+        : new Date(inicioStr.replace(' ', 'T')); // Asegurar formato ISO
+    
+    const fin = finStr.includes('Z') || finStr.includes('+') 
+        ? new Date(finStr) 
+        : new Date(finStr.replace(' ', 'T'));
 
     if (ahora < inicio) return 'futuro';
     if (ahora > fin) return 'pasado';
@@ -903,7 +933,7 @@ async function loadArticulosAsignados(reservaId) {
 
 // Agregar artículo a la reserva
 async function agregarArticuloAReserva() {
-    const articuloId = document.getElementById('articuloSelect').value;
+    const articuloId = parseInt(document.getElementById('articuloSelect').value);
     const cantidad = parseInt(document.getElementById('articuloCantidad').value);
 
     if (!articuloId) {
@@ -917,14 +947,63 @@ async function agregarArticuloAReserva() {
     }
 
     try {
+        // Validar disponibilidad antes de agregar/actualizar
+        const reserva = reservas.find(r => r.id === currentReservaId);
+        if (reserva) {
+            const response = await axios.get('/api/v1/articulos/disponibilidad', {
+                params: {
+                    fecha_inicio: reserva.fecha_hora_inicio,
+                    fecha_fin: reserva.fecha_hora_fin,
+                    reserva_id: currentReservaId
+                }
+            });
+            
+            const articuloDisp = response.data.find(a => a.id === articuloId);
+            if (articuloDisp) {
+                // Verificar si el artículo ya está asignado
+                const articuloYaAsignado = articulosAsignadosActuales.find(a => a.id === articuloId);
+                const cantidadActual = articuloYaAsignado ? articuloYaAsignado.cantidad : 0;
+                const cantidadDisponibleAgregar = articuloDisp.cantidad_disponible_para_agregar || 0;
+                const maximoPermitido = cantidadActual + cantidadDisponibleAgregar;
+                
+                console.log(`Validación al agregar artículo ${articuloId}:`, {
+                    cantidad: cantidad,
+                    cantidadActual: cantidadActual,
+                    cantidadDisponibleAgregar: cantidadDisponibleAgregar,
+                    maximoPermitido: maximoPermitido,
+                    articuloNombre: articuloDisp.nombre
+                });
+                
+                // Validación estricta: si no hay disponibilidad para agregar, bloquear SIEMPRE
+                if (cantidadDisponibleAgregar <= 0) {
+                    if (cantidadActual === 0) {
+                        showError(`No puedes agregar "${articuloDisp.nombre}". No hay stock disponible para las fechas seleccionadas (0 disponibles para agregar).`);
+                    } else {
+                        showError(`No puedes agregar más unidades de "${articuloDisp.nombre}". Ya tienes ${cantidadActual} asignados y no hay más disponibles (0 disponibles para agregar).`);
+                    }
+                    return;
+                }
+                
+                // Validación de cantidad solicitada vs máximo permitido
+                if (cantidad > maximoPermitido) {
+                    showError(`No hay suficiente stock disponible para "${articuloDisp.nombre}". Máximo permitido: ${maximoPermitido} (Ya tienes: ${cantidadActual}, Disponible para agregar: ${cantidadDisponibleAgregar})`);
+                    return;
+                }
+            } else {
+                // Si el artículo no aparece en la respuesta de disponibilidad, no está disponible
+                showError('Este artículo no está disponible para las fechas de la reserva');
+                return;
+            }
+        }
+
         await axios.post(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}?cantidad=${cantidad}`);
         showSuccess('Artículo agregado/actualizado exitosamente');
 
-    // Recargar lista de artículos asignados y disponibilidad
-    await loadArticulosAsignados(currentReservaId);
-    await cargarDisponibilidadArticulos(currentReservaId);
-    // Refrescar también la grilla de reservas
-    await loadReservas();
+        // Recargar lista de artículos asignados y disponibilidad
+        await loadArticulosAsignados(currentReservaId);
+        await cargarDisponibilidadArticulos(currentReservaId);
+        // Refrescar también la grilla de reservas
+        await loadReservas();
 
         // Actualizar el estado del formulario (el select mantiene su valor)
         actualizarInfoArticulo();
@@ -933,6 +1012,10 @@ async function agregarArticuloAReserva() {
         const status = error.response?.status;
         const detail = error.response?.data?.detail || error.message || 'Error al agregar el artículo';
         showError(`${status ? '['+status+'] ' : ''}${detail}`);
+        
+        // IMPORTANTE: Recargar los artículos asignados para reflejar el estado real del servidor
+        await loadArticulosAsignados(currentReservaId);
+        await cargarDisponibilidadArticulos(currentReservaId);
     }
 }
 
@@ -953,21 +1036,68 @@ async function modificarCantidadArticulo(articuloId, cambio) {
             return;
         }
 
+        // Validar disponibilidad antes de incrementar
+        if (cambio > 0) {
+            // Obtener disponibilidad actual del artículo
+            const reserva = reservas.find(r => r.id === currentReservaId);
+            if (reserva) {
+                try {
+                    const response = await axios.get('/api/v1/articulos/disponibilidad', {
+                        params: {
+                            fecha_inicio: reserva.fecha_hora_inicio,
+                            fecha_fin: reserva.fecha_hora_fin,
+                            reserva_id: currentReservaId
+                        }
+                    });
+                    
+                    const articuloDisp = response.data.find(a => a.id === articuloId);
+                    if (articuloDisp) {
+                        // La cantidad máxima que podemos tener en esta reserva es:
+                        // lo que ya tenemos asignado + lo que podemos agregar adicionalmente
+                        const cantidadYaAsignada = articuloDisp.cantidad_asignada_en_reserva || 0;
+                        const cantidadDisponibleAgregar = articuloDisp.cantidad_disponible_para_agregar || 0;
+                        const maximoPermitido = cantidadYaAsignada + cantidadDisponibleAgregar;
+                        
+                        console.log(`Validación artículo ${articuloId}:`, {
+                            cantidadActual: articuloActual.cantidad,
+                            nuevaCantidad: nuevaCantidad,
+                            cantidadYaAsignada: cantidadYaAsignada,
+                            cantidadDisponibleAgregar: cantidadDisponibleAgregar,
+                            maximoPermitido: maximoPermitido
+                        });
+                        
+                        if (nuevaCantidad > maximoPermitido) {
+                            showError(`No hay suficiente stock disponible. Máximo permitido: ${maximoPermitido} (Ya tienes: ${cantidadYaAsignada}, Disponible para agregar: ${cantidadDisponibleAgregar})`);
+                            return;
+                        }
+                    }
+                } catch (dispError) {
+                    console.error('Error verificando disponibilidad:', dispError);
+                    // Continuar con la petición y dejar que el backend valide
+                }
+            }
+        }
+
         // Usar el endpoint POST con modo='reemplazar' para establecer la cantidad exacta
         await axios.post(`/api/v1/reservas/${currentReservaId}/articulos/${articuloId}?cantidad=${nuevaCantidad}&modo=reemplazar`);
         showSuccess(`Cantidad actualizada a ${nuevaCantidad}`);
 
-    // Recargar lista y disponibilidad
-    await loadArticulosAsignados(currentReservaId);
-    await cargarDisponibilidadArticulos(currentReservaId);
-    // Refrescar también la grilla de reservas
-    await loadReservas();
+        // Recargar lista y disponibilidad
+        await loadArticulosAsignados(currentReservaId);
+        await cargarDisponibilidadArticulos(currentReservaId);
+        // Refrescar también la grilla de reservas
+        await loadReservas();
 
         // Actualizar el estado del formulario
         actualizarInfoArticulo();
     } catch (error) {
         console.error('Error modificando cantidad:', error);
-        showError(error.response?.data?.detail || 'Error al modificar la cantidad');
+        const errorMsg = error.response?.data?.detail || error.message || 'Error al modificar la cantidad';
+        showError(errorMsg);
+        
+        // IMPORTANTE: Recargar los artículos asignados para reflejar el estado real del servidor
+        await loadArticulosAsignados(currentReservaId);
+        await cargarDisponibilidadArticulos(currentReservaId);
     }
 }
 

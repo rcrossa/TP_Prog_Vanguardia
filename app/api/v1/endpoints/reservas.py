@@ -79,17 +79,55 @@ def _validar_stock(nueva_cantidad, articulo, total_reservado_otras,
         )
 
 def _calcular_total_reservado_otras(db, reserva_id, articulo_id):
+    # Obtener las fechas de la reserva actual para verificar solapamiento
+    reserva_actual = db.execute(
+        text(
+            """
+            SELECT fecha_hora_inicio, fecha_hora_fin FROM reservas WHERE id = :reserva_id
+            """
+        ),
+        {"reserva_id": reserva_id}
+    ).fetchone()
+    
+    if not reserva_actual:
+        return 0
+    
+    fecha_inicio = reserva_actual[0]
+    fecha_fin = reserva_actual[1]
+    
+    # Contar solo las reservas que se solapan con el período de esta reserva
     result = db.execute(
         text(
             """
-            SELECT SUM(ra.cantidad) FROM reserva_articulos ra
-            JOIN reservas r ON ra.reserva_id = r.id
-            WHERE ra.articulo_id = :articulo_id
-            AND ra.reserva_id != :reserva_id
-            AND r.fecha_hora_fin >= NOW()
+            SELECT COALESCE(SUM(cantidad_usada), 0) as total
+            FROM (
+                -- Reservas directas del artículo que se solapan
+                SELECT 1 as cantidad_usada
+                FROM reservas r
+                WHERE r.id_articulo = :articulo_id
+                AND r.id != :reserva_id
+                AND r.fecha_hora_fin >= :fecha_inicio
+                AND r.fecha_hora_inicio <= :fecha_fin
+                
+                UNION ALL
+                
+                -- Artículos en reservas de sala que se solapan
+                SELECT ra.cantidad as cantidad_usada
+                FROM reserva_articulos ra
+                JOIN reservas r ON ra.reserva_id = r.id
+                WHERE ra.articulo_id = :articulo_id
+                AND ra.reserva_id != :reserva_id
+                AND r.fecha_hora_fin >= :fecha_inicio
+                AND r.fecha_hora_inicio <= :fecha_fin
+            ) as reservas_solapadas
             """
         ),
-        {"articulo_id": articulo_id, "reserva_id": reserva_id}
+        {
+            "articulo_id": articulo_id, 
+            "reserva_id": reserva_id,
+            "fecha_inicio": fecha_inicio,
+            "fecha_fin": fecha_fin
+        }
     ).fetchone()
     return result[0] if result and result[0] else 0
 

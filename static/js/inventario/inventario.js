@@ -112,7 +112,13 @@ async function loadEstadisticas() {
         // Tarjetas de artículos (tipos)
         document.getElementById('total-articles').textContent = stats.total_articulos;
         document.getElementById('available-articles').textContent = stats.articulos_disponibles;
-        document.getElementById('reserved-articles').textContent = stats.articulos_no_disponibles;
+        
+        // Mostrar artículos sin stock AHORA (más útil que articulos_no_disponibles)
+        const articulosSinStock = stats.articulos_sin_stock_ahora !== undefined 
+            ? stats.articulos_sin_stock_ahora 
+            : stats.articulos_no_disponibles; // fallback
+        document.getElementById('reserved-articles').textContent = articulosSinStock;
+        
         document.getElementById('total-quantity').textContent = stats.total_unidades;
 
         // Tarjetas de unidades (cantidad real disponible/reservada)

@@ -194,38 +194,88 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
     articulos_no_disponibles = total_articulos - articulos_disponibles
 
     # Calcular unidades reservadas actualmente (en curso ahora)
-    ahora = datetime.now()
+    # Las fechas en la BD son "naive" (sin timezone), representan hora local ART (UTC-3)
+    # Ajustamos la hora actual restando 3 horas para comparar con fechas locales
     query_reservadas = text(
         """
         SELECT COALESCE(SUM(cantidad_usada), 0) as total
         FROM (
-            -- Reservas directas de artículos (activas ahora)
+            -- Reservas directas de artículos (activas ahora en hora local)
             SELECT 1 as cantidad_usada
             FROM reservas r
             WHERE r.id_articulo IS NOT NULL
-            AND r.fecha_hora_fin >= :ahora
-            AND r.fecha_hora_inicio <= :ahora
+            AND r.fecha_hora_fin >= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
+            AND r.fecha_hora_inicio <= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
 
             UNION ALL
 
-            -- Artículos en reservas de sala (activas ahora)
+            -- Artículos en reservas de sala (activas ahora en hora local)
             SELECT ra.cantidad as cantidad_usada
             FROM reserva_articulos ra
             JOIN reservas r ON ra.reserva_id = r.id
-            WHERE r.fecha_hora_fin >= :ahora
-            AND r.fecha_hora_inicio <= :ahora
+            WHERE r.fecha_hora_fin >= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
+            AND r.fecha_hora_inicio <= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
         ) as reservas_activas
     """
     )
 
-    result = db.execute(query_reservadas, {"ahora": ahora})
+    result = db.execute(query_reservadas)
     unidades_reservadas = result.scalar() or 0
     unidades_disponibles = max(0, total_unidades - unidades_reservadas)
+
+    # Calcular cuántos artículos tienen stock completamente agotado HOY
+    # Necesitamos encontrar artículos donde en ALGÚN MOMENTO del día,
+    # todas las unidades están reservadas simultáneamente
+    query_articulos_sin_stock = text(
+        """
+        WITH reservas_hoy AS (
+            -- Todas las reservas que tocan el día de hoy (hora local)
+            SELECT DISTINCT r.id, r.fecha_hora_inicio, r.fecha_hora_fin
+            FROM reservas r
+            WHERE r.fecha_hora_fin >= DATE_TRUNC('day', CURRENT_TIMESTAMP - INTERVAL '3 hours')
+            AND r.fecha_hora_inicio <= DATE_TRUNC('day', CURRENT_TIMESTAMP - INTERVAL '3 hours') + INTERVAL '1 day' - INTERVAL '1 second'
+        ),
+        articulos_en_reservas AS (
+            -- Para cada artículo, encontrar el máximo de unidades reservadas simultáneamente
+            SELECT 
+                a.id as articulo_id,
+                a.cantidad as stock_total,
+                (
+                    SELECT MAX(total_en_momento)
+                    FROM (
+                        -- Para cada reserva, contar cuántas unidades del artículo están reservadas
+                        -- en reservas que se solapan con esta
+                        SELECT r1.id as reserva_id, COALESCE(SUM(
+                            CASE 
+                                WHEN ra.articulo_id = a.id THEN ra.cantidad
+                                ELSE 0
+                            END
+                        ), 0) as total_en_momento
+                        FROM reservas_hoy r1
+                        LEFT JOIN reservas r2 ON (
+                            r2.fecha_hora_inicio <= r1.fecha_hora_fin
+                            AND r2.fecha_hora_fin >= r1.fecha_hora_inicio
+                        )
+                        LEFT JOIN reserva_articulos ra ON ra.reserva_id = r2.id
+                        GROUP BY r1.id
+                    ) as momentos
+                ) as max_reservado_simultaneo
+            FROM articulos a
+        )
+        SELECT COUNT(*) as total
+        FROM articulos_en_reservas
+        WHERE stock_total <= max_reservado_simultaneo
+    """
+    )
+
+    result_sin_stock = db.execute(query_articulos_sin_stock)
+    articulos_sin_stock_ahora = result_sin_stock.scalar() or 0
 
     return {
         "total_articulos": total_articulos,
         "articulos_disponibles": articulos_disponibles,
         "articulos_no_disponibles": articulos_no_disponibles,
+        "articulos_sin_stock_ahora": articulos_sin_stock_ahora,  # NUEVO: artículos con 0 unidades disponibles
         "total_unidades": total_unidades,
         "unidades_reservadas": unidades_reservadas,
         "unidades_disponibles": unidades_disponibles,
