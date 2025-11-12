@@ -3,7 +3,7 @@
 {% block title %}Dashboard - Sistema de Reservas{% endblock %}
 
 {% block extra_head %}
-<link href="/static/css/dashboard.css?v=1.0" rel="stylesheet">
+<link href="/static/css/dashboard.css?v={{ static_version }}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -239,5 +239,5 @@ async function exportReports(format = 'json') {
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="/static/js/dashboard/dashboard.js?v=2.0"></script>
+<script src="/static/js/dashboard/dashboard.js?v={{ static_version }}"></script>
 {% endblock %}

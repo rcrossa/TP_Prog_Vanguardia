@@ -8,6 +8,7 @@ let salas = [];
 let isAdmin = false;
 let salaModal;
 let salaToDelete = null;
+let disponibilidadActual = {}; // Disponibilidad actual de las salas
 
 // 🔒 SEGURIDAD PRE-RENDER: Aplicar clase admin INMEDIATAMENTE
 (function() {
@@ -37,12 +38,30 @@ async function loadSalas() {
         const response = await axios.get('/api/v1/salas/');
         // Limpiar y actualizar la variable global correctamente
         salas = Array.isArray(response.data) ? response.data.slice() : [];
+        
+        // Cargar disponibilidad actual
+        await loadDisponibilidadActual();
+        
         renderSalas(salas);
     } catch (error) {
         salas = [];
         renderSalas(salas);
         console.error('Error al cargar salas:', error);
         showError('Error al cargar las salas');
+    }
+}
+
+/**
+ * Cargar disponibilidad actual de todas las salas
+ */
+async function loadDisponibilidadActual() {
+    try {
+        const response = await axios.get('/api/v1/salas/disponibilidad/actual');
+        disponibilidadActual = response.data;
+    } catch (error) {
+        console.error('Error cargando disponibilidad:', error);
+        // Si falla, asumir que todas están disponibles
+        disponibilidadActual = {};
     }
 }
 
@@ -78,13 +97,9 @@ function renderSalas(salasToRender) {
             <td>
                 <span class="badge bg-primary">${sala.capacidad} personas</span>
             </td>
-            ${!isAdmin ? `
-                <td>
-                    <span class="badge bg-success">
-                        <i class="fas fa-check me-1"></i>Disponible
-                    </span>
-                </td>
-            ` : ''}
+            <td>
+                ${getSalaDisponibilidadBadge(sala.id)}
+            </td>
             ${isAdmin ? `
                 <td>
                     <div class="btn-group btn-group-sm">
@@ -103,6 +118,28 @@ function renderSalas(salasToRender) {
             ` : ''}
         </tr>
     `).join('');
+}
+
+/**
+ * Obtener badge de disponibilidad de una sala
+ */
+function getSalaDisponibilidadBadge(salaId) {
+    const disponible = disponibilidadActual[salaId];
+    
+    // Si no tenemos info de disponibilidad, asumir disponible
+    if (disponible === undefined || disponible === true) {
+        return `
+            <span class="badge bg-success">
+                <i class="fas fa-check me-1"></i>Disponible
+            </span>
+        `;
+    } else {
+        return `
+            <span class="badge bg-danger">
+                <i class="fas fa-times me-1"></i>Ocupada
+            </span>
+        `;
+    }
 }
 
 /**

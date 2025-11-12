@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.core.database import get_db
 from app.repositories.reserva_repository import ReservaRepository
 from app.repositories.sala_repository import SalaRepository
@@ -207,7 +208,18 @@ async def get_dashboard_metrics(request: Request, days: int = 30, db: Session = 
         if r.fecha_hora_inicio.date() == ahora_local.date()
     )
 
-    salas_disponibles = sum(1 for s in salas if s.disponible)
+    # Contar salas disponibles AHORA (sin reservas activas en este momento)
+    query_salas_ocupadas = text("""
+        SELECT COUNT(DISTINCT id_sala)
+        FROM reservas
+        WHERE id_sala IS NOT NULL
+        AND fecha_hora_inicio <= CURRENT_TIMESTAMP
+        AND fecha_hora_fin >= CURRENT_TIMESTAMP
+    """)
+    result_salas_ocupadas = db.execute(query_salas_ocupadas)
+    salas_ocupadas_ahora = result_salas_ocupadas.scalar() or 0
+    total_salas = len(salas)
+    salas_disponibles = max(0, total_salas - salas_ocupadas_ahora)
 
     articulos = ArticuloRepository.get_all(db)
     stock_critico = sum(1 for a in articulos if a.cantidad < 5 and a.disponible)

@@ -47,7 +47,7 @@
                         <th width="80">ID</th>
                         <th>Nombre</th>
                         <th width="120">Capacidad</th>
-                        <th class="user-only">Disponibilidad</th>
+                        <th width="150">Disponibilidad</th>
                         <th class="admin-only" width="150">Acciones</th>
                     </tr>
                 </thead>
@@ -134,5 +134,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/salas/salas.js?v=1.0"></script>
+<script src="/static/js/salas/salas.js?v={{ static_version }}"></script>
 {% endblock %}

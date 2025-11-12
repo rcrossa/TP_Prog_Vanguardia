@@ -6,9 +6,14 @@ Este módulo define los endpoints REST para las operaciones CRUD
 del modelo Sala utilizando FastAPI.
 """
 from typing import List
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
 from fastapi.responses import JSONResponse
 from httpx import HTTPError
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from app.core.database import get_db
 from app.services.java_client import JavaServiceClient
 from app.schemas.sala import Sala, SalaCreate, SalaUpdate
 
@@ -106,3 +111,46 @@ async def count_salas():
         return JSONResponse(status_code=502, content={"detail": f"Error de red: {str(e)}"})
     except ValueError as e:
         return JSONResponse(status_code=400, content={"detail": f"Datos inválidos: {str(e)}"})
+
+
+@router.get("/disponibilidad/actual")
+async def get_disponibilidad_salas(db: Session = Depends(get_db)):
+    """
+    Obtener disponibilidad actual de todas las salas.
+    
+    Retorna un diccionario con el ID de la sala como clave y un booleano
+    indicando si está disponible AHORA (no tiene reservas activas en este momento).
+    """
+    try:
+        # Obtener todas las salas de Java
+        salas = await JavaServiceClient.get_salas()
+        if not salas:
+            return {}
+        
+        # Obtener reservas activas AHORA para salas
+        ahora_local = datetime.now(ZoneInfo("America/Argentina/Buenos_Aires"))
+        
+        query = text("""
+            SELECT DISTINCT id_sala
+            FROM reservas
+            WHERE id_sala IS NOT NULL
+            AND fecha_hora_inicio <= CURRENT_TIMESTAMP
+            AND fecha_hora_fin >= CURRENT_TIMESTAMP
+        """)
+        
+        result = db.execute(query)
+        salas_ocupadas = {row[0] for row in result}
+        
+        # Crear diccionario de disponibilidad
+        disponibilidad = {}
+        for sala in salas:
+            sala_id = sala.get('id')
+            # Sala disponible si: tiene campo disponible=True Y no está ocupada ahora
+            disponibilidad[sala_id] = sala.get('disponible', True) and (sala_id not in salas_ocupadas)
+        
+        return disponibilidad
+        
+    except HTTPError as e:
+        return JSONResponse(status_code=502, content={"detail": f"Error de red: {str(e)}"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Error: {str(e)}"})
