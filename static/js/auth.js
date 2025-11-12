@@ -209,7 +209,7 @@ class AuthManager {
         const email = form.email.value.trim();
         const password = form.password.value;
         const submitButton = form.querySelector('button[type="submit"]');
-        const alertElement = document.getElementById('alert');
+        const alertElement = document.getElementById('loginAlert');
 
         this.hideAlert(alertElement);
         this.setLoading(submitButton, true);
@@ -224,6 +224,18 @@ class AuthManager {
         const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
         if (!emailRegex.test(email)) {
             this.showAlert(alertElement, 'warning', 'El email ingresado no es válido.');
+            this.setLoading(submitButton, false);
+            return;
+        }
+
+        // Validación: contraseña obligatoria y longitud mínima
+        if (!password) {
+            this.showAlert(alertElement, 'warning', 'Por favor, ingresa tu contraseña.');
+            this.setLoading(submitButton, false);
+            return;
+        }
+        if (password.length < 6) {
+            this.showAlert(alertElement, 'warning', 'La contraseña debe tener al menos 6 caracteres.');
             this.setLoading(submitButton, false);
             return;
         }
@@ -325,12 +337,14 @@ class AuthManager {
         if (alertElement) {
             alertElement.className = `alert alert-${type}`;
             alertElement.textContent = message;
+            alertElement.classList.remove('d-none');
             alertElement.style.display = 'block';
         }
     }
 
     hideAlert(alertElement) {
         if (alertElement) {
+            alertElement.classList.add('d-none');
             alertElement.style.display = 'none';
         }
     }
