@@ -189,7 +189,9 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
     articulos = ArticuloService.get_articulos(db, 0, 1000)
 
     total_articulos = len(articulos)
+    # Solo contar unidades de artículos marcados como disponibles
     total_unidades = sum(art.cantidad for art in articulos)
+    total_unidades_disponibles = sum(art.cantidad for art in articulos if art.disponible)
     articulos_disponibles = sum(1 for art in articulos if art.disponible)
     articulos_no_disponibles = total_articulos - articulos_disponibles
 
@@ -221,7 +223,8 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
 
     result = db.execute(query_reservadas)
     unidades_reservadas = result.scalar() or 0
-    unidades_disponibles = max(0, total_unidades - unidades_reservadas)
+    # Calcular unidades disponibles = unidades de artículos disponibles - unidades reservadas
+    unidades_disponibles = max(0, total_unidades_disponibles - unidades_reservadas)
 
     # Calcular cuántos artículos tienen stock completamente agotado HOY
     # Necesitamos encontrar artículos donde en ALGÚN MOMENTO del día,

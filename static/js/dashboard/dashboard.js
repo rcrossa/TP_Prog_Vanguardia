@@ -100,6 +100,9 @@ class DashboardManager {
 
         const salasEl = document.getElementById('salasDisponibles');
         if (salasEl) salasEl.textContent = metricas.salas_disponibles;
+
+        const articulosEl = document.getElementById('articulosDisponibles');
+        if (articulosEl) articulosEl.textContent = metricas.articulos_disponibles;
     }
 
     updateOcupacionChart(ocupacionData) {

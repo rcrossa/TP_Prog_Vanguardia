@@ -211,6 +211,7 @@ async def get_dashboard_metrics(request: Request, days: int = 30, db: Session = 
 
     articulos = ArticuloRepository.get_all(db)
     stock_critico = sum(1 for a in articulos if a.cantidad < 5 and a.disponible)
+    articulos_disponibles = sum(1 for a in articulos if a.disponible)
 
     # Calcular ocupación promedio
     if reservas:
@@ -235,6 +236,7 @@ async def get_dashboard_metrics(request: Request, days: int = 30, db: Session = 
             "reservas_hoy": reservas_hoy,
             "ocupacion_promedio": round(ocupacion_promedio, 1),
             "salas_disponibles": salas_disponibles,
+            "articulos_disponibles": articulos_disponibles,
             "stock_critico": stock_critico
         }
     }
