@@ -10,10 +10,8 @@ Este proyecto incluye scripts automatizados para configurar e iniciar la platafo
 
 | Script | Sistema | Descripción |
 |--------|---------|-------------|
-| `setup_inicia_todo.sh` | Mac/Linux | **Script principal** - Configuración completa con selección de modo |
-| `setup_inicia_todo.bat` | Windows | **Script principal** - Configuración completa con selección de modo |
-| `setup.sh` | Mac/Linux | Redirige a `setup_inicia_todo.sh` |
-| `setup_win.bat` | Windows | Redirige a `setup_inicia_todo.bat` |
+| `setup_inicia_todo.sh` | Mac/Linux | Configuración completa con selección de modo |
+| `setup_inicia_todo.bat` | Windows | Configuración completa con selección de modo |
 
 ### Gestión de Servicios
 
