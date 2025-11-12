@@ -17,24 +17,52 @@
 - Python 3.11+
 - Docker y Docker Compose
 - Git
+- Java 17+ (para modo DB-only)
+- Maven (para modo DB-only)
 
-### Instalación
+### Instalación Automática
 
+**Mac/Linux:**
 ```bash
 # 1. Clonar el repositorio
 git clone <repo-url>
 cd TP_Prog_Vanguardia
 
 # 2. Ejecutar setup automático
-./setup.sh
+./setup_inicia_todo.sh
 
-# 3. Acceder a la aplicación
-# Frontend: http://localhost:8000
-# API Docs Python: http://localhost:8000/docs
-# API Docs Java: http://localhost:8080/swagger-ui.html
+# 3. Seleccionar modo de ejecución:
+#    [1] DB-only: Base de datos en Docker, servicios locales
+#    [2] Full Docker: Todo en contenedores
 ```
 
-> 💡 **Más detalles:** Consulta la [Guía de Configuración](./docs/configuracion_entorno.md) y [Docker Guide](./docs/docker_guide.md)
+**Windows:**
+```cmd
+REM 1. Clonar el repositorio
+git clone <repo-url>
+cd TP_Prog_Vanguardia
+
+REM 2. Ejecutar setup automático
+setup_inicia_todo.bat
+
+REM 3. Seleccionar modo de ejecución:
+REM    [1] DB-only: Base de datos en Docker, servicios locales
+REM    [2] Full Docker: Todo en contenedores
+```
+
+### Acceder a la Aplicación
+
+Después del setup, los servicios estarán disponibles en:
+
+- 🌐 **Frontend:** http://localhost:8000
+- 📚 **API Docs Python:** http://localhost:8000/docs
+- ☕ **API Docs Java:** http://localhost:8080/swagger-ui.html
+- 🐘 **PgAdmin:** http://localhost:5050
+
+> 💡 **Guías detalladas:**
+> - [📝 Scripts de Setup](./docs/SETUP_SCRIPTS.md) - Explicación completa de modos y scripts
+> - [⚙️ Configuración](./docs/configuracion_entorno.md) - Variables de entorno
+> - [🐳 Docker Guide](./docs/docker_guide.md) - Gestión de contenedores
 
 ---
 
@@ -106,6 +134,15 @@ graph TB
 ### Infraestructura
 - **Base de Datos:** PostgreSQL 15
 - **Containerización:** Docker & Docker Compose
+- **Timezone:** America/Argentina/Buenos_Aires (configurado automáticamente)
+
+### Sistema de Setup Automatizado
+- ✅ **Detección automática** de Docker, Python y Java
+- ✅ **Dos modos de ejecución:** DB-only (desarrollo) y Full Docker (producción)
+- ✅ **Cache busting automático** con timestamp en cada setup
+- ✅ **Creación de admin** por defecto
+- ✅ **Scripts multiplataforma:** Mac/Linux (.sh) y Windows (.bat)
+- ✅ **Gestión de servicios:** Scripts para iniciar/detener todos los servicios
 
 ---
 
@@ -115,25 +152,29 @@ graph TB
 
 | Documento | Descripción |
 |-----------|-------------|
+| [📝 Scripts de Setup](./docs/SETUP_SCRIPTS.md) | **⭐ Guía completa de scripts y modos de ejecución** |
 | [🏗️ Arquitectura](./docs/architecture.md) | Diseño completo del sistema |
 | [⚙️ Configuración](./docs/configuracion_entorno.md) | Variables de entorno |
 | [🐳 Docker](./docker/README.md) | Guía de contenedores |
 | [☕ Java Service](./java-service/README.md) | API Java Spring Boot |
 | [📋 API Reference](./docs/api_reference.md) | Referencia de endpoints |
+| [🔄 Cache Busting](./docs/cache_busting.md) | Sistema de invalidación de caché |
 | [❓ FAQ](./docs/faq.md) | Preguntas frecuentes |
 | [🔧 Troubleshooting](./docs/troubleshooting.md) | Solución de problemas |
 
 ### 🎯 Por Tipo de Usuario
 
-**Desarrolladores:**
-1. [Configuración de Entorno](./docs/configuracion_entorno.md)
-2. [Arquitectura del Sistema](./docs/architecture.md)
-3. [Estándares de Código](./docs/formato_codigo.md)
+**Desarrolladores - Primera vez:**
+1. [📝 Scripts de Setup](./docs/SETUP_SCRIPTS.md) - **⭐ EMPEZAR AQUÍ**
+2. [⚙️ Configuración de Entorno](./docs/configuracion_entorno.md)
+3. [🏗️ Arquitectura del Sistema](./docs/architecture.md)
+4. [📐 Estándares de Código](./docs/formato_codigo.md)
 
 **Evaluadores/Profesores:**
-1. [Estado del Proyecto](#-estado-del-proyecto) (esta sección)
-2. [Guía Docker](./docker/README.md)
-3. [Testing con Postman](./postman/README.md)
+1. [📊 Estado del Proyecto](#-estado-del-proyecto) (esta sección)
+2. [📝 Scripts de Setup](./docs/SETUP_SCRIPTS.md) - Instalación rápida
+3. [🐳 Guía Docker](./docker/README.md)
+4. [📮 Testing con Postman](./postman/README.md)
 
 ---
 
@@ -232,26 +273,74 @@ postman/Sistema_Completo_API_Collection.postman_collection.json
 
 ## 🐳 Docker
 
-### Modo Database-Only (Recomendado)
-```bash
-cd docker
-./start-db-only.sh
+### Modos de Ejecución
 
-# Ejecutar servicios manualmente:
-# Terminal 1: Python service
+El proyecto soporta **dos modos de ejecución** configurables durante el setup:
+
+#### 1️⃣ DB-only (Desarrollo)
+- ✅ PostgreSQL + PgAdmin en Docker
+- ✅ Python y Java ejecutándose localmente
+- 🎯 **Ideal para:** Desarrollo activo, debugging, modificaciones frecuentes
+
+#### 2️⃣ Full Docker (Producción/Testing)
+- ✅ PostgreSQL + PgAdmin + Python + Java en Docker
+- ✅ Ambiente completamente aislado
+- 🎯 **Ideal para:** Testing de integración, ambiente de producción
+
+### Gestión de Servicios
+
+**Mac/Linux:**
+```bash
+# Iniciar todo (con selección de modo)
+./setup_inicia_todo.sh
+
+# Solo iniciar servicios locales (modo DB-only)
+# Terminal 1: Python
+source venv/bin/activate
 python main.py
 
-# Terminal 2: Java service
+# Terminal 2: Java
 cd java-service && ./run.sh
+
+# Detener todos los servicios
+./docker/stop-all.sh
 ```
 
-### Detener Servicios
+**Windows:**
+```cmd
+REM Iniciar todo (con selección de modo)
+setup_inicia_todo.bat
+
+REM Solo iniciar servicios locales (modo DB-only)
+REM Opción 1: Script automático (recomendado)
+start_services.bat
+
+REM Opción 2: Manual en terminales separadas
+REM Terminal 1: Python
+venv\Scripts\activate
+python main.py
+
+REM Terminal 2: Java
+cd java-service
+mvnw.cmd spring-boot:run
+
+REM Detener todos los servicios
+docker\stop-all.bat
+```
+
+### Ver Logs (Modo Full Docker)
+
 ```bash
-cd docker
-./stop-all.sh
+# Mac/Linux
+docker-compose -f docker/docker-compose.full.yml logs -f
+
+# Windows
+docker-compose -f docker\docker-compose.full.yml logs -f
 ```
 
-> 🐳 **Guía completa:** [Docker README](./docker/README.md)
+> 🐳 **Documentación completa:**
+> - [📝 Scripts de Setup](./docs/SETUP_SCRIPTS.md) - Guía de scripts y modos
+> - [🐳 Docker Guide](./docker/README.md) - Configuración avanzada de Docker
 
 ---
 
@@ -260,14 +349,29 @@ cd docker
 ```
 TP_Prog_Vanguardia/
 ├── app/                    # 🐍 Código Python (FastAPI)
+│   ├── api/               # Endpoints REST
+│   ├── auth/              # Autenticación JWT
+│   ├── models/            # Modelos SQLAlchemy
+│   ├── services/          # Lógica de negocio
+│   ├── repositories/      # Acceso a datos
+│   └── schemas/           # Schemas Pydantic
 ├── java-service/           # ☕ Código Java (Spring Boot)
+│   └── src/main/java/     # Código fuente Java
 ├── docs/                   # 📚 Documentación técnica
 ├── docker/                 # 🐳 Configuración Docker
-├── templates/              # 🎨 Frontend HTML
-├── static/                 # 📁 CSS/JS
+│   ├── docker-compose.db-only.yml   # Solo base de datos
+│   ├── docker-compose.full.yml      # Stack completo
+│   ├── stop-all.sh        # Detener servicios (Mac/Linux)
+│   └── stop-all.bat       # Detener servicios (Windows)
+├── templates/              # 🎨 Frontend HTML (Jinja2)
+├── static/                 # 📁 CSS/JS con cache busting
 ├── scripts/                # 🛠️ Scripts útiles
 ├── postman/                # 📮 Colecciones de API
-├── tests/                  # 🧪 Tests
+├── tests/                  # 🧪 Tests unitarios/integración
+├── setup_inicia_todo.sh   # 🚀 Setup Mac/Linux
+├── setup_inicia_todo.bat  # 🚀 Setup Windows
+├── start_services.bat     # ▶️ Iniciar servicios (Windows)
+├── docs/SETUP_SCRIPTS.md       # 📝 Documentación de scripts
 └── README.md              # 📄 Este archivo
 ```
 
@@ -328,10 +432,12 @@ Proyecto académico para la asignatura Programación de Vanguardia.
 
 ## 🔗 Enlaces Útiles
 
-- [📚 Índice de Documentación](./docs/README.md)
+- [📝 **Scripts de Setup**](./docs/SETUP_SCRIPTS.md) - **⭐ Guía de instalación y modos de ejecución**
+- [� Índice de Documentación](./docs/README.md)
 - [🐳 Docker Setup](./docker/README.md)
 - [☕ Java Service API](./java-service/README.md)
 - [🛠️ Scripts Útiles](./scripts/README.md)
 - [📮 Testing Postman](./postman/README.md)
+- [🔄 Cache Busting](./docs/cache_busting.md)
 
 ---

@@ -92,6 +92,7 @@ services:
       # App
       - DEBUG=true
       - PYTHONUNBUFFERED=1
+      - STATIC_VERSION=${STATIC_VERSION:-1}
 
     ports:
       - "${PYTHON_SERVICE_PORT:-8000}:8000"

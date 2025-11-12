@@ -46,19 +46,45 @@ if [ ! -f ".env" ]; then
     echo "📝 Creando .env desde plantilla..."
     cp .env.example .env
 fi
+
+# Generar timestamp para cache busting
+CACHE_VERSION=$(date +%s)
+echo "🔄 Generando versión de caché: $CACHE_VERSION"
+
+# Actualizar o agregar STATIC_VERSION en .env
+if grep -q "^STATIC_VERSION=" .env; then
+    # Si existe, reemplazarla
+    sed -i.bak "s/^STATIC_VERSION=.*/STATIC_VERSION=$CACHE_VERSION/" .env
+    rm -f .env.bak
+else
+    # Si no existe, agregarla
+    echo "STATIC_VERSION=$CACHE_VERSION" >> .env
+fi
+
 if [ ! -f "docker/.env" ]; then
     echo "📝 Creando docker/.env desde plantilla..."
     cp docker/.env.example docker/.env
 fi
 
+# Actualizar o agregar STATIC_VERSION en docker/.env también
+if grep -q "^STATIC_VERSION=" docker/.env; then
+    sed -i.bak "s/^STATIC_VERSION=.*/STATIC_VERSION=$CACHE_VERSION/" docker/.env
+    rm -f docker/.env.bak
+else
+    echo "STATIC_VERSION=$CACHE_VERSION" >> docker/.env
+fi
+
 # Selección de stack a levantar
-echo "\n� ¿Qué stack deseas iniciar?"
-echo "1) Solo base de datos (db-only)"
-echo "2) Full stack (Python + Java + DB)"
+echo "\n🔧 ¿Qué stack deseas iniciar?"
+echo "1) Solo base de datos (db-only) - Python y Java correrán localmente"
+echo "2) Full stack (Python + Java + DB) - Todo en Docker"
 read -p "Selecciona una opción (1-2, default 1): " stack_option
 stack_file="docker-compose.db-only.yml"
+USE_DOCKER_FULL=false
+
 if [ "$stack_option" == "2" ]; then
     stack_file="docker-compose.full.yml"
+    USE_DOCKER_FULL=true
 fi
 
 cd docker
@@ -68,7 +94,7 @@ docker-compose -f $stack_file up -d
 # Esperar a que la base de datos esté lista
 echo "⏳ Esperando a que PostgreSQL esté listo..."
 for i in {1..20}; do
-    if docker-compose exec -T postgres pg_isready -U $(grep POSTGRES_USER .env | cut -d'=' -f2) > /dev/null 2>&1; then
+    if docker-compose -f $stack_file exec -T postgres pg_isready -U $(grep POSTGRES_USER .env | cut -d'=' -f2) > /dev/null 2>&1; then
         echo "✅ PostgreSQL está listo."
         break
     fi
@@ -77,46 +103,59 @@ done
 
 cd ..
 
+# Solo configurar entorno Python local si NO es modo Full Docker
+if [ "$USE_DOCKER_FULL" = false ]; then
+    # Crear y activar entorno virtual
+    echo "\n🐍 Configurando entorno virtual Python..."
+    if [ ! -d "venv" ]; then
+        python3 -m venv venv
+        echo "✅ Entorno virtual creado en ./venv"
+    fi
 
-# Crear y activar entorno virtual
-echo "\n🐍 Configurando entorno virtual Python..."
-if [ ! -d "venv" ]; then
-    python3 -m venv venv
-    echo "✅ Entorno virtual creado en ./venv"
+    # Activar entorno virtual según shell
+    if [ -n "$ZSH_VERSION" ]; then
+        source venv/bin/activate
+    elif [ -n "$BASH_VERSION" ]; then
+        source venv/bin/activate
+    else
+        . venv/bin/activate
+    fi
+
+    echo "\n📦 Instalando dependencias Python en el virtualenv..."
+    pip install --upgrade pip
+    pip install -r requirements.txt
 fi
-
-# Activar entorno virtual según shell
-if [ -n "$ZSH_VERSION" ]; then
-    source venv/bin/activate
-elif [ -n "$BASH_VERSION" ]; then
-    source venv/bin/activate
-else
-    . venv/bin/activate
-fi
-
-echo "\n📦 Instalando dependencias Python en el virtualenv..."
-pip install --upgrade pip
-pip install -r requirements.txt
 
 # Mostrar credenciales
 echo "\n📋 Credenciales configuradas (docker/.env):"
 grep -E 'POSTGRES_USER|POSTGRES_PASSWORD|PGADMIN_DEFAULT_EMAIL|PGADMIN_DEFAULT_PASSWORD' docker/.env | sed 's/^/   /'
 
-
-echo "\n👤 Creando usuario administrador por defecto..."
-if [ -f "create_admin.py" ]; then
-    python create_admin.py || echo "⚠️  No se pudo crear el admin automáticamente. Puedes crearlo manualmente luego."
-else
-    echo "⚠️  create_admin.py no encontrado."
+# Crear usuario admin solo si NO es modo Full Docker
+if [ "$USE_DOCKER_FULL" = false ]; then
+    echo "\n👤 Creando usuario administrador por defecto..."
+    if [ -f "create_admin.py" ]; then
+        python create_admin.py || echo "⚠️  No se pudo crear el admin automáticamente. Puedes crearlo manualmente luego."
+    else
+        echo "⚠️  create_admin.py no encontrado."
+    fi
 fi
 
-echo "\n🎉 Setup completado. Servicios disponibles:"
-echo "   - PostgreSQL: localhost:5432"
-echo "   - API Python: http://localhost:8000/docs"
-echo "   - API Java:   http://localhost:8080/swagger-ui.html"
-echo "   - PgAdmin:    http://localhost:5050"
-
-echo "\n🚀 Iniciando servicios en terminales separadas de VS Code..."
+if [ "$USE_DOCKER_FULL" = true ]; then
+    echo "\n🎉 Setup completado (Modo Full Docker). Servicios disponibles:"
+    echo "   - PostgreSQL: localhost:5432"
+    echo "   - API Python: http://localhost:8000/docs (en Docker)"
+    echo "   - API Java:   http://localhost:8080/swagger-ui.html (en Docker)"
+    echo "   - PgAdmin:    http://localhost:5050"
+    echo ""
+    echo "✅ Todos los servicios están corriendo en contenedores Docker"
+    echo "   Para ver logs: docker-compose -f docker/docker-compose.full.yml logs -f"
+    echo "   Para detener:  ./docker/stop-all.sh"
+else
+    echo "\n🎉 Setup completado (Modo DB-only). Servicios disponibles:"
+    echo "   - PostgreSQL: localhost:5432"
+    echo "   - PgAdmin:    http://localhost:5050"
+    echo ""
+    echo "🚀 Iniciando servicios Python y Java localmente..."
 
 # Obtener la ruta absoluta del directorio actual
 WORKSPACE_DIR="$(pwd)"
@@ -207,7 +246,7 @@ JAVA_EOF
     echo "   (Puedes eliminarlos cuando quieras)"
 }
 
-# Intentar iniciar servicios
+# Intentar iniciar servicios locales
 if [[ "$OSTYPE" == "darwin"* ]]; then
     start_services
 else
@@ -217,106 +256,7 @@ else
     echo "   Terminal 2 (Python): source venv/bin/activate && python main.py"
 fi
 
-echo "\n💡 Para Windows, usa setup_win.bat."
+fi  # Cierre del if [ "$USE_DOCKER_FULL" = false ]
 
-echo "\n� Iniciando servicios en terminales separadas..."
-
-# Obtener la ruta absoluta del directorio actual
-WORKSPACE_DIR="$(pwd)"
-
-# Crear un archivo temporal con los comandos para el terminal de Python
-PYTHON_CMD_FILE="/tmp/vscode_python_cmd.sh"
-cat > "$PYTHON_CMD_FILE" << 'EOF'
-#!/bin/bash
-cd "$WORKSPACE_DIR"
-source venv/bin/activate
-echo "🐍 Iniciando servicio Python..."
-python main.py
-EOF
-
-# Crear un archivo temporal con los comandos para el terminal de Java
-JAVA_CMD_FILE="/tmp/vscode_java_cmd.sh"
-cat > "$JAVA_CMD_FILE" << 'EOF'
-#!/bin/bash
-cd "$WORKSPACE_DIR/java-service"
-echo "☕ Iniciando servicio Java..."
-./mvnw spring-boot:run
-EOF
-
-# Reemplazar $WORKSPACE_DIR en los archivos temporales
-sed -i.bak "s|\$WORKSPACE_DIR|$WORKSPACE_DIR|g" "$PYTHON_CMD_FILE"
-sed -i.bak "s|\$WORKSPACE_DIR|$WORKSPACE_DIR|g" "$JAVA_CMD_FILE"
-
-# Hacer ejecutables los scripts temporales
-chmod +x "$PYTHON_CMD_FILE"
-chmod +x "$JAVA_CMD_FILE"
-
-# Verificar si estamos ejecutando desde VS Code
-if [ -n "$VSCODE_IPC_HOOK_CLI" ] || [ -n "$TERM_PROGRAM" ]; then
-    # Ejecutar comandos en terminales de VS Code usando AppleScript (macOS)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # Terminal para Python
-        osascript -e "
-        tell application \"Visual Studio Code\"
-            activate
-        end tell
-        " 2>/dev/null
-        
-        # Usar 'code' CLI para abrir terminales
-        code --new-window "$WORKSPACE_DIR" 2>/dev/null || true
-        
-        # Esperar un poco para que VS Code esté listo
-        sleep 1
-        
-        # Crear terminal de Python
-        osascript <<-APPLESCRIPT
-        tell application "System Events"
-            tell process "Code"
-                keystroke "t" using {control down, shift down}
-                delay 0.5
-            end tell
-        end tell
-APPLESCRIPT
-        
-        # Enviar comando de Python
-        sleep 0.5
-        osascript -e 'tell application "System Events" to keystroke "source venv/bin/activate && python main.py"'
-        osascript -e 'tell application "System Events" to keystroke return'
-        
-        # Esperar un poco
-        sleep 1
-        
-        # Crear terminal de Java
-        osascript <<-APPLESCRIPT
-        tell application "System Events"
-            tell process "Code"
-                keystroke "t" using {control down, shift down}
-                delay 0.5
-            end tell
-        end tell
-APPLESCRIPT
-        
-        # Enviar comando de Java
-        sleep 0.5
-        osascript -e 'tell application "System Events" to keystroke "cd java-service && ./mvnw spring-boot:run"'
-        osascript -e 'tell application "System Events" to keystroke return'
-        
-        echo "✅ Servicios iniciados en terminales separadas de VS Code"
-    else
-        # Para Linux, usar una aproximación diferente
-        echo "⚠️  Inicio automático de terminales solo disponible en macOS"
-        echo "   Por favor, abre manualmente dos terminales y ejecuta:"
-        echo "   Terminal 1: source venv/bin/activate && python main.py"
-        echo "   Terminal 2: cd java-service && ./mvnw spring-boot:run"
-    fi
-else
-    # Si no estamos en VS Code, mostrar instrucciones
-    echo "\n🔧 Para iniciar los servicios, ejecuta en terminales separadas:"
-    echo "   Terminal 1 (Python): source venv/bin/activate && python main.py"
-    echo "   Terminal 2 (Java):   cd java-service && ./mvnw spring-boot:run"
-fi
-
-# Limpiar archivos temporales
-rm -f "$PYTHON_CMD_FILE" "$PYTHON_CMD_FILE.bak" "$JAVA_CMD_FILE" "$JAVA_CMD_FILE.bak"
-
-echo "\n💡 Para Windows, usa setup_win.bat."
+echo "\n💡 Para Windows, usa setup_inicia_todo.bat"
+echo "\n✨ Setup finalizado exitosamente!"
