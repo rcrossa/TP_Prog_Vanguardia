@@ -105,21 +105,6 @@ async function loadReservas() {
         const response = await axios.get('/api/v1/reservas/');
         reservas = response.data;
         
-        // DEBUG: Log para verificar las fechas de las reservas
-        console.log(`Total reservas cargadas: ${reservas.length}`);
-        const reservasFuturas = reservas.filter(r => {
-            const estado = getEstadoReserva(r);
-            return estado === 'futuro';
-        });
-        console.log(`Reservas futuras: ${reservasFuturas.length}`);
-        if (reservasFuturas.length > 0) {
-            console.log('Primeras 5 reservas futuras:', reservasFuturas.slice(0, 5).map(r => ({
-                id: r.id,
-                inicio: r.fecha_hora_inicio,
-                estado: getEstadoReserva(r)
-            })));
-        }
-        
         filteredReservas = reservas; // Inicializar reservas filtradas
         // El backend ya maneja los permisos:
         // - Admin ve todas las reservas
@@ -708,6 +693,8 @@ async function saveReserva() {
         }
     } catch (error) {
         console.error('Error guardando reserva:', error);
+        console.error('Error response data:', error.response?.data);
+        console.error('Error status:', error.response?.status);
 
         // Mostrar mensaje de error más detallado
         let errorMsg = 'Error al guardar la reserva';
@@ -966,14 +953,6 @@ async function agregarArticuloAReserva() {
                 const cantidadDisponibleAgregar = articuloDisp.cantidad_disponible_para_agregar || 0;
                 const maximoPermitido = cantidadActual + cantidadDisponibleAgregar;
                 
-                console.log(`Validación al agregar artículo ${articuloId}:`, {
-                    cantidad: cantidad,
-                    cantidadActual: cantidadActual,
-                    cantidadDisponibleAgregar: cantidadDisponibleAgregar,
-                    maximoPermitido: maximoPermitido,
-                    articuloNombre: articuloDisp.nombre
-                });
-                
                 // Validación estricta: si no hay disponibilidad para agregar, bloquear SIEMPRE
                 if (cantidadDisponibleAgregar <= 0) {
                     if (cantidadActual === 0) {
@@ -1057,14 +1036,6 @@ async function modificarCantidadArticulo(articuloId, cambio) {
                         const cantidadYaAsignada = articuloDisp.cantidad_asignada_en_reserva || 0;
                         const cantidadDisponibleAgregar = articuloDisp.cantidad_disponible_para_agregar || 0;
                         const maximoPermitido = cantidadYaAsignada + cantidadDisponibleAgregar;
-                        
-                        console.log(`Validación artículo ${articuloId}:`, {
-                            cantidadActual: articuloActual.cantidad,
-                            nuevaCantidad: nuevaCantidad,
-                            cantidadYaAsignada: cantidadYaAsignada,
-                            cantidadDisponibleAgregar: cantidadDisponibleAgregar,
-                            maximoPermitido: maximoPermitido
-                        });
                         
                         if (nuevaCantidad > maximoPermitido) {
                             showError(`No hay suficiente stock disponible. Máximo permitido: ${maximoPermitido} (Ya tienes: ${cantidadYaAsignada}, Disponible para agregar: ${cantidadDisponibleAgregar})`);

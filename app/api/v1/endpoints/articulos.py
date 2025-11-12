@@ -195,7 +195,7 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
 
     # Calcular unidades reservadas actualmente (en curso ahora)
     # Las fechas en la BD son "naive" (sin timezone), representan hora local ART (UTC-3)
-    # Ajustamos la hora actual restando 3 horas para comparar con fechas locales
+    # PostgreSQL está configurado en timezone America/Argentina/Buenos_Aires
     query_reservadas = text(
         """
         SELECT COALESCE(SUM(cantidad_usada), 0) as total
@@ -204,8 +204,8 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
             SELECT 1 as cantidad_usada
             FROM reservas r
             WHERE r.id_articulo IS NOT NULL
-            AND r.fecha_hora_fin >= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
-            AND r.fecha_hora_inicio <= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
+            AND r.fecha_hora_fin >= CURRENT_TIMESTAMP
+            AND r.fecha_hora_inicio <= CURRENT_TIMESTAMP
 
             UNION ALL
 
@@ -213,8 +213,8 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
             SELECT ra.cantidad as cantidad_usada
             FROM reserva_articulos ra
             JOIN reservas r ON ra.reserva_id = r.id
-            WHERE r.fecha_hora_fin >= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
-            AND r.fecha_hora_inicio <= (CURRENT_TIMESTAMP - INTERVAL '3 hours')
+            WHERE r.fecha_hora_fin >= CURRENT_TIMESTAMP
+            AND r.fecha_hora_inicio <= CURRENT_TIMESTAMP
         ) as reservas_activas
     """
     )
@@ -232,8 +232,8 @@ def get_estadisticas_inventario(db: Session = Depends(get_db)):
             -- Todas las reservas que tocan el día de hoy (hora local)
             SELECT DISTINCT r.id, r.fecha_hora_inicio, r.fecha_hora_fin
             FROM reservas r
-            WHERE r.fecha_hora_fin >= DATE_TRUNC('day', CURRENT_TIMESTAMP - INTERVAL '3 hours')
-            AND r.fecha_hora_inicio <= DATE_TRUNC('day', CURRENT_TIMESTAMP - INTERVAL '3 hours') + INTERVAL '1 day' - INTERVAL '1 second'
+            WHERE r.fecha_hora_fin >= DATE_TRUNC('day', CURRENT_TIMESTAMP)
+            AND r.fecha_hora_inicio <= DATE_TRUNC('day', CURRENT_TIMESTAMP) + INTERVAL '1 day' - INTERVAL '1 second'
         ),
         articulos_en_reservas AS (
             -- Para cada artículo, encontrar el máximo de unidades reservadas simultáneamente
@@ -288,12 +288,12 @@ def get_disponibilidad_actual_articulos(db: Session = Depends(get_db)):
 
     # Obtener todos los artículos
     articulos = ArticuloService.get_articulos(db, 0, 1000)
-    ahora = datetime.now()
 
     disponibilidad = {}
 
     for articulo in articulos:
         # Calcular unidades reservadas ahora para este artículo
+        # PostgreSQL está configurado en timezone America/Argentina/Buenos_Aires
         query_reservadas = text(
             """
             SELECT COALESCE(SUM(cantidad_usada), 0) as total
@@ -302,8 +302,8 @@ def get_disponibilidad_actual_articulos(db: Session = Depends(get_db)):
                 SELECT 1 as cantidad_usada
                 FROM reservas r
                 WHERE r.id_articulo = :articulo_id
-                AND r.fecha_hora_fin >= :ahora
-                AND r.fecha_hora_inicio <= :ahora
+                AND r.fecha_hora_fin >= CURRENT_TIMESTAMP
+                AND r.fecha_hora_inicio <= CURRENT_TIMESTAMP
 
                 UNION ALL
 
@@ -312,14 +312,14 @@ def get_disponibilidad_actual_articulos(db: Session = Depends(get_db)):
                 FROM reserva_articulos ra
                 JOIN reservas r ON ra.reserva_id = r.id
                 WHERE ra.articulo_id = :articulo_id
-                AND r.fecha_hora_fin >= :ahora
-                AND r.fecha_hora_inicio <= :ahora
+                AND r.fecha_hora_fin >= CURRENT_TIMESTAMP
+                AND r.fecha_hora_inicio <= CURRENT_TIMESTAMP
             ) as reservas_activas
         """
         )
 
         result = db.execute(
-            query_reservadas, {"articulo_id": articulo.id, "ahora": ahora}
+            query_reservadas, {"articulo_id": articulo.id}
         )
         unidades_reservadas = result.scalar() or 0
         unidades_disponibles = max(0, articulo.cantidad - unidades_reservadas)
@@ -432,13 +432,6 @@ def count_articulos(
 
 @router.get("/{articulo_id}/reservas")
 def get_reservas_articulo(articulo_id: int, db: Session = Depends(get_db)):
-    # Mostrar la URL de conexión y la base activa
-    try:
-        result_dbname = db.execute(text("SELECT current_database()"))
-        dbname = result_dbname.scalar()
-        print(f"[DEBUG] current_database: {dbname}")
-    except Exception as e:
-        print(f"[DEBUG] error mostrando info de conexión: {e}")
     """Obtener reservas activas y futuras donde se usa este artículo."""
     # Reservas directas del artículo
     result_directas = db.execute(

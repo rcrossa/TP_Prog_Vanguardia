@@ -51,13 +51,20 @@ class ReservaService:
 
         # Validar que no se está reservando demasiado en el pasado
         # Permitir un margen de 30 minutos para compensar desfases de tiempo y casos de uso reales
-        now = datetime.now()
+        # IMPORTANTE: Las fechas en la BD son naive (sin timezone) y representan hora local ART (UTC-3)
+        # PostgreSQL está configurado en timezone America/Argentina/Buenos_Aires
+        result_now = db.execute(text("SELECT CURRENT_TIMESTAMP::timestamp"))
+        now = result_now.scalar()
+        if now is None:
+            now = datetime.now()  # fallback
+        
         margin_minutes = 30
         cutoff_time = now - timedelta(minutes=margin_minutes)
 
         if reserva_data.fecha_hora_inicio < cutoff_time:
             raise ValueError(
-                f"No se pueden crear reservas con más de {margin_minutes} minutos en el pasado"
+                f"No se pueden crear reservas con más de {margin_minutes} minutos en el pasado. "
+                f"Hora actual: {now}, Cutoff: {cutoff_time}, Inicio reserva: {reserva_data.fecha_hora_inicio}"
             )
 
         # Una reserva debe ser para un artículo O una sala, no ambos ni ninguno
@@ -340,9 +347,17 @@ class ReservaService:
             )
 
         # Validar que no se está reservando en el pasado
-        if fecha_inicio < datetime.now():
+        # IMPORTANTE: Las fechas en la BD son naive (sin timezone) y representan hora local ART (UTC-3)
+        # PostgreSQL está configurado en timezone America/Argentina/Buenos_Aires
+        result_now = db.execute(text("SELECT CURRENT_TIMESTAMP::timestamp"))
+        now_local = result_now.scalar()
+        if now_local is None:
+            now_local = datetime.now()  # fallback
+        
+        if fecha_inicio < now_local:
             raise ValueError(
-                "No se pueden modificar reservas para fechas pasadas"
+                f"No se pueden modificar reservas para fechas pasadas. "
+                f"Hora actual: {now_local}, Inicio reserva: {fecha_inicio}"
             )
 
         # Si se está cambiando el artículo, validar disponibilidad
