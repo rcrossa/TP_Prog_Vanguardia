@@ -5,6 +5,7 @@ Este módulo contiene la aplicación FastAPI principal con los endpoints
 básicos y la configuración inicial del sistema de reservas.
 """
 
+import os
 from datetime import datetime
 import uvicorn
 from sqlalchemy.orm import Session

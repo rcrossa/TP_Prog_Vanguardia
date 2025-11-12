@@ -33,6 +33,25 @@ from app.services.articulo_service import ArticuloService
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+# Inyectar variable de versión estática para cache busting
+# Si STATIC_VERSION no está configurada, usar el timestamp del inicio de la aplicación
+# Esto asegura que cada vez que se reinicie/redeploy la app, se invalide la caché
+STATIC_VERSION = os.getenv('STATIC_VERSION')
+if not STATIC_VERSION:
+    # Usar timestamp del inicio de la aplicación como fallback
+    STATIC_VERSION = str(int(datetime.now().timestamp()))
+    print(f"⚠️  STATIC_VERSION no configurada, usando timestamp: {STATIC_VERSION}")
+else:
+    print(f"✅ STATIC_VERSION configurada: {STATIC_VERSION}")
+
+# Agregar context processor para inyectar STATIC_VERSION en todos los templates
+def inject_static_version():
+    """Inyecta la versión de archivos estáticos en todos los templates."""
+    return {"static_version": STATIC_VERSION}
+
+# Configurar el context processor
+templates.env.globals['static_version'] = STATIC_VERSION
+
 
 # Endpoint API para reservas activas (dashboard.js)
 @router.get("/api/v1/stats/reservas")
