@@ -14,6 +14,7 @@ from app.auth.dependencies import get_current_user
 from app.models.reserva import Reserva
 from app.repositories.sala_repository import SalaRepository
 from app.repositories.persona_repository import PersonaRepository
+from app.repositories.articulo_repository import ArticuloRepository
 
 router = APIRouter()
 
@@ -101,6 +102,10 @@ def get_dashboard_metrics(
         )
 
         salas_disponibles = sum(1 for s in salas if s.disponible)
+        
+        # Contar artículos disponibles
+        articulos = ArticuloRepository.get_all(db)
+        articulos_disponibles = sum(1 for a in articulos if a.disponible)
 
         # Calcular ocupación promedio
         if reservas:
@@ -125,7 +130,8 @@ def get_dashboard_metrics(
             "metricas": {
                 "reservas_hoy": reservas_hoy,
                 "ocupacion_promedio": round(ocupacion_promedio, 1),
-                "salas_disponibles": salas_disponibles
+                "salas_disponibles": salas_disponibles,
+                "articulos_disponibles": articulos_disponibles
             }
         }
     except (ValueError, KeyError, AttributeError) as e:

@@ -60,94 +60,10 @@ Base.metadata.create_all(bind=engine)
 
 # Crear aplicación FastAPI
 app = FastAPI(
-    title="🏢 Sistema de Reservas API",
-    description="""
-    ## 📋 API Completa para Gestión de Reservas
-
-    Esta API REST permite gestionar un sistema completo de reservas de salas y artículos.
-
-    ### 🚀 Características Principales
-
-    * **👥 Gestión de Personas** - CRUD completo con validación de emails únicos
-    * **📦 Gestión de Artículos** - Control de disponibilidad y reservas
-    * **🏢 Gestión de Salas** - Configuración de capacidad y horarios
-    * **📅 Sistema de Reservas** - Reservas inteligentes con detección de conflictos
-
-    ### 🔧 Funcionalidades Avanzadas
-
-    * ✅ Validación automática de conflictos de horarios
-    * ✅ Verificación de disponibilidad en tiempo real
-    * ✅ Relaciones complejas entre entidades
-    * ✅ Paginación y filtros inteligentes
-    * ✅ Documentación interactiva completa
-
-    ### 📊 Base de Datos
-
-    Utiliza PostgreSQL con SQLAlchemy 2.0 para máximo rendimiento y confiabilidad.
-
-    ### 🎯 Casos de Uso
-
-    - **Oficinas corporativas**: Reserva de salas de reuniones
-    - **Bibliotecas**: Reserva de libros y salas de estudio
-    - **Universidades**: Gestión de aulas y equipos
-    - **Espacios de coworking**: Reserva de escritorios y recursos
-
-    ---
-
-    **💡 Tip**: Usa la sección "Try it out" para probar los endpoints directamente.
-    """,
+    title="Sistema de Reservas API",
+    description="API REST para gestión de reservas de salas y artículos con detección de conflictos y validación automática.",
     version="1.0.0",
     debug=settings.debug,
-    contact={
-        "name": "Equipo de Desarrollo",
-        "url": "https://github.com/rcrossa/TP_Prog_Vanguardia",
-        "email": "dev@sistemarreservas.com",
-    },
-    license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT",
-    },
-    terms_of_service="https://sistemarreservas.com/terms",
-    openapi_tags=[
-        {
-            "name": "personas",
-            "description": (
-                "👥 **Gestión de Personas** - Operaciones CRUD para usuarios "
-                "del sistema. Incluye validación de emails únicos y gestión "
-                "de información personal."
-            ),
-        },
-        {
-            "name": "articulos",
-            "description": (
-                "📦 **Gestión de Artículos** - Control completo de artículos "
-                "reservables. Manejo de disponibilidad, estados y operaciones CRUD."
-            ),
-        },
-        {
-            "name": "salas",
-            "description": (
-                "🏢 **Gestión de Salas** - Administración de espacios físicos. "
-                "Configuración de capacidades y características de las salas."
-            ),
-        },
-        {
-            "name": "reservas",
-            "description": (
-                "📅 **Sistema de Reservas** - Motor inteligente de reservas "
-                "con detección automática de conflictos. Soporta reservas de "
-                "artículos y salas con validaciones temporales."
-            ),
-        },
-        {
-            "name": " Sistema",
-            "description": (
-                "🏠 **Información del Sistema** - Endpoints de sistema "
-                "incluyendo health checks, estadísticas e información "
-                "general de la API."
-            ),
-        },
-    ],
 )
 
 # Configurar CORS
@@ -169,58 +85,11 @@ app.include_router(web_router)
 
 @app.get(
     "/stats",
-    tags=["🏠 Sistema"],
-    summary="📊 Estadísticas del Sistema",
-    description="Resumen estadístico completo del estado actual del sistema",
-    responses={
-        200: {
-            "description": "Estadísticas del sistema",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "personas": {"total": 25, "activas": 23},
-                        "articulos": {"total": 45, "disponibles": 38, "reservados": 7},
-                        "salas": {"total": 12, "pequeñas": 6, "grandes": 6},
-                        "reservas": {"total": 156, "activas": 23, "completadas": 133},
-                        "timestamp": "2025-10-15T17:48:12.095000",
-                    }
-                }
-            },
-        }
-    },
+    tags=["Sistema"],
+    summary="Estadísticas del Sistema",
 )
 async def get_system_stats(db: Session = Depends(get_db)):
-    """
-    ## 📊 Dashboard de Estadísticas
-
-    Proporciona un resumen ejecutivo del estado actual del sistema.
-
-    ### 📈 Métricas Incluidas
-
-    **👥 Personas**
-    - Total de usuarios registrados
-    - Usuarios activos (con reservas)
-
-    **📦 Artículos**
-    - Inventario total
-    - Disponibles para reserva
-    - Actualmente reservados
-
-    **🏢 Salas**
-    - Total de espacios
-    - Distribución por capacidad
-
-    **📅 Reservas**
-    - Total histórico
-    - Reservas activas actuales
-    - Reservas completadas
-
-    ### 🎯 Casos de Uso
-    - Dashboards administrativos
-    - Reportes ejecutivos
-    - Monitoreo de utilización
-    - Planificación de recursos
-    """
+    """Obtener resumen estadístico del sistema."""
     try:
         return {
             "personas": {"total": PersonaService.count_personas(db)},
@@ -238,7 +107,7 @@ async def get_system_stats(db: Session = Depends(get_db)):
             "reservas": {"total": ReservaService.count_reservas(db)},
             "sistema": {
                 "version": "1.0.0",
-                "estado": "🟢 Operativo",
+                "estado": "operativo",
                 "timestamp": datetime.now().isoformat(),
             },
         }
@@ -251,148 +120,40 @@ async def get_system_stats(db: Session = Depends(get_db)):
 
 @app.get(
     "/",
-    tags=["🏠 Sistema"],
-    summary="🏠 Información del Sistema",
-    description="Endpoint de bienvenida con información básica de la API",
-    responses={
-        200: {
-            "description": "Información del sistema",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "message": "Bienvenido al Sistema de Reservas API",
-                        "version": "1.0.0",
-                        "status": "🟢 Operativo",
-                        "features": [
-                            "CRUD Personas",
-                            "CRUD Artículos",
-                            "CRUD Salas",
-                            "Sistema Reservas",
-                        ],
-                        "docs": "/docs",
-                        "redoc": "/redoc",
-                    }
-                }
-            },
-        }
-    },
+    tags=["Sistema"],
+    summary="Información del Sistema",
 )
 async def root():
-    """
-    ## 🏠 Sistema de Reservas API
-
-    Bienvenido a la API más completa para gestión de reservas.
-
-    ### 🚀 Características Principales
-    - **CRUD Completo** para todas las entidades
-    - **Validaciones Inteligentes** automáticas
-    - **Detección de Conflictos** en tiempo real
-    - **Documentación Interactiva** con Swagger UI
-
-    ### 📚 Documentación
-    - **Swagger UI**: `/docs` (Interfaz interactiva)
-    - **ReDoc**: `/redoc` (Documentación alternativa)
-
-    ### 🏃‍♂️ Empezar Ahora
-    1. Explora los endpoints en `/docs`
-    2. Crea personas, artículos y salas
-    3. Prueba el sistema de reservas inteligente
-    """
+    """Endpoint raíz con información básica de la API."""
     return {
-        "message": "🏢 Bienvenido al Sistema de Reservas API",
+        "message": "Sistema de Reservas API",
         "version": "1.0.0",
-        "status": "🟢 Operativo",
-        "features": [
-            "👥 CRUD Personas",
-            "📦 CRUD Artículos",
-            "🏢 CRUD Salas",
-            "📅 Sistema Reservas Inteligente",
-        ],
-        "endpoints": {
-            "personas": "/api/v1/personas",
-            "articulos": "/api/v1/articulos",
-            "salas": "/api/v1/salas",
-            "reservas": "/api/v1/reservas",
-        },
+        "status": "operativo",
         "docs": "/docs",
-        "redoc": "/redoc",
         "health": "/health",
     }
 
 
 @app.get(
     "/health",
-    tags=["🏠 Sistema"],
-    summary="🏥 Health Check",
-    description="Verificación del estado de la aplicación y conectividad de base de datos",
-    responses={
-        200: {
-            "description": "Sistema funcionando correctamente",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "🟢 healthy",
-                        "database": "🟢 connected",
-                        "timestamp": "2025-10-15T17:48:12.095000",
-                        "version": "1.0.0",
-                        "message": "La aplicación y base de datos están funcionando correctamente",
-                    }
-                }
-            },
-        },
-        503: {
-            "description": "Servicio no disponible - Error de base de datos",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Error de conexión a la base de datos: connection refused"
-                    }
-                }
-            },
-        },
-    },
+    tags=["Sistema"],
+    summary="Health Check",
 )
 async def health_check(db: Session = Depends(get_db)):
-    """
-    ## 🏥 Health Check del Sistema
-
-    Verifica el estado general de la aplicación y sus dependencias.
-
-    ### ✅ Verificaciones Realizadas
-    - **🔗 Conectividad**: Estado de conexión a PostgreSQL
-    - **⚡ Responsividad**: Tiempo de respuesta de la base de datos
-    - **🏃 Aplicación**: Estado general del servidor FastAPI
-
-    ### 📊 Estados Posibles
-    - **🟢 Healthy**: Todo funcionando correctamente
-    - **🔴 Unhealthy**: Error de conexión o servicio caído
-
-    ### 🚨 Uso en Producción
-    Este endpoint es ideal para:
-    - Monitoreo automatizado (Kubernetes health checks)
-    - Balanceadores de carga (health probes)
-    - Sistemas de alerta y observabilidad
-    """
+    """Verificar estado del sistema y conectividad de base de datos."""
     try:
-
         # Verificar conexión a la base de datos
         db.execute(text("SELECT 1"))
         return {
-            "status": "🟢 healthy",
-            "database": "🟢 connected",
+            "status": "healthy",
+            "database": "connected",
             "timestamp": datetime.now().isoformat(),
             "version": "1.0.0",
-            "components": {
-                "fastapi": "🟢 running",
-                "postgresql": "🟢 connected",
-                "sqlalchemy": "🟢 active",
-            },
-            "message": "La aplicación y base de datos están funcionando correctamente",
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"🔴 Error de conexión a la base de datos: {str(e)}",
+            detail=f"Error de conexión a la base de datos: {str(e)}",
         ) from e
 
 
